@@ -35,8 +35,8 @@
 | 红队 RT | 0 | 6 | 4 | 10 |
 | **总计** | **2** | **50** | **49** | **101** |
 
-- 已修复：30　|　待修复：71
-- 全部 10 域已审查完成；未修复 Critical = 0、Major = 22、Minor = 49
+- 已修复：36　|　待修复：65
+- 全部 10 域已审查完成；未修复 Critical = 0、Major = 17、Minor = 48
 
 ## 优先处理清单（Critical + Major）
 
@@ -54,7 +54,7 @@
 | — | — | **— 第二轮审查（04/06/07/08/09）新发现，待修复 —** |
 | P0 | UI-001 | UI 缺实时更新通道（Critical，已修复）|
 | P1 | MCP-001~004 | 结果标准化缺失、调用日志/状态机/权限契约不闭环 |
-| P1 | WF-001~005 | 两套状态机不一致、回滚血缘/并行汇聚缺失 |
+| P1 | WF-001~005 | 两套状态机不一致、回滚血缘/并行汇聚缺失（已修复）|
 | P1 | UI-002~007 | 工作流设计器/Skill/插件/身份/发布渠道/错误态缺口（UI-002~005 已修复，余 UI-006/007）|
 | P1 | MVP-001~005 | 阶段依赖表、外键迁移、范围越级、DoD 对齐、出口门槛 |
 | P1 | RT-001~006 | 提示注入、确认完整性、审计防篡改、凭证最小化、插件供应链、跨项目隔离 |
@@ -152,12 +152,12 @@
 
 | Issue-ID | Issue-Type | Priority | Affected-Docs | Description | Suggested-Fix | Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| WF-001 | Consistency/状态机 | Major | 07-workflow, 03-database | §4.2 failed→skipped 与 DB §8.3 不一致 | 以 DB §8.3 为权威统一 skipped 入边 | 待修复 |
-| WF-002 | Consistency/状态机 | Major | 07-workflow, 03-database | §4.1 阶段名建模工作流状态、缺 terminated，与 DB §8.2 口径不同 | §4.1 标注业务视图，补 terminated/rejected 落点 | 待修复 |
-| WF-003 | Workflow | Major | 07-workflow, 03-database | 原地重试 vs 新建 stage_run 重做无判定规则，血缘二义 | 区分 attempt_count++ 与新 run+parent_stage_run_id 触发条件 | 待修复 |
-| WF-004 | Workflow/版本 | Major | 07-workflow | 回滚致下游资产失效策略与分叉血缘未定义 | 定义下游失效/重算策略与分支血缘表达 | 待修复 |
-| WF-005 | Workflow | Major | 07-workflow, 03-database | 并行汇聚(join)未定义为显式阶段，join_any/gate 聚合缺失 | 定义汇总阶段门禁与合并、对齐 dependency_type | 待修复 |
-| WF-006 | Consistency | Minor | 07-workflow, 03-database | §9 映射过时(publish_records 已落地)，缺 sessions/deps 映射 | 更新映射为权威表 | 待修复 |
+| WF-001 | Consistency/状态机 | Major | 07-workflow, 03-database | §4.2 failed→skipped 与 DB §8.3 不一致 | 以 DB §8.3 为权威统一 skipped 入边 | 已修复 |
+| WF-002 | Consistency/状态机 | Major | 07-workflow, 03-database | §4.1 阶段名建模工作流状态、缺 terminated，与 DB §8.2 口径不同 | §4.1 标注业务视图，补 terminated/rejected 落点 | 已修复 |
+| WF-003 | Workflow | Major | 07-workflow, 03-database | 原地重试 vs 新建 stage_run 重做无判定规则，血缘二义 | 区分 attempt_count++ 与新 run+parent_stage_run_id 触发条件 | 已修复 |
+| WF-004 | Workflow/版本 | Major | 07-workflow | 回滚致下游资产失效策略与分叉血缘未定义 | 定义下游失效/重算策略与分支血缘表达 | 已修复 |
+| WF-005 | Workflow | Major | 07-workflow, 03-database | 并行汇聚(join)未定义为显式阶段，join_any/gate 聚合缺失 | 定义汇总阶段门禁与合并、对齐 dependency_type | 已修复 |
+| WF-006 | Consistency | Minor | 07-workflow, 03-database | §9 映射过时(publish_records 已落地)，缺 sessions/deps 映射 | 更新映射为权威表 | 已修复 |
 | WF-007 | Consistency | Minor | 07-workflow, 02-architecture | 九阶段与架构 §8.2 抽象命名/粒度不一 | 互标抽象/实例关系或统一术语 | 待修复 |
 | WF-008 | Consistency | Minor | 07-workflow, 03-database | asset_type 词表与 DB §5.9 不一致 | 统一受控词表 | 待修复 |
 | WF-009 | Completeness | Minor | 07-workflow | 配置回滚未引用既有版本机制 | 引用 workflow_version/*_config_versions/profile_snapshot | 待修复 |
@@ -247,3 +247,4 @@
 | 2026-06-03 | 第二轮审查汇总 | 04 MCP / 06 工作流 / 07 UI / 08 MVP / 09 红队 审查完成，追加 1 Critical（UI-001）+ 26 Major + 22 Minor，全部待修复；总问题 52 → 101，待修复 27 → 76 |
 | 2026-06-03 | 首轮终审 | 10 终审完成，结论不通过（有放行条件）：须修复 UI-001 与第二轮 26 个 Major 后复审；49 个 Minor 登记排期 |
 | 2026-06-03 | 修复批次 6 | UI-001(Critical) / UI-002 / UI-003 / UI-004 / UI-005 → 已修复；UI 新增实时通道、工作流设计器、Skill/插件管理、身份与访问、发布与渠道管理，并补页面树/信息架构节点；未修复 Critical 1→0；详见 fix-log.md |
+| 2026-06-03 | 修复批次 7 | WF-001~005（5 Major）+ WF-006（Minor）→ 已修复；工作流统一状态机口径、补重试/重做判定、回滚下游失效与分叉血缘、并行汇聚语义；DB 联动 content_assets.stale 与 asset_versions.source_stage_run_id；工作流 Major 清零，未修复 High 22→17；详见 fix-log.md |

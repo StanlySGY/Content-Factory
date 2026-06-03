@@ -109,3 +109,23 @@
 - 修复 5 项：1 Critical + 4 Major。已修复累计 25 → 30；未修复 Critical 1→0、High（Major）26→22。
 - 原 §22 禁止事项、§23 后续细化文档顺延为 §27、§28；§1~§21 编号不变，内部引用不受影响。
 - UI 域剩 UI-006（模块映射表）、UI-007（错误态补全）两个 Major 及 4 个 Minor 待后续批次。
+
+## 批次 7（2026-06-03）
+
+第二轮修复第二批，聚焦工作流 WF 域全部 5 个 Major 并顺带关闭强耦合的 WF-006，集中于 `docs/07-workflow/content-workflow.md`，联动 `docs/03-database/database-design.md` 字段。
+
+| 修复时间 | 问题编号 | 修改内容 | 影响范围 |
+| --- | --- | --- | --- |
+| 2026-06-03 | WF-001 (Major) | §4.2 阶段状态机移除 `failed --> skipped`，`skipped` 入边对齐 DB §8.3（仅 `pending --> skipped`），补失败仅可重试/终止/退回的说明 | wf §4.2 ↔ db §8.3 |
+| 2026-06-03 | WF-002 (Major) | §4.1 标注为业务阶段视图（非状态机权威），补 `terminated` 状态并映射 DB §8.2，明确审查 `approved/revision_required/rejected/terminated` 业务落点 | wf §4.1 ↔ db §8.2/§8.4 |
+| 2026-06-03 | WF-003 (Major) | 新增 §5.4「重试与重做判定」：区分同 run 原地重试（`attempt_count++`，技术失败）与跨 run 重做（新建 `stage_run`+`parent_stage_run_id`，业务退回/回滚）；DB §5.7 措辞同步消除"重试"血缘二义 | wf §5.4；db §5.7 |
+| 2026-06-03 | WF-004 (Major) | 新增 §5.5「回滚的下游影响」：下游资产 `stale` 失效 + 重算、已发布走修正、分叉血缘经 parent 链 + `source_stage_run_id`；DB 联动 `content_assets.status` 增 `stale`、`asset_versions` 增 `source_stage_run_id`（含 ER） | wf §5.5/§6.3；db §3 ER/§5.9/§5.10 |
+| 2026-06-03 | WF-005 (Major) | §7.3 隐式「汇总上下文」提升为显式「汇聚阶段(join)」；新增 §7.5「并行汇聚语义」：join_all/join_any、部分失败、gate_result 聚合，对齐 DB §5.5.1 `dependency_type` 与 §5.7 `parallel_group` | wf §7.3/§7.5 ↔ db §5.5.1/§5.7 |
+| 2026-06-03 | WF-006 (Minor) | §9 数据映射更新：发布记录指向已落地的 `publish_records`，补 `workflow_stage_dependencies`、`agent_sessions/agent_messages` 映射 | wf §9 |
+
+### 批次小结
+
+- 修复 6 项：5 Major + 1 Minor。已修复累计 30 → 36；未修复 Critical 保持 0、High（Major）22 → 17、Minor 49 → 48。
+- 工作流域（WF）全部 Major 清零；WF-006 因与本批引用强耦合（`publish_records`/`stage_dependencies`）一并关闭，避免 §9 映射与新增引用矛盾。
+- DB 联动两处字段（`content_assets.status` 的 `stale`、`asset_versions.source_stage_run_id`）已同步 ER 与表说明，与 wf §5.4/§5.5 形成闭环。
+- WF 域剩 WF-007/008/009/010 四个 Minor 待后续 Minor 批次。

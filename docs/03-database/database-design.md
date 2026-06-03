@@ -43,6 +43,7 @@ erDiagram
     content_tasks ||--o{ context_packs : uses
     stage_runs ||--o{ context_packs : receives
     stage_runs ||--o{ content_assets : produces
+    stage_runs ||--o{ asset_versions : produces_version
     content_assets ||--o{ asset_versions : versions
     stage_runs ||--o{ review_records : reviewed_by
     content_assets ||--o{ review_records : reviews
@@ -178,6 +179,7 @@ erDiagram
         string storage_uri
         string checksum
         json metadata
+        uuid source_stage_run_id FK
         uuid created_by FK
         datetime created_at
     }
@@ -372,7 +374,7 @@ erDiagram
 | workflow_run_id | uuid | FK workflow_runs.id, not null | 所属工作流实例 |
 | workflow_stage_id | uuid | FK workflow_stages.id, not null | 阶段定义 |
 | agent_profile_id | uuid | FK agent_profiles.id, nullable | 执行 Agent，仅 Agent 阶段使用 |
-| parent_stage_run_id | uuid | FK stage_runs.id, nullable | 回滚/重试/退回重做的来源阶段运行，构成血缘 |
+| parent_stage_run_id | uuid | FK stage_runs.id, nullable | 回滚/退回重做新建运行的来源阶段运行，构成血缘；同 run 原地重试不写本字段 |
 | status | varchar(32) | not null | 阶段状态 |
 | attempt_count | integer | not null | 执行次数 |
 | parallel_group | varchar(64) | nullable | 并行分组标识，同组阶段可并行执行 |
@@ -384,7 +386,7 @@ erDiagram
 
 约束与说明：
 
-- `parent_stage_run_id` 记录重试与退回重做血缘，根阶段运行为空。
+- `parent_stage_run_id` 记录回滚与退回重做（新建运行）的血缘，根阶段运行为空；同 run 原地重试仅递增 `attempt_count`、不产生新血缘节点（见 content-workflow §5.4）。
 - `parallel_group` 为空表示串行；同一 `workflow_run_id` 下同组阶段并行调度。
 - `gate_result` 为门禁判定快照；审查结论仍以 `review_records` 为权威，二者不冲突（见 §10.1）。
 
@@ -422,13 +424,15 @@ erDiagram
 | stage_run_id | uuid | FK stage_runs.id, nullable | 来源阶段 |
 | asset_type | varchar(64) | not null | research, outline, draft, revision, final |
 | title | varchar(240) | not null | 资产标题 |
-| status | varchar(32) | not null | draft, review_pending, approved, rejected, archived |
+| status | varchar(32) | not null | draft, review_pending, approved, rejected, stale, archived |
 | current_version | integer | not null | 当前版本号（与 current_version_id 对应，便于展示）|
 | current_version_id | uuid | FK asset_versions.id, nullable | 当前版本指针，保证当前版本引用完整性 |
 | created_at | timestamptz | not null | 创建时间 |
 | updated_at | timestamptz | not null | 更新时间 |
 
 > `current_version_id` 与 `asset_versions` 构成当前版本的引用完整性约束；因 `content_assets` 与 `asset_versions` 互相引用，该外键可空并采用延迟约束，新建资产时先插入资产再回填当前版本指针。`current_version` 整数仅作展示冗余，权威指针为 `current_version_id`。
+>
+> `status` 的 `stale` 表示上游回滚/重做导致需重算的陈旧资产（见 `content-workflow.md` §5.5）；`stale` 资产经新建 `stage_run` 重做产出新版本后转回有效态，重做完成前不得进入审核或发布。
 
 ### 5.10 asset_versions
 
@@ -442,6 +446,7 @@ erDiagram
 | storage_uri | text | not null | 正文或附件存储地址 |
 | checksum | varchar(128) | not null | 内容校验值 |
 | metadata | jsonb | not null | 字数、格式、模型、来源等元数据 |
+| source_stage_run_id | uuid | FK stage_runs.id, nullable | 产出该版本的阶段运行，锚定分叉血缘（见 `content-workflow.md` §5.5） |
 | created_by | uuid | FK users.id, nullable | 创建人；系统生成可为空 |
 | created_at | timestamptz | not null | 创建时间 |
 

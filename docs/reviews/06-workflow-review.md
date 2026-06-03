@@ -26,12 +26,12 @@
 
 | ID | 级别 | 类型 | 问题 | 位置 | 状态 |
 | --- | --- | --- | --- | --- | --- |
-| WF-001 | Major | 状态机一致性 | §4.2 含 `failed --> skipped` 转移，DB §8.3 仅 `pending --> skipped`，合法转移集不一致 | wf §4.2 ↔ db §8.3 | 待修复 |
-| WF-002 | Major | 状态机一致性 | §4.1 以阶段名建模工作流状态、缺 `terminated`，与 DB §8.2 通用状态口径不同；审查 rejected/terminated 无落点 | wf §4.1 ↔ db §8.2 | 待修复 |
-| WF-003 | Major | Workflow/血缘 | "原地重试(attempt_count++)"与"新建 stage_run 重做(parent_stage_run_id)"无判定规则，血缘记录方式二义 | wf §5.3/§4.2 | 待修复 |
-| WF-004 | Major | Workflow/版本 | 回滚使下游资产相对旧上游失效，未定义下游作废/标记 stale/重算策略；版本链路未表达分叉血缘 | wf §5/§6.2 | 待修复 |
-| WF-005 | Major | Workflow | 并行汇聚(join)未定义为显式阶段；join_any 部分失败、各分支 gate_result 聚合规则缺失 | wf §7.3/§8 ↔ db §5.5.1 | 待修复 |
-| WF-006 | Minor | 数据映射 | §9 仍称发布"后续扩展 publish_records"，DB §5.21 已落地；缺 agent_sessions/messages、stage_dependencies 映射 | wf §9 | 待修复 |
+| WF-001 | Major | 状态机一致性 | §4.2 含 `failed --> skipped` 转移，DB §8.3 仅 `pending --> skipped`，合法转移集不一致 | wf §4.2 ↔ db §8.3 | 已修复 |
+| WF-002 | Major | 状态机一致性 | §4.1 以阶段名建模工作流状态、缺 `terminated`，与 DB §8.2 通用状态口径不同；审查 rejected/terminated 无落点 | wf §4.1 ↔ db §8.2 | 已修复 |
+| WF-003 | Major | Workflow/血缘 | "原地重试(attempt_count++)"与"新建 stage_run 重做(parent_stage_run_id)"无判定规则，血缘记录方式二义 | wf §5.3/§4.2 | 已修复 |
+| WF-004 | Major | Workflow/版本 | 回滚使下游资产相对旧上游失效，未定义下游作废/标记 stale/重算策略；版本链路未表达分叉血缘 | wf §5/§6.2 | 已修复 |
+| WF-005 | Major | Workflow | 并行汇聚(join)未定义为显式阶段；join_any 部分失败、各分支 gate_result 聚合规则缺失 | wf §7.3/§8 ↔ db §5.5.1 | 已修复 |
+| WF-006 | Minor | 数据映射 | §9 仍称发布"后续扩展 publish_records"，DB §5.21 已落地；缺 agent_sessions/messages、stage_dependencies 映射 | wf §9 | 已修复 |
 | WF-007 | Minor | 一致性 | §2 九阶段与架构 §8.2 抽象骨架命名/粒度不同，无映射说明 | wf §2 ↔ arch §8.2 | 待修复 |
 | WF-008 | Minor | 一致性 | 细粒度 asset_type 词表与 DB §5.9 示例枚举对不上；review/publish 已独立表非 asset | wf §3 ↔ db §5.9 | 待修复 |
 | WF-009 | Minor | 完整性 | §5.1 配置回滚未引用既有版本化机制（workflow_version / *_config_versions / profile_snapshot） | wf §5.1 | 待修复 |
@@ -54,3 +54,4 @@
 | 日期 | 审查者 | 动作 | 说明 |
 | --- | --- | --- | --- |
 | 2026-06-03 | 架构评审 | 完成审查 | 0 Critical / 5 Major / 5 Minor；结论有条件通过 |
+| 2026-06-03 | 修复跟踪 | 批次 7 修复 | WF-001~005（5 Major）+ WF-006（Minor）→ 已修复；统一状态机口径、补重试/重做判定与回滚下游失效血缘、并行汇聚语义；详见 fix-log 批次 7 |

@@ -235,8 +235,14 @@ stateDiagram-v2
     topic_ready --> cancelled: 取消
     researching --> cancelled: 取消
     reviewing --> cancelled: 取消
+    reviewing --> terminated: 人工终止
+    publishing --> terminated: 人工终止
+    revision_required --> terminated: 人工终止
     cancelled --> archived: 归档
+    terminated --> archived: 归档
 ```
+
+> §4.1 是面向内容生产的业务阶段视图（任务进度），非状态机权威。其阶段态映射数据库权威运行状态机（`database-design.md` §8.2）的抽象状态：阶段推进对应 `running`、阶段间审查对应 `waiting_review`，`revision_required` 对应退回，`publish_failed` 是 `publishing` 内 `failed` 的业务细分，`terminated` 为人工终止。审查结论（DB §8.4）业务落点：`approved` 推进发布、`revision_required` 进入 `revision_required` 退回重做、`rejected`（拒绝并作废当前产出）进入 `revision_required` 并强制新建 `stage_run` 重做（见 §5.4）、`terminated` 进入 `terminated`。**工作流运行的权威状态机以 DB §8.2 为准**，本图仅用于业务进度呈现。
 
 ### 4.2 阶段状态
 
@@ -250,11 +256,12 @@ stateDiagram-v2
     revision_required --> running: 重新执行
     running --> failed: 执行失败
     failed --> running: 重试
-    failed --> skipped: 人工跳过
-    pending --> skipped: 条件不满足
+    pending --> skipped: 条件跳过
     approved --> [*]
     skipped --> [*]
 ```
+
+> §4.2 阶段运行状态机与数据库权威定义（`database-design.md` §8.3）严格一致：`skipped` 仅由 `pending` 经条件不满足进入；阶段执行失败只能 `failed --> running` 重试，不在阶段级直接跳过。需放弃某个失败阶段时，由工作流级人工终止（§4.1 `terminated`）或经审查退回（`revision_required`）处理。
 
 ## 5. 回滚机制
 
@@ -297,6 +304,34 @@ flowchart LR
 - 回滚必须记录原因、操作者、目标版本和影响范围。
 - 已发布内容回滚必须生成发布修正记录，不直接覆盖历史发布记录。
 - 回滚后重新执行的阶段必须生成新的 `stage_run` 和资产版本。
+
+### 5.4 重试与重做判定
+
+阶段重新执行分两类，触发条件与血缘记录方式不同，避免 `attempt_count` 与 `parent_stage_run_id` 二义（对齐 `database-design.md` §8.3 状态机与 §5.7 字段）。
+
+| 维度 | 同 run 原地重试 | 跨 run 重做 |
+| --- | --- | --- |
+| 触发 | 技术性可恢复失败（MCP 超时、Agent 调用异常、瞬时错误） | 业务退回（审查 `revision_required`）、审查 `rejected` 作废、人工回滚到历史阶段 |
+| 状态路径 | `failed --> running`（DB §8.3） | `revision_required --> running` 或回滚新建运行 |
+| stage_run | 复用同一 `stage_run` | 新建 `stage_run` |
+| attempt_count | `+1` | 新运行从 1 计 |
+| parent_stage_run_id | 不写（不产生新血缘节点） | 指向来源 `stage_run`，构成回滚/重做血缘链 |
+| 资产版本 | 不强制新增 | 必须生成新 `asset_version`（见 §5.3） |
+
+判定规则：
+
+- 失败是否可自动恢复由领域层策略（错误类型 + 重试上限）判定；达到上限仍失败则升级为人工处理，不静默原地重试。
+- 审查结论 `revision_required` 与 `rejected` 均为业务重做：前者沿当前资产链退回，后者作废当前产出并强制新建 `stage_run`（对应 §4.1 落点）。
+- 同 run 原地重试只递增 `attempt_count`，不写 `parent_stage_run_id`；血缘链仅由跨 run 重做构成，保证血缘单义。
+
+### 5.5 回滚的下游影响
+
+回滚或重做某阶段后，依赖其产出的下游阶段资产相对新上游已过期，必须显式失效并重算，不得静默沿用。
+
+- **失效判定**：以 `workflow_stage_dependencies`（`database-design.md` §5.5.1）依赖图为准，回滚阶段的全部下游（直接与传递）阶段资产标记为 `stale`（`content_assets.status`）。
+- **重算策略**：`stale` 资产须经新建 `stage_run` 重做、产出新 `asset_version` 后转回有效；重做完成前其 `current_version_id` 仍指向旧版本，但不得进入审核或发布。
+- **已发布内容**：不就地失效，按 §5.3 生成发布修正记录处理。
+- **分叉血缘**：版本链路分叉由 `stage_runs.parent_stage_run_id` 血缘链表达，每个 `asset_version` 经 `source_stage_run_id`（`database-design.md` §5.10）锚定产出它的阶段运行，据此可逐版本回溯所属分支。
 
 ## 6. 版本机制
 
@@ -344,7 +379,7 @@ flowchart TB
 
 - 资产版本只追加，不覆盖。
 - 当前版本由内容资产记录指向。
-- 每个版本必须记录来源阶段、创建者、时间、摘要和校验值。
+- 每个版本必须经 `asset_versions.source_stage_run_id` 记录来源阶段运行，并记录创建者、时间、摘要和校验值。
 - Agent 输出版本必须保留原始输出和标准化输出引用。
 
 ## 7. 多 Agent 协作机制
@@ -400,7 +435,7 @@ flowchart TB
 
 ### 7.3 多 Agent 并行
 
-调研、配图建议、风险审查可以并行执行，但写作和审核必须依赖明确版本。
+调研、配图建议、风险审查可以并行执行，但写作和审核必须依赖明确版本。并行分支必须经显式汇聚阶段（join）收口，语义见 §7.5。
 
 ```mermaid
 flowchart LR
@@ -408,17 +443,17 @@ flowchart LR
     Research[调研 Agent]
     VisualIdea[视觉 Agent]
     RiskCheck[风险审查 Agent]
-    Merge[汇总上下文]
+    Join[汇聚阶段 join_all]
     Outline[大纲 Agent]
     Writing[写作 Agent]
 
     Topic --> Research
     Topic --> VisualIdea
     Topic --> RiskCheck
-    Research --> Merge
-    VisualIdea --> Merge
-    RiskCheck --> Merge
-    Merge --> Outline
+    Research --> Join
+    VisualIdea --> Join
+    RiskCheck --> Join
+    Join --> Outline
     Outline --> Writing
 ```
 
@@ -426,9 +461,22 @@ flowchart LR
 
 - 每个 Agent 只处理当前阶段授权范围。
 - Agent 间不直接共享隐式聊天上下文，必须通过 `ContextPack` 和 `ContentAsset` 传递。
-- 并行 Agent 产出必须经过汇总阶段形成统一上下文。
+- 并行 Agent 产出必须经过显式汇聚阶段（join）形成统一上下文。
 - 冲突结论必须进入审核或人工决策。
 - Reviewer Agent 不得直接修改最终内容，只提出结论和建议。
+
+### 7.5 并行汇聚（join）语义
+
+并行分支必须经显式汇聚阶段收口，不依赖隐式上下文合并。汇聚阶段是一个真实 `stage_run`，行为对齐 `workflow_stage_dependencies.dependency_type`（`database-design.md` §5.5.1）。
+
+| 汇聚类型 | 激活条件 | 部分失败处理 |
+| --- | --- | --- |
+| `join_all` | 全部上游分支 `approved` 后激活 | 任一上游 `failed` 或未达门禁则汇聚阻塞，按 §5.4 重试或重做该分支 |
+| `join_any` | 任一上游分支 `approved` 即可激活 | 允许部分分支失败；未完成分支不阻塞，但其产出不进入合并上下文 |
+
+- 同组并行分支由 `stage_runs.parallel_group`（`database-design.md` §5.7）标识。
+- 汇聚阶段聚合各分支 `gate_result`：`join_all` 要求全部分支门禁通过，`join_any` 以已通过分支为准并记录被排除分支。
+- 合并后的统一上下文经 `ContextPack` 传递给下游；冲突结论进入审核或人工决策（§7.4）。
 
 ## 8. 质量门禁
 
@@ -457,7 +505,9 @@ flowchart LR
 | 内容资产 | `content_assets` |
 | 资产版本 | `asset_versions` |
 | 审核记录 | `review_records` |
-| 发布记录 | 可先使用 `content_assets` + `audit_events`，后续扩展 `publish_records` |
+| 发布记录 | `publish_records` |
+| 阶段依赖 | `workflow_stage_dependencies` |
+| Agent 会话 / 消息 | `agent_sessions` / `agent_messages` |
 | 审计事件 | `audit_events` |
 
 ## 10. 发布控制
