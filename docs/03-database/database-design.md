@@ -574,12 +574,16 @@ Skill 定义表。
 | project_id | uuid | FK projects.id, not null | 所属项目，支撑行级隔离 |
 | stage_run_id | uuid | FK stage_runs.id, not null | 所属阶段 |
 | mcp_tool_id | uuid | FK mcp_tools.id, not null | 被调用工具 |
-| status | varchar(32) | not null | pending, running, succeeded, failed, cancelled |
+| caller_type | varchar(32) | not null | workflow, agent, skill, plugin, user |
+| caller_id | uuid | nullable | 调用方 ID |
+| status | varchar(32) | not null | pending, running, succeeded, failed, denied, timeout, cancelled |
+| risk_level | varchar(32) | not null | 调用风险等级 low/medium/high |
 | input_data | jsonb | not null | 输入快照，敏感值脱敏 |
 | output_data | jsonb | nullable | 输出快照 |
 | error_data | jsonb | nullable | 错误信息 |
 | started_at | timestamptz | nullable | 开始时间 |
 | completed_at | timestamptz | nullable | 完成时间 |
+| duration_ms | integer | nullable | 调用耗时，与 MCP 调用日志对齐 |
 | created_at | timestamptz | not null | 创建时间 |
 
 #### skill_invocations

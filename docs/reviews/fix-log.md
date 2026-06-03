@@ -149,3 +149,20 @@
 - 红队域（RT）全部 Major 清零；跨域安全强制点（注入隔离/确认绑定/审计防篡改/凭证最小化/插件供应链/跨项目隔离）已在设计层定义并落地强制点。
 - DB 联动：audit_events 哈希链三字段、调用表与 agent_messages 的 project_id（RT-003/006）。
 - RT 域剩 RT-007/008/009/010 四个 Minor（脱敏传播/digest 约束/WSL 路径/远端 TLS）待后续 Minor 批次。
+
+## 批次 9（2026-06-03）
+
+第二轮修复第四批，聚焦 MCP 域全部 4 个 Major，集中于 `docs/05-mcp/mcp-architecture.md`，联动 `docs/03-database/database-design.md`。
+
+| 修复时间 | 问题编号 | 修改内容 | 影响范围 |
+| --- | --- | --- | --- |
+| 2026-06-03 | MCP-001 (Major) | §3 架构图加 `Result Normalizer` 节点并连入网关链路；§12 网关契约新增「标准调用结果」结构（success/failed/timeout/denied 同构 + digest/risk/duration） | mcp §3/§12 |
+| 2026-06-03 | MCP-002 (Major) | db tool_invocations 补 caller_type/caller_id/risk_level/duration_ms，status 枚举补 denied/timeout；mcp §9.3 增 invocation/permission/lifecycle 日志落表映射 | db §5.17；mcp §9.3 |
+| 2026-06-03 | MCP-003 (Major) | mcp §4 新增「生命周期状态 → 数据表字段映射」表，区分持久态（install_status/health_status/server.status）与运行瞬态 | mcp §4 ↔ db §5.13/§5.22 |
+| 2026-06-03 | MCP-004 (Major) | §5.2 Manifest permissions 补 production/destructive/user_confirmation/context_scope 四维，声明与 §8.2 八维及 mcp_tools.permission_schema 对齐 | mcp §5.2 ↔ §8.2 |
+
+### 批次小结
+
+- 修复 4 项：4 Major。已修复累计 42 → 46；未修复 Critical 保持 0、High（Major）11 → 7、Minor 48（不变）。
+- MCP 域全部 Major 清零；tool_invocations 与 MCP 调用日志字段/枚举闭环（caller/risk/duration），与跨域 DB-018 caller 维度诉求一致。
+- MCP 域剩 MCP-005~008 四个 Minor（integrity 字段/MCPBridge 图/状态语义/市场日志表）待后续 Minor 批次。

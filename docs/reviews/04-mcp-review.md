@@ -29,10 +29,10 @@
 
 | ID | 级别 | 类型 | 问题 | 位置 | 状态 |
 | --- | --- | --- | --- | --- | --- |
-| MCP-001 | Major | Consistency/Completeness | `Result Normalizer` 在 system-arch §7.1、agent §11.1 为一等组件，本文档 §3 架构图与 §12 网关契约完全缺失 | mcp §3/§12 | 待修复 |
-| MCP-002 | Major | Consistency/数据映射 | 调用日志状态枚举（denied/timeout）与字段（caller_type/caller_id/risk_level/duration_ms/digest）和 `tool_invocations` 不一致，无落库位 | mcp §9.2/§12 ↔ db §5.17 | 待修复 |
-| MCP-003 | Major | 状态机/数据映射 | §4 生命周期 13 态与 `mcp_servers.status`(3 态)/`mcp_installations.install_status` 无映射，运行态无承载位 | mcp §4 ↔ db §5.13/§5.22 | 待修复 |
-| MCP-004 | Major | 契约缺口 | §8.2 权限维度（production/destructive/user_confirmation/context_scope）未在 §5.2 Manifest 声明，注册期无法校验 | mcp §8.2 ↔ §5.2 | 待修复 |
+| MCP-001 | Major | Consistency/Completeness | `Result Normalizer` 在 system-arch §7.1、agent §11.1 为一等组件，本文档 §3 架构图与 §12 网关契约完全缺失 | mcp §3/§12 | 已修复 |
+| MCP-002 | Major | Consistency/数据映射 | 调用日志状态枚举（denied/timeout）与字段（caller_type/caller_id/risk_level/duration_ms/digest）和 `tool_invocations` 不一致，无落库位 | mcp §9.2/§12 ↔ db §5.17 | 已修复 |
+| MCP-003 | Major | 状态机/数据映射 | §4 生命周期 13 态与 `mcp_servers.status`(3 态)/`mcp_installations.install_status` 无映射，运行态无承载位 | mcp §4 ↔ db §5.13/§5.22 | 已修复 |
+| MCP-004 | Major | 契约缺口 | §8.2 权限维度（production/destructive/user_confirmation/context_scope）未在 §5.2 Manifest 声明，注册期无法校验 | mcp §8.2 ↔ §5.2 | 已修复 |
 | MCP-005 | Minor | 完整性 | §6.2 要求校验签名、§5.4/§11.4 记录校验值，但 Manifest §5.2 无 integrity（checksum/signature/publisher_key）字段 | mcp §5.2 | 待修复 |
 | MCP-006 | Minor | 图示一致性 | §14 图为 `Agent → MCPGateway`，缺 `MCPBridge`，与本节文字及 agent §11.1 不一致 | mcp §14 | 待修复 |
 | MCP-007 | Minor | 完整性 | 状态机禁用/启用语义、failed/degraded 可达终态路径不完整 | mcp §4 | 待修复 |
@@ -55,3 +55,4 @@
 | 日期 | 审查者 | 动作 | 说明 |
 | --- | --- | --- | --- |
 | 2026-06-03 | 架构评审 | 完成审查 | 0 Critical / 4 Major / 4 Minor；结论有条件通过 |
+| 2026-06-03 | 修复跟踪 | 批次 9 修复 | MCP-001~004（4 Major）→ 已修复；Result Normalizer/调用日志对齐/生命周期映射/Manifest 权限四维；详见 fix-log 批次 9 |

@@ -35,8 +35,8 @@
 | 红队 RT | 0 | 6 | 4 | 10 |
 | **总计** | **2** | **50** | **49** | **101** |
 
-- 已修复：42　|　待修复：59
-- 全部 10 域已审查完成；未修复 Critical = 0、Major = 11、Minor = 48
+- 已修复：46　|　待修复：55
+- 全部 10 域已审查完成；未修复 Critical = 0、Major = 7、Minor = 48
 
 ## 优先处理清单（Critical + Major）
 
@@ -53,7 +53,7 @@
 | P2 | 其余 Major | 第一轮（架构/产品/Agent/数据库）全部已修复 |
 | — | — | **— 第二轮审查（04/06/07/08/09）新发现，待修复 —** |
 | P0 | UI-001 | UI 缺实时更新通道（Critical，已修复）|
-| P1 | MCP-001~004 | 结果标准化缺失、调用日志/状态机/权限契约不闭环 |
+| P1 | MCP-001~004 | 结果标准化缺失、调用日志/状态机/权限契约不闭环（已修复）|
 | P1 | WF-001~005 | 两套状态机不一致、回滚血缘/并行汇聚缺失（已修复）|
 | P1 | UI-002~007 | 工作流设计器/Skill/插件/身份/发布渠道/错误态缺口（UI-002~005 已修复，余 UI-006/007）|
 | P1 | MVP-001~005 | 阶段依赖表、外键迁移、范围越级、DoD 对齐、出口门槛 |
@@ -139,10 +139,10 @@
 
 | Issue-ID | Issue-Type | Priority | Affected-Docs | Description | Suggested-Fix | Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| MCP-001 | Consistency/Completeness | Major | 05-mcp, 02-architecture, 04-agent | Result Normalizer 在主架构图与网关契约缺失 | §3 图与 §12 契约补结果标准化组件与标准结果结构 | 待修复 |
-| MCP-002 | Consistency/数据映射 | Major | 05-mcp, 03-database | 调用日志状态枚举/字段与 tool_invocations 不一致，denied/timeout/caller 无落库 | 统一枚举，tool_invocations 补 caller/risk/duration，权限与生命周期日志落表 | 待修复 |
-| MCP-003 | Workflow/状态机 | Major | 05-mcp, 03-database | 生命周期 13 态与 mcp_servers/mcp_installations 无映射 | 增"状态→数据表字段"映射表 | 待修复 |
-| MCP-004 | Completeness/契约 | Major | 05-mcp | 权限维度(production/destructive/user_confirmation/context_scope)未在 Manifest 声明 | Manifest permissions 补四维并与 mcp_tools.permission_schema 对齐 | 待修复 |
+| MCP-001 | Consistency/Completeness | Major | 05-mcp, 02-architecture, 04-agent | Result Normalizer 在主架构图与网关契约缺失 | §3 图与 §12 契约补结果标准化组件与标准结果结构 | 已修复 |
+| MCP-002 | Consistency/数据映射 | Major | 05-mcp, 03-database | 调用日志状态枚举/字段与 tool_invocations 不一致，denied/timeout/caller 无落库 | 统一枚举，tool_invocations 补 caller/risk/duration，权限与生命周期日志落表 | 已修复 |
+| MCP-003 | Workflow/状态机 | Major | 05-mcp, 03-database | 生命周期 13 态与 mcp_servers/mcp_installations 无映射 | 增"状态→数据表字段"映射表 | 已修复 |
+| MCP-004 | Completeness/契约 | Major | 05-mcp | 权限维度(production/destructive/user_confirmation/context_scope)未在 Manifest 声明 | Manifest permissions 补四维并与 mcp_tools.permission_schema 对齐 | 已修复 |
 | MCP-005 | Completeness | Minor | 05-mcp | Manifest 缺 integrity(checksum/signature/publisher_key) | 增 integrity 字段 | 待修复 |
 | MCP-006 | Consistency | Minor | 05-mcp, 04-agent | §14 图缺 MCPBridge，与文字/agent §11.1 不一致 | 图补 MCPBridge 节点 | 待修复 |
 | MCP-007 | Completeness | Minor | 05-mcp | 状态机禁用/启用语义、failed/degraded 终态路径不完整 | 补状态语义与可达终态 | 待修复 |
@@ -249,3 +249,4 @@
 | 2026-06-03 | 修复批次 6 | UI-001(Critical) / UI-002 / UI-003 / UI-004 / UI-005 → 已修复；UI 新增实时通道、工作流设计器、Skill/插件管理、身份与访问、发布与渠道管理，并补页面树/信息架构节点；未修复 Critical 1→0；详见 fix-log.md |
 | 2026-06-03 | 修复批次 7 | WF-001~005（5 Major）+ WF-006（Minor）→ 已修复；工作流统一状态机口径、补重试/重做判定、回滚下游失效与分叉血缘、并行汇聚语义；DB 联动 content_assets.stale 与 asset_versions.source_stage_run_id；工作流 Major 清零，未修复 High 22→17；详见 fix-log.md |
 | 2026-06-03 | 修复批次 8 | RT-001~006（6 Major）→ 已修复；跨域安全强制点落地：注入隔离(trust_level)、确认令牌绑定、审计哈希链、服务身份/凭证隔离、插件供应链沙箱、跨项目 RLS + 敏感表 project_id；红队 Major 清零，未修复 High 17→11；详见 fix-log.md |
+| 2026-06-03 | 修复批次 9 | MCP-001~004（4 Major）→ 已修复；Result Normalizer 入图与网关契约、tool_invocations 补 caller/risk/duration + 枚举对齐、生命周期状态映射表、Manifest 权限四维；MCP Major 清零，未修复 High 11→7；详见 fix-log.md |

@@ -41,6 +41,7 @@ flowchart TB
         Log[MCP Log Collector]
         HotReload[MCP Hot Reload Manager]
         Marketplace[MCP Marketplace]
+        Normalizer[Result Normalizer]
     end
 
     subgraph Servers[MCP Server]
@@ -66,6 +67,8 @@ flowchart TB
     MCPGateway --> Contract
     MCPGateway --> Runtime
     Runtime --> Servers
+    Servers --> Normalizer
+    Normalizer --> MCPGateway
     Installer --> Registry
     Installer --> Marketplace
     Runtime --> Process
@@ -120,6 +123,21 @@ stateDiagram-v2
 | disabled | 被管理员禁用 |
 | uninstalled | 已卸载 |
 
+生命周期状态 → 数据表字段映射（持久态落库，运行瞬态由 Runtime Manager 内存持有）：
+
+| 生命周期态 | 承载位 |
+| --- | --- |
+| discovered | 未持久化（或 `mcp_marketplace_entries` 缓存）|
+| registered | `mcp_servers` 行创建 |
+| installed | `mcp_installations.install_status=installed` |
+| configured | `mcp_config_versions` 存在 |
+| validated / degraded | `mcp_installations.health_status=healthy/degraded` |
+| stopped / starting / running / reloading / stopping | 运行瞬态，由 Runtime Manager 持有，不落库 |
+| failed | `install_status=failed` 或 `health_status=unreachable` |
+| disabled | `mcp_servers.status=disabled`、`install_status=disabled` |
+| uninstalled | `install_status=uninstalled` |
+| archived（管理归档）| `mcp_servers.status=archived` |
+
 ## 5. MCP 注册
 
 ### 5.1 注册来源
@@ -156,12 +174,18 @@ permissions:
   network: none | allowlist | unrestricted
   secrets: []
   external_services: []
+  production: false
+  destructive: false
+  user_confirmation: false
+  context_scope: stage | task | project
 risk_level: low | medium | high
 hot_reload: true
 health_check:
   type: tool_call | process | http
   timeout_seconds: 10
 ```
+
+> `permissions` 八维（filesystem/network/secrets/external_services/production/destructive/user_confirmation/context_scope）与 §8.2 权限维度一致，注册期由 Contract Validator 校验，并与 `mcp_tools.permission_schema`（db §5.14）对齐。
 
 ### 5.3 注册流程
 
@@ -415,6 +439,7 @@ sequenceDiagram
 - 输入输出默认记录摘要，必要时记录脱敏快照。
 - 高风险调用必须记录完整授权链路。
 - 日志应能关联任务、工作流、阶段、Agent Session 和审查记录。
+- 落库映射：`invocation_log` 落 `tool_invocations`（含 caller_type/caller_id/risk_level/duration_ms，状态枚举一致，见 db §5.17）；`permission_log` 与 `lifecycle_log` 落 `audit_events`（以 action 区分，见 db §5.18）。
 
 ## 10. MCP 热加载
 
@@ -553,6 +578,20 @@ MCPGateway
 | `input` | 工具输入 |
 | `permission_context` | 权限上下文 |
 | `timeout_seconds` | 超时 |
+
+标准调用结果（由 Result Normalizer 统一产出，成功/失败/超时/拒绝同构）：
+
+| 字段 | 说明 |
+| --- | --- |
+| `status` | success, failed, timeout, denied |
+| `data` | 标准化输出，`success` 时有效 |
+| `error` | 标准错误结构（code/message/retryable），`failed`/`timeout` 时有效 |
+| `input_digest` | 输入摘要，脱敏，用于审计与确认令牌比对 |
+| `output_digest` | 输出摘要 |
+| `risk_level` | 本次调用风险等级 |
+| `duration_ms` | 耗时 |
+
+结果经 Result Normalizer 标准化后回流调用方并落 `tool_invocations`（见 §9.2、db §5.17），`status` 与调用日志枚举一致。
 
 ## 13. 数据模型映射
 
