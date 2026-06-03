@@ -16,7 +16,7 @@
 | 04 | MCP | [04-mcp-review.md](./04-mcp-review.md) | 已完成 | 0 | 4 | 4 | 0 | 0 | 2026-06-03 |
 | 05 | 数据库 | [05-database-review.md](./05-database-review.md) | 已完成 | 0 | 8 | 11 | 0 | 8 | 2026-06-03 |
 | 06 | 工作流 | [06-workflow-review.md](./06-workflow-review.md) | 已完成 | 0 | 5 | 5 | 0 | 0 | 2026-06-03 |
-| 07 | UI | [07-ui-review.md](./07-ui-review.md) | 已完成 | 1 | 6 | 4 | 0 | 0 | 2026-06-03 |
+| 07 | UI | [07-ui-review.md](./07-ui-review.md) | 已完成 | 1 | 6 | 4 | 0 | 5 | 2026-06-03 |
 | 08 | MVP | [08-mvp-review.md](./08-mvp-review.md) | 已完成 | 0 | 5 | 5 | 0 | 0 | 2026-06-03 |
 | 09 | 红队 | [09-red-team-review.md](./09-red-team-review.md) | 已完成 | 0 | 6 | 4 | 0 | 0 | 2026-06-03 |
 | 10 | 终审 | [10-final-review.md](./10-final-review.md) | 已完成 | 0 | 0 | 0 | 0 | 0 | 2026-06-03 |
@@ -30,8 +30,8 @@
 | 审查中 | 0 |
 | 已完成 | 10 |
 | 已修复 | 0 |
-| 未修复 Critical | 1 |
-| 未修复 High | 26 |
+| 未修复 Critical | 0 |
+| 未修复 High | 22 |
 
 ## 放行判据
 
@@ -57,3 +57,4 @@
 | 2026-06-03 | 修复批次 5 | 修复 AGENT-005 / AGENT-006 / DB-001 / DB-006 / DB-016；Agent 已修复 5→7、数据库 5→8，未修复 High 5→0（全部 Major 清零）|
 | 2026-06-03 | 第二轮审查完成 | 完成 04 MCP / 06 工作流 / 07 UI / 08 MVP / 09 红队 / 10 终审；新增 1 Critical + 26 Major + 22 Minor；待审查 6→0、已完成 4→10 |
 | 2026-06-03 | 首轮终审 | 结论：不通过（有放行条件）。未修复 Critical=1（UI-001）、High=26，须第二轮修复后复审 |
+| 2026-06-03 | 修复批次 6 | 修复 UI-001(Critical) + UI-002~005；UI 已修复 0→5，未修复 Critical 1→0、High 26→22 |

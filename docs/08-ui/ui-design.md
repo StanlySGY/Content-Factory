@@ -59,6 +59,15 @@ flowchart TB
     MCP --> Tools[MCP Tools]
     WeChat --> Drafts[公众号草稿]
     WeChat --> Publish[发布记录]
+    App --> Workflows[工作流设计器]
+    App --> Skills[Skill 管理]
+    App --> Plugins[插件管理]
+    App --> Channels[发布渠道]
+    Workflows --> WfTemplates[模板与版本]
+    Skills --> SkillRegistry[Skill 注册与门禁]
+    Plugins --> PluginsInstalled[已安装与市场]
+    Channels --> ChannelConfig[渠道配置]
+    Settings --> Members[成员与角色]
 ```
 
 ## 4. 页面树
@@ -72,6 +81,10 @@ flowchart TB
 │   ├── tasks/:taskId/editor
 │   ├── tasks/:taskId/workflow
 │   └── review
+├── workflows
+│   ├── templates
+│   ├── :workflowId/designer
+│   └── :workflowId/versions
 ├── assets
 │   ├── materials
 │   ├── images
@@ -89,6 +102,15 @@ flowchart TB
 │   ├── tools
 │   ├── logs
 │   └── marketplace
+├── skills
+│   ├── registry
+│   └── gates
+├── plugins
+│   ├── installed
+│   └── marketplace
+├── channels
+│   ├── list
+│   └── :channelId/config
 ├── wechat
 │   ├── workspace
 │   ├── drafts
@@ -96,7 +118,8 @@ flowchart TB
 │   └── publish-records
 └── settings
     ├── project
-    ├── workflow
+    ├── members
+    ├── roles
     ├── permissions
     └── integrations
 ```
@@ -583,7 +606,150 @@ sequenceDiagram
 - 动画遵守 `prefers-reduced-motion`。
 - 色彩对比度满足 WCAG AA。
 
-## 22. 禁止事项
+## 22. 实时更新通道
+
+Agent 长会话、后台 Session 与工作流阶段推进是异步的（见 `docs/02-architecture/system-architecture.md` §14.1、§15.1）。前端必须通过实时通道呈现流式输出与状态变化，且实时数据仅用于展示，权威状态以后端为准。
+
+### 22.1 通道选型
+
+- 默认使用 SSE 承载服务端单向推送（Agent 流式输出、状态变更、工具调用事件）；需要双向交互的场景（如交互式 Session 输入）使用 WebSocket。
+- 通道不可用时回退到轮询，回退对用户透明，仅降低实时性。
+
+### 22.2 订阅粒度
+
+| 粒度 | 用途 |
+| --- | --- |
+| task | 任务级状态与阶段推进 |
+| stage_run | 单阶段执行状态与门禁结果 |
+| session | Agent 会话流式输出、消息、工具调用 |
+
+### 22.3 消息类型
+
+| 类型 | 说明 |
+| --- | --- |
+| `status_change` | 任务 / 阶段 / Session 状态流转 |
+| `agent_token` | Agent 流式增量输出 |
+| `tool_call` | 工具 / MCP 调用开始与结果 |
+| `review_event` | 审查创建、结论 |
+| `error` | 执行失败、连接异常 |
+
+### 22.4 连接与一致性
+
+- 断线自动重连并按最后事件序号续传；持续失败回退轮询并提示连接降级。
+- 实时事件不写入前端权威状态，刷新后以后端查询结果为准（遵守 §27 前端状态非权威原则）。
+- 敏感内容遵循后端可见性标记，不在 `user_visible` 之外的通道下发。
+
+## 23. 工作流设计器
+
+### 23.1 页面目标
+
+可视化定义与编排工作流模板：阶段、依赖、执行者、质量门禁与版本，对应 PRD §6.3 与架构 §3.1「工作流设计器」。
+
+### 23.2 页面结构
+
+```text
+工作流设计器
+├── 模板列表（含版本、状态：draft / active / deprecated）
+├── 阶段编排画布
+│   ├── 阶段节点（key / name / executor_type）
+│   ├── 依赖连线（finish_to_start / join_all / join_any）
+│   └── 并行分组
+├── 阶段配置面板
+│   ├── 输入 / 输出契约
+│   ├── 执行者绑定（按能力，不绑定具体 Provider）
+│   └── 质量门禁配置
+└── 版本与发布（新建版本不覆盖、运行中实例不自动升级）
+```
+
+### 23.3 交互
+
+- 阶段依赖以 `workflow_stage_dependencies`（DB §5.5.1）为权威，画布编辑产生依赖记录，保存前校验无环。
+- 执行者按能力需求绑定，由后端能力匹配选择 Agent（agent §4.4），前端不写死 Provider。
+- 模板发布创建新版本（DB §9.1），不修改运行中实例。
+- 门禁配置映射 `workflow_stages.gate_schema`，前端不实现门禁逻辑。
+
+## 24. Skill 与插件管理
+
+补全配置中心对 Skill 与插件的治理界面（架构 §3.1、PRD §6.9 / §6.10），与 Agent / MCP 管理同等粒度。
+
+### 24.1 Skill 管理
+
+```text
+Skill 管理
+├── Skill 列表（名称 / 触发条件 / 输入输出 / 状态）
+├── Skill 详情（用途、触发、输出格式）
+├── 质量门禁 Skill 标记
+└── 工作流阶段引用关系
+```
+
+### 24.2 插件管理
+
+```text
+插件管理
+├── 已安装插件（名称 / 版本 / runtime / 状态 / 健康）
+├── 插件详情（能力、权限、依赖、入口、失败策略）
+├── 安装 / 升级 / 禁用 / 卸载（展示来源与校验信息）
+└── 插件市场
+```
+
+### 24.3 交互
+
+- 安装第三方插件前展示来源、版本、权限、依赖与校验信息，高风险默认禁用（对齐 MCP 安装确认）。
+- Skill / 插件权限与失败策略只读展示后端配置，前端不实现治理逻辑。
+- 状态映射 DB `skill_definitions`、`plugin_definitions` / `plugin_installations`。
+
+## 25. 身份与访问
+
+对接架构 §13 身份与访问控制，提供认证、会话、项目成员与角色界面。
+
+### 25.1 认证与会话
+
+- 未认证访问重定向登录；会话过期或被吊销时统一拦截并提示重新登录。
+- 前端不持有后端长期凭证，仅持服务端校验的会话令牌。
+
+### 25.2 项目成员与角色
+
+```text
+settings/members
+├── 成员列表（用户 / 角色 / 状态）
+├── 角色（MVP：owner；预留成员角色，呼应 DB-005 project_members）
+└── 邀请 / 移除 / 变更角色（高风险，需确认）
+```
+
+### 25.3 项目隔离
+
+- TopBar 项目切换即切换数据作用域，所有列表按当前 `project_id` 隔离（架构 §13.3）。
+- 跨项目数据不展示、不可操作；切换项目清空与上一项目相关的本地视图状态。
+
+### 25.4 权限页
+
+- `settings/permissions` 展示角色到操作的授权矩阵与高风险操作授权项。
+- 授权变更为高风险动作，使用阻断式确认并写审计。
+
+## 26. 发布与渠道管理
+
+发布与渠道是可扩展能力，公众号图文为 MVP 首要渠道（PRD §6.12）；公众号工作台（§16）是渠道的具体实现之一。
+
+### 26.1 渠道配置
+
+```text
+channels
+├── 渠道列表（类型 / 状态 / 授权情况）
+├── 渠道配置（格式、字数、封面、排版适配规则）
+└── 外部平台授权（OAuth / 凭证引用，凭证不在前端留存）
+```
+
+### 26.2 发布记录
+
+- 发布记录展示锚定的具体资产版本（对应 DB `publish_records.asset_version_id`），保证已发布内容不随后续修订漂移。
+- 展示发布状态（pending / publishing / published / failed / withdrawn）、渠道侧引用、失败原因与审计事件。
+- 支持重试、撤回、重发，均为外部动作，需确认并写审计。
+
+### 26.3 多渠道扩展
+
+- 新增渠道通过插件接入，工作台以统一抽象渲染不同渠道的预览与适配检查，不为单一渠道硬编码。
+
+## 27. 禁止事项
 
 - 禁止在前端实现核心业务规则。
 - 禁止前端直接调用 Agent、MCP、Skill 或插件内部实现。
@@ -592,7 +758,7 @@ sequenceDiagram
 - 禁止高风险动作只用 Toast 提示。
 - 禁止隐藏 Agent 或 MCP 的失败原因。
 
-## 23. 后续细化文档
+## 28. 后续细化文档
 
 - 设计系统 Token：`docs/08-ui/design-system.md`
 - 页面原型：`docs/08-ui/wireframes.md`

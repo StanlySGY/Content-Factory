@@ -35,8 +35,8 @@
 | 红队 RT | 0 | 6 | 4 | 10 |
 | **总计** | **2** | **50** | **49** | **101** |
 
-- 已修复：25　|　待修复：76
-- 全部 10 域已审查完成；未修复 Critical = 1（UI-001）、Major = 26、Minor = 49
+- 已修复：30　|　待修复：71
+- 全部 10 域已审查完成；未修复 Critical = 0、Major = 22、Minor = 49
 
 ## 优先处理清单（Critical + Major）
 
@@ -52,10 +52,10 @@
 | P1 | PROD-003/004/005 | 缺主用户/差异化；缺发布与渠道功能项（已修复） |
 | P2 | 其余 Major | 第一轮（架构/产品/Agent/数据库）全部已修复 |
 | — | — | **— 第二轮审查（04/06/07/08/09）新发现，待修复 —** |
-| P0 | UI-001 | UI 缺实时更新通道（Critical）|
+| P0 | UI-001 | UI 缺实时更新通道（Critical，已修复）|
 | P1 | MCP-001~004 | 结果标准化缺失、调用日志/状态机/权限契约不闭环 |
 | P1 | WF-001~005 | 两套状态机不一致、回滚血缘/并行汇聚缺失 |
-| P1 | UI-002~007 | 工作流设计器/Skill/插件/身份/发布渠道/错误态缺口 |
+| P1 | UI-002~007 | 工作流设计器/Skill/插件/身份/发布渠道/错误态缺口（UI-002~005 已修复，余 UI-006/007）|
 | P1 | MVP-001~005 | 阶段依赖表、外键迁移、范围越级、DoD 对齐、出口门槛 |
 | P1 | RT-001~006 | 提示注入、确认完整性、审计防篡改、凭证最小化、插件供应链、跨项目隔离 |
 
@@ -167,11 +167,11 @@
 
 | Issue-ID | Issue-Type | Priority | Affected-Docs | Description | Suggested-Fix | Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| UI-001 | 实时通道 | Critical | 08-ui, 02-architecture | 全篇无实时更新通道，无法呈现 Agent 长会话与后台 Session | 新增 SSE/WS 章节：订阅粒度/重连/消息类型 | 待修复 |
-| UI-002 | Completeness | Major | 08-ui | 缺工作流设计器页面 | 补阶段编排/依赖/执行者/门禁/模板版本化 | 待修复 |
-| UI-003 | Completeness | Major | 08-ui | 缺 Skill 与插件管理界面 | 补 Skill/插件注册/权限/隔离界面 | 待修复 |
-| UI-004 | Consistency/Security | Major | 08-ui, 02-architecture | 身份/角色界面缺失，与 §13 授权脱节 | 补登录/会话/成员/角色/权限页/项目隔离表达 | 待修复 |
-| UI-005 | Consistency | Major | 08-ui, 01-product | 发布渠道适配/版本锚定/审计未落地 | 补渠道配置/版本锚定展示/审计/插件化渠道 | 待修复 |
+| UI-001 | 实时通道 | Critical | 08-ui, 02-architecture | 全篇无实时更新通道，无法呈现 Agent 长会话与后台 Session | 新增 SSE/WS 章节：订阅粒度/重连/消息类型 | 已修复 |
+| UI-002 | Completeness | Major | 08-ui | 缺工作流设计器页面 | 补阶段编排/依赖/执行者/门禁/模板版本化 | 已修复 |
+| UI-003 | Completeness | Major | 08-ui | 缺 Skill 与插件管理界面 | 补 Skill/插件注册/权限/隔离界面 | 已修复 |
+| UI-004 | Consistency/Security | Major | 08-ui, 02-architecture | 身份/角色界面缺失，与 §13 授权脱节 | 补登录/会话/成员/角色/权限页/项目隔离表达 | 已修复 |
+| UI-005 | Consistency | Major | 08-ui, 01-product | 发布渠道适配/版本锚定/审计未落地 | 补渠道配置/版本锚定展示/审计/插件化渠道 | 已修复 |
 | UI-006 | Consistency | Major | 08-ui, 02-architecture | UI 模块与架构 §3.1 命名不一致，执行监控/审查弱化 | 补 UI→架构模块映射表，明确承载页 | 待修复 |
 | UI-007 | Completeness | Major | 08-ui | 空/错/加载态不完整(鉴权/网络/超时/断连/分页) | 补全空态与全局错误态 | 待修复 |
 | UI-008 | Consistency | Minor | 08-ui | §3 信息架构图与 §4 页面树不一致 | 统一节点 | 待修复 |
@@ -246,3 +246,4 @@
 | 2026-06-03 | 修复批次 5 | AGENT-005 / AGENT-006 / DB-001 / DB-006 / DB-016 → 已修复；Agent 补 Adapter 注册与能力匹配，DB 修 audit 多态、配置快照、插件扩展 + plugin_installations/config_versions；**全部 Major 清零**；详见 fix-log.md |
 | 2026-06-03 | 第二轮审查汇总 | 04 MCP / 06 工作流 / 07 UI / 08 MVP / 09 红队 审查完成，追加 1 Critical（UI-001）+ 26 Major + 22 Minor，全部待修复；总问题 52 → 101，待修复 27 → 76 |
 | 2026-06-03 | 首轮终审 | 10 终审完成，结论不通过（有放行条件）：须修复 UI-001 与第二轮 26 个 Major 后复审；49 个 Minor 登记排期 |
+| 2026-06-03 | 修复批次 6 | UI-001(Critical) / UI-002 / UI-003 / UI-004 / UI-005 → 已修复；UI 新增实时通道、工作流设计器、Skill/插件管理、身份与访问、发布与渠道管理，并补页面树/信息架构节点；未修复 Critical 1→0；详见 fix-log.md |
