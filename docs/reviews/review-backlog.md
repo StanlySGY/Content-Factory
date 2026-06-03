@@ -28,10 +28,15 @@
 | 产品 PROD | 0 | 5 | 6 | 11 |
 | Agent | 1 | 6 | 5 | 12 |
 | 数据库 DB | 0 | 8 | 11 | 19 |
-| **总计** | **1** | **24** | **27** | **52** |
+| MCP | 0 | 4 | 4 | 8 |
+| 工作流 WF | 0 | 5 | 5 | 10 |
+| UI | 1 | 6 | 4 | 11 |
+| MVP | 0 | 5 | 5 | 10 |
+| 红队 RT | 0 | 6 | 4 | 10 |
+| **总计** | **2** | **50** | **49** | **101** |
 
-- 已修复：25　|　待修复：27
-- 尚未审查（问题待补充）：04 MCP、06 工作流、07 UI、08 MVP、09 红队、10 终审
+- 已修复：25　|　待修复：76
+- 全部 10 域已审查完成；未修复 Critical = 1（UI-001）、Major = 26、Minor = 49
 
 ## 优先处理清单（Critical + Major）
 
@@ -45,7 +50,14 @@
 | P1 | AGENT-004 / DB-004 | Session/Message、发布、MCP 生命周期等核心表缺失（已修复） |
 | P1 | ARCH-003/004/005 | 缺认证边界、运行时拓扑、并发一致性（已修复） |
 | P1 | PROD-003/004/005 | 缺主用户/差异化；缺发布与渠道功能项（已修复） |
-| P2 | 其余 Major | 全部已修复（Major 清零）|
+| P2 | 其余 Major | 第一轮（架构/产品/Agent/数据库）全部已修复 |
+| — | — | **— 第二轮审查（04/06/07/08/09）新发现，待修复 —** |
+| P0 | UI-001 | UI 缺实时更新通道（Critical）|
+| P1 | MCP-001~004 | 结果标准化缺失、调用日志/状态机/权限契约不闭环 |
+| P1 | WF-001~005 | 两套状态机不一致、回滚血缘/并行汇聚缺失 |
+| P1 | UI-002~007 | 工作流设计器/Skill/插件/身份/发布渠道/错误态缺口 |
+| P1 | MVP-001~005 | 阶段依赖表、外键迁移、范围越级、DoD 对齐、出口门槛 |
+| P1 | RT-001~006 | 提示注入、确认完整性、审计防篡改、凭证最小化、插件供应链、跨项目隔离 |
 
 ## Backlog 主表
 
@@ -123,6 +135,80 @@
 
 > 注：DB-010 在数据库审查中已并入 DB-002（context_packs 版本唯一性），不单列。
 
+### MCP
+
+| Issue-ID | Issue-Type | Priority | Affected-Docs | Description | Suggested-Fix | Status |
+| --- | --- | --- | --- | --- | --- | --- |
+| MCP-001 | Consistency/Completeness | Major | 05-mcp, 02-architecture, 04-agent | Result Normalizer 在主架构图与网关契约缺失 | §3 图与 §12 契约补结果标准化组件与标准结果结构 | 待修复 |
+| MCP-002 | Consistency/数据映射 | Major | 05-mcp, 03-database | 调用日志状态枚举/字段与 tool_invocations 不一致，denied/timeout/caller 无落库 | 统一枚举，tool_invocations 补 caller/risk/duration，权限与生命周期日志落表 | 待修复 |
+| MCP-003 | Workflow/状态机 | Major | 05-mcp, 03-database | 生命周期 13 态与 mcp_servers/mcp_installations 无映射 | 增"状态→数据表字段"映射表 | 待修复 |
+| MCP-004 | Completeness/契约 | Major | 05-mcp | 权限维度(production/destructive/user_confirmation/context_scope)未在 Manifest 声明 | Manifest permissions 补四维并与 mcp_tools.permission_schema 对齐 | 待修复 |
+| MCP-005 | Completeness | Minor | 05-mcp | Manifest 缺 integrity(checksum/signature/publisher_key) | 增 integrity 字段 | 待修复 |
+| MCP-006 | Consistency | Minor | 05-mcp, 04-agent | §14 图缺 MCPBridge，与文字/agent §11.1 不一致 | 图补 MCPBridge 节点 | 待修复 |
+| MCP-007 | Completeness | Minor | 05-mcp | 状态机禁用/启用语义、failed/degraded 终态路径不完整 | 补状态语义与可达终态 | 待修复 |
+| MCP-008 | Completeness | Minor | 05-mcp, 03-database | mcp_marketplace_entries/mcp_lifecycle_logs 无落点 | 明确落地或引用专项文档 | 待修复 |
+
+### 工作流 WF
+
+| Issue-ID | Issue-Type | Priority | Affected-Docs | Description | Suggested-Fix | Status |
+| --- | --- | --- | --- | --- | --- | --- |
+| WF-001 | Consistency/状态机 | Major | 07-workflow, 03-database | §4.2 failed→skipped 与 DB §8.3 不一致 | 以 DB §8.3 为权威统一 skipped 入边 | 待修复 |
+| WF-002 | Consistency/状态机 | Major | 07-workflow, 03-database | §4.1 阶段名建模工作流状态、缺 terminated，与 DB §8.2 口径不同 | §4.1 标注业务视图，补 terminated/rejected 落点 | 待修复 |
+| WF-003 | Workflow | Major | 07-workflow, 03-database | 原地重试 vs 新建 stage_run 重做无判定规则，血缘二义 | 区分 attempt_count++ 与新 run+parent_stage_run_id 触发条件 | 待修复 |
+| WF-004 | Workflow/版本 | Major | 07-workflow | 回滚致下游资产失效策略与分叉血缘未定义 | 定义下游失效/重算策略与分支血缘表达 | 待修复 |
+| WF-005 | Workflow | Major | 07-workflow, 03-database | 并行汇聚(join)未定义为显式阶段，join_any/gate 聚合缺失 | 定义汇总阶段门禁与合并、对齐 dependency_type | 待修复 |
+| WF-006 | Consistency | Minor | 07-workflow, 03-database | §9 映射过时(publish_records 已落地)，缺 sessions/deps 映射 | 更新映射为权威表 | 待修复 |
+| WF-007 | Consistency | Minor | 07-workflow, 02-architecture | 九阶段与架构 §8.2 抽象命名/粒度不一 | 互标抽象/实例关系或统一术语 | 待修复 |
+| WF-008 | Consistency | Minor | 07-workflow, 03-database | asset_type 词表与 DB §5.9 不一致 | 统一受控词表 | 待修复 |
+| WF-009 | Completeness | Minor | 07-workflow | 配置回滚未引用既有版本机制 | 引用 workflow_version/*_config_versions/profile_snapshot | 待修复 |
+| WF-010 | Completeness | Minor | 07-workflow | cancelled 仅部分阶段有出边 | 明确取消允许态集合 | 待修复 |
+
+### UI
+
+| Issue-ID | Issue-Type | Priority | Affected-Docs | Description | Suggested-Fix | Status |
+| --- | --- | --- | --- | --- | --- | --- |
+| UI-001 | 实时通道 | Critical | 08-ui, 02-architecture | 全篇无实时更新通道，无法呈现 Agent 长会话与后台 Session | 新增 SSE/WS 章节：订阅粒度/重连/消息类型 | 待修复 |
+| UI-002 | Completeness | Major | 08-ui | 缺工作流设计器页面 | 补阶段编排/依赖/执行者/门禁/模板版本化 | 待修复 |
+| UI-003 | Completeness | Major | 08-ui | 缺 Skill 与插件管理界面 | 补 Skill/插件注册/权限/隔离界面 | 待修复 |
+| UI-004 | Consistency/Security | Major | 08-ui, 02-architecture | 身份/角色界面缺失，与 §13 授权脱节 | 补登录/会话/成员/角色/权限页/项目隔离表达 | 待修复 |
+| UI-005 | Consistency | Major | 08-ui, 01-product | 发布渠道适配/版本锚定/审计未落地 | 补渠道配置/版本锚定展示/审计/插件化渠道 | 待修复 |
+| UI-006 | Consistency | Major | 08-ui, 02-architecture | UI 模块与架构 §3.1 命名不一致，执行监控/审查弱化 | 补 UI→架构模块映射表，明确承载页 | 待修复 |
+| UI-007 | Completeness | Major | 08-ui | 空/错/加载态不完整(鉴权/网络/超时/断连/分页) | 补全空态与全局错误态 | 待修复 |
+| UI-008 | Consistency | Minor | 08-ui | §3 信息架构图与 §4 页面树不一致 | 统一节点 | 待修复 |
+| UI-009 | Completeness | Minor | 08-ui, 01-product | 无统一调用追溯视图 | 明确追溯视图(输入/输出/状态/耗时) | 待修复 |
+| UI-010 | Consistency | Minor | 08-ui | 状态徽章与领域状态机无完整映射 | 补状态映射表 | 待修复 |
+| UI-011 | Security/Compliance | Minor | 08-ui, 02-architecture | 高风险确认未声明后端策略驱动，恐前端硬编码业务规则 | 声明确认由后端风险策略驱动，前端仅渲染 | 待修复 |
+
+### MVP
+
+| Issue-ID | Issue-Type | Priority | Affected-Docs | Description | Suggested-Fix | Status |
+| --- | --- | --- | --- | --- | --- | --- |
+| MVP-001 | Consistency | Major | 10-development, 03-database | S2 缺 workflow_stage_dependencies，"禁止跳阶段"无数据载体 | S2 加该表(线性依赖+无环校验) | 待修复 |
+| MVP-002 | 迁移排序 | Major | 10-development | stage_runs.agent_profile_id FK 指向 S4 才建的 agent_profiles | S2 暂留列不加 FK 或 agent_profiles 提前 | 待修复 |
+| MVP-003 | Scope | Major | 10-development, 01-product | S4 skill/plugin 越级进 MVP(PRD 为 P2) | S4 收敛，skill/plugin 移后阶段或空表占位 | 待修复 |
+| MVP-004 | Testability | Major | 10-development, 01-product | 任务初始状态与 draft→ready 流转未规定，未对齐 §7.5 | S1 明确初始 draft/确认置 ready + 测试 | 待修复 |
+| MVP-005 | Completeness | Major | 10-development, 01-product | 缺工时估算；验收未对接 §2.3 硬指标出口门槛 | 补估算与可追溯率/扩展达成出口门槛 | 待修复 |
+| MVP-006 | Completeness | Minor | 10-development, 03-database | publish_records 标可选将丢失版本不漂移保证 | 至少建表 | 待修复 |
+| MVP-007 | Consistency | Minor | 10-development | content_assets.status 各 Sprint 落地子集含糊 | 澄清 S2/S3 各落地 status | 待修复 |
+| MVP-008 | Completeness | Minor | 10-development | compare/editor-state 端点无表，应注明只读计算 | 标注只读计算端点 | 待修复 |
+| MVP-009 | Completeness | Minor | 10-development | 布局壳层基线 Sprint 未指明 | AppShell 等归入 S1 | 待修复 |
+| MVP-010 | Consistency | Minor | 10-development | MVP 九阶段必建子集未明确 | 明确 MVP 必建阶段子集 | 待修复 |
+
+### 红队 RT
+
+| Issue-ID | Issue-Type | Priority | Affected-Docs | Description | Suggested-Fix | Status |
+| --- | --- | --- | --- | --- | --- | --- |
+| RT-001 | Security/注入 | Major | 04-agent, 05-mcp, 02-architecture | 未防间接提示注入，外部内容入上下文被下游消费，无数据/指令分离 | 来源可信级标记+隔离，授权不由 Agent 文本驱动 | 待修复 |
+| RT-002 | Security/授权 | Major | 05-mcp, 02-architecture | 人工确认未与 (tool_id,input_digest,risk,stage_run) 绑定，TOCTOU | 确认令牌绑定摘要+短时效+执行前重校验 | 待修复 |
+| RT-003 | Security/审计 | Major | 03-database, 04-agent | 审计防删/防篡改仅策略，无追加写/哈希链/权限分离；脱敏靠自觉 | 追加写+哈希链+存储分离+统一脱敏管道 | 待修复 |
+| RT-004 | Security/凭证 | Major | 02-architecture, 04-agent | 服务身份签发/轮换未定义，后端凭证管理单点爆炸半径无控 | 短时效令牌+按 Session 下发+凭证管理隔离+速率限制 | 待修复 |
+| RT-005 | Security/供应链 | Major | 02-architecture, 05-mcp | 插件缺来源/签名/摘要校验与进程沙箱强制(不对称 §9.4)，构成提权 | 插件补供应链治理+runtime=process 沙箱强制项 | 待修复 |
+| RT-006 | Security/隔离 | Major | 02-architecture, 03-database | 跨项目隔离仅应用层，无 RLS；敏感快照表未绑 project_id | DB 层 RLS/强制谓词+敏感表绑 project_id+测试告警 | 待修复 |
+| RT-007 | Security/数据 | Minor | 03-database | sensitivity_level 脱敏靠自觉，到 Provider 传播控制缺失 | 定义传播矩阵+ContextBuilder 强制脱敏 | 待修复 |
+| RT-008 | Security/数据 | Minor | 05-mcp, 03-database | digest/脱敏无算法与不可逆要求 | 定义脱敏标准与 digest 约束 | 待修复 |
+| RT-009 | Security/沙箱 | Minor | 04-agent | WSL 路径转换与沙箱交叉逃逸边界未明确 | 路径规范化+白名单根校验 | 待修复 |
+| RT-010 | Security/传输 | Minor | 05-mcp, 03-database | 远端/HTTP/SSE MCP 未要求 TLS 与身份校验 | 远端传输强制 TLS+端点身份校验 | 待修复 |
+
 ## 跨域问题簇（建议批量修复）
 
 | 簇 | 关联 Issue | 统一处理建议 |
@@ -134,6 +220,12 @@
 | 运行时/WSL/认证 | ARCH-003, ARCH-004, AGENT-007 | 联动定义认证边界、运行时拓扑、WSL 宿主与密钥传递 |
 | 阶段术语/范围 | PROD-005, PROD-006, PROD-010 | 统一阶段术语并收敛 MVP 范围，补发布与渠道功能项 |
 | 工作流持久化 | DB-012, DB-013, DB-006 | 并行依赖、回滚血缘、门禁结果、配置快照一并补入数据库 |
+| 状态机一致性（二轮）| WF-001, WF-002, MCP-003, UI-010 | 各状态机统一以领域 §8 为权威，UI 徽章与 MCP 生命周期对齐 |
+| 调用日志与可追溯（二轮）| MCP-002, DB-018, RT-008, UI-009 | tool_invocations 补 caller/risk/duration + 统一脱敏 + 前端追溯视图 |
+| 安全强制点（二轮）| RT-001, RT-002, RT-003, RT-004, RT-005, RT-006 | 实现前统一定义注入隔离、确认绑定、审计防篡改、凭证最小化、插件沙箱、跨项目隔离强制点 |
+| UI 核心模块缺口（二轮）| UI-001, UI-002, UI-003, UI-004, UI-005, UI-006, UI-007 | 实时通道 + 工作流设计器/Skill/插件/身份/发布渠道/错误态 |
+| 回滚与并行（二轮）| WF-003, WF-004, WF-005 | 重试/重做血缘判定、下游失效策略、join 汇聚语义 |
+| MVP 可开发性（二轮）| MVP-001, MVP-002, MVP-003, MVP-004 | 阶段依赖表、外键迁移排序、范围收敛、任务初始状态对齐 DoD |
 
 ## 维护规则
 
@@ -152,3 +244,5 @@
 | 2026-06-03 | 修复批次 3 | ARCH-003 / ARCH-004 / ARCH-005 / AGENT-007 / AGENT-004 → 已修复；架构新增身份访问控制、运行时拓扑、并发一致性三节，Agent 补执行宿主/密钥边界与 Session 表映射；详见 fix-log.md |
 | 2026-06-03 | 修复批次 4 | PROD-001 / PROD-002 / PROD-003 / PROD-004 / PROD-005 → 已修复；PRD 补量化指标、DoD 与可测试验收、主用户与目标市场、竞品差异化、发布与渠道管理；产品域 Major 清零；详见 fix-log.md |
 | 2026-06-03 | 修复批次 5 | AGENT-005 / AGENT-006 / DB-001 / DB-006 / DB-016 → 已修复；Agent 补 Adapter 注册与能力匹配，DB 修 audit 多态、配置快照、插件扩展 + plugin_installations/config_versions；**全部 Major 清零**；详见 fix-log.md |
+| 2026-06-03 | 第二轮审查汇总 | 04 MCP / 06 工作流 / 07 UI / 08 MVP / 09 红队 审查完成，追加 1 Critical（UI-001）+ 26 Major + 22 Minor，全部待修复；总问题 52 → 101，待修复 27 → 76 |
+| 2026-06-03 | 首轮终审 | 10 终审完成，结论不通过（有放行条件）：须修复 UI-001 与第二轮 26 个 Major 后复审；49 个 Minor 登记排期 |
