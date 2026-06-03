@@ -26,12 +26,12 @@
 
 | ID | 级别 | 类型 | 问题 | 位置 | 状态 |
 | --- | --- | --- | --- | --- | --- |
-| MVP-001 | Major | DB 一致性 | S2 交付 workflow_stages 与"禁止跳阶段"回归，但未交付 `workflow_stage_dependencies`（依赖权威表），规则无数据载体 | roadmap §5.3 ↔ db §5.5.1 | 待修复 |
-| MVP-002 | Major | 迁移排序 | `stage_runs.agent_profile_id` FK 指向 `agent_profiles`，但 stage_runs 在 S2、agent_profiles 在 S4，迁移引用未建表 | roadmap §5.3 vs §7.3 | 待修复 |
-| MVP-003 | Major | 范围/优先级冲突 | S4 将 skill/plugin 表纳入 MVP，PRD §7.3 明确为 P2；与"最小可运行优先""主用户闭环无关延后"相悖 | roadmap §7.3 ↔ PRD §7 | 待修复 |
-| MVP-004 | Major | DoD 对齐 | PRD §7.5 规定任务创建后置 `ready`，但 S1 未规定初始状态与 draft→ready 确认流转归属 | roadmap §4.3 ↔ PRD §7.5 | 待修复 |
-| MVP-005 | Major | Sprint 完整性 | 缺工时/周期估算；各 Sprint 验收未对接 PRD §2.3 硬指标（可追溯率 100%、扩展达成）作为出口门槛 | roadmap 全篇 ↔ PRD §2.3 | 待修复 |
-| MVP-006 | Minor | 完整性 | `publish_records` 标为可选/可用审计替代，将丢失"已发布版本不漂移"保证（DB §5.21 asset_version_id） | roadmap §7.3 | 待修复 |
+| MVP-001 | Major | DB 一致性 | S2 交付 workflow_stages 与"禁止跳阶段"回归，但未交付 `workflow_stage_dependencies`（依赖权威表），规则无数据载体 | roadmap §5.3 ↔ db §5.5.1 | 已修复 |
+| MVP-002 | Major | 迁移排序 | `stage_runs.agent_profile_id` FK 指向 `agent_profiles`，但 stage_runs 在 S2、agent_profiles 在 S4，迁移引用未建表 | roadmap §5.3 vs §7.3 | 已修复 |
+| MVP-003 | Major | 范围/优先级冲突 | S4 将 skill/plugin 表纳入 MVP，PRD §7.3 明确为 P2；与"最小可运行优先""主用户闭环无关延后"相悖 | roadmap §7.3 ↔ PRD §7 | 已修复 |
+| MVP-004 | Major | DoD 对齐 | PRD §7.5 规定任务创建后置 `ready`，但 S1 未规定初始状态与 draft→ready 确认流转归属 | roadmap §4.3 ↔ PRD §7.5 | 已修复 |
+| MVP-005 | Major | Sprint 完整性 | 缺工时/周期估算；各 Sprint 验收未对接 PRD §2.3 硬指标（可追溯率 100%、扩展达成）作为出口门槛 | roadmap 全篇 ↔ PRD §2.3 | 已修复 |
+| MVP-006 | Minor | 完整性 | `publish_records` 标为可选/可用审计替代，将丢失"已发布版本不漂移"保证（DB §5.21 asset_version_id） | roadmap §7.3 | 已修复 |
 | MVP-007 | Minor | 一致性 | S3 称 content_assets.status"完善"，但 S2 已落地该表，未澄清各 Sprint 落地的 status 子集 | roadmap §6.3 | 待修复 |
 | MVP-008 | Minor | 完整性 | `/api/assets/:id/compare`、`/api/tasks/:id/editor-state` 无对应表，应注明为只读计算端点 | roadmap §6.4 | 待修复 |
 | MVP-009 | Minor | 完整性 | 跨 Sprint 前端引用 AppShell/SidebarNav/TopBar/ContextPanel，未指明布局壳层基线 Sprint | roadmap §8.2 | 待修复 |
@@ -55,3 +55,4 @@
 | 日期 | 审查者 | 动作 | 说明 |
 | --- | --- | --- | --- |
 | 2026-06-03 | 工程管理评审 | 完成审查 | 0 Critical / 5 Major / 5 Minor；结论有条件通过 |
+| 2026-06-03 | 修复跟踪 | 批次 11 修复 | MVP-001~005（5 Major）+ MVP-006(Minor) → 已修复；阶段依赖表/迁移排序/范围收敛/任务初始态/出口门槛；详见 fix-log 批次 11 |

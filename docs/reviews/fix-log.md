@@ -182,3 +182,23 @@
 - UI 域全部 Major 清零（UI-001~005 见批次 6，UI-006/007 本批）；同步修正批次 6 遗漏，07-ui-review 问题表 UI-001~007 状态对齐 backlog。
 - UI 域剩 UI-008/009/010/011 四个 Minor 待后续 Minor 批次。
 - 剩余仅 MVP 5 个 Major（MVP-001~005）。
+
+## 批次 11（2026-06-03）
+
+第二轮修复第六批（收官），清除 MVP 域全部 5 个 Major 并顺带关闭强耦合的 MVP-006，集中于 `docs/10-development/development-roadmap.md`。
+
+| 修复时间 | 问题编号 | 修改内容 | 影响范围 |
+| --- | --- | --- | --- |
+| 2026-06-03 | MVP-001 (Major) | S2 §5.3 新增表加入 `workflow_stage_dependencies`，要求落地 finish_to_start 线性依赖 + 无环校验，承载"禁止跳阶段" | roadmap §5.3 ↔ db §5.5.1 |
+| 2026-06-03 | MVP-002 (Major) | §5.3 写明 stage_runs.agent_profile_id 在 S2 仅留列、S4 建 agent_profiles 后补 FK，决策记入迁移说明 | roadmap §5.3 |
+| 2026-06-03 | MVP-003 (Major) | §7.3 将 skill/plugin 四表移出 MVP（PRD §7.3 为 P2），收敛 S4 为 Agent Profile + MCP + 发布准备，skill/plugin 仅可空表占位不作验收 | roadmap §7.3 ↔ PRD §7 |
+| 2026-06-03 | MVP-004 (Major) | §4.3 明确任务创建默认 draft、确认置 ready（对齐 PRD §7.5），流转归任务领域服务并要求 §4.6 单测/集成测试 | roadmap §4.3 ↔ PRD §7.5 |
+| 2026-06-03 | MVP-005 (Major) | §3 Sprint 总览加估算列与串并行假设；§9 里程碑新增 MVP 出口门槛（可追溯率 100%、扩展零业务代码改动、§2.3 指标可采集）| roadmap §3/§9 ↔ PRD §2.3 |
+| 2026-06-03 | MVP-006 (Minor) | §7.3 publish_records 由"可选/可替代"改为至少建表以锚定 asset_version_id，保证已发布版本不漂移 | roadmap §7.3 ↔ db §5.21 |
+
+### 批次小结
+
+- 修复 6 项：5 Major + 1 Minor。已修复累计 48 → 54；**未修复 Critical = 0、未修复 High（Major）= 0**；未修复 Minor 48 → 47。
+- MVP 域全部 Major 清零；MVP-006 因与 MVP-003 同段强耦合一并关闭。
+- **至此全部 10 域的 Critical 与 Major 全部清零**，达成放行判据「未修复 Critical = 0、未修复 High = 0」，可进入终审（10-final-review）复审。
+- MVP 域剩 MVP-007/008/009/010 四个 Minor；全仓剩 47 项 Minor 均已排期、允许带入开发跟踪。

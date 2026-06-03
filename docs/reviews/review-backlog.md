@@ -35,8 +35,8 @@
 | 红队 RT | 0 | 6 | 4 | 10 |
 | **总计** | **2** | **50** | **49** | **101** |
 
-- 已修复：48　|　待修复：53
-- 全部 10 域已审查完成；未修复 Critical = 0、Major = 5、Minor = 48
+- 已修复：54　|　待修复：47
+- 全部 10 域已审查完成；未修复 Critical = 0、Major = 0、Minor = 47
 
 ## 优先处理清单（Critical + Major）
 
@@ -56,7 +56,7 @@
 | P1 | MCP-001~004 | 结果标准化缺失、调用日志/状态机/权限契约不闭环（已修复）|
 | P1 | WF-001~005 | 两套状态机不一致、回滚血缘/并行汇聚缺失（已修复）|
 | P1 | UI-002~007 | 工作流设计器/Skill/插件/身份/发布渠道/错误态缺口（已修复）|
-| P1 | MVP-001~005 | 阶段依赖表、外键迁移、范围越级、DoD 对齐、出口门槛 |
+| P1 | MVP-001~005 | 阶段依赖表、外键迁移、范围越级、DoD 对齐、出口门槛（已修复）|
 | P1 | RT-001~006 | 提示注入、确认完整性、审计防篡改、凭证最小化、插件供应链、跨项目隔离（已修复）|
 
 ## Backlog 主表
@@ -183,12 +183,12 @@
 
 | Issue-ID | Issue-Type | Priority | Affected-Docs | Description | Suggested-Fix | Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| MVP-001 | Consistency | Major | 10-development, 03-database | S2 缺 workflow_stage_dependencies，"禁止跳阶段"无数据载体 | S2 加该表(线性依赖+无环校验) | 待修复 |
-| MVP-002 | 迁移排序 | Major | 10-development | stage_runs.agent_profile_id FK 指向 S4 才建的 agent_profiles | S2 暂留列不加 FK 或 agent_profiles 提前 | 待修复 |
-| MVP-003 | Scope | Major | 10-development, 01-product | S4 skill/plugin 越级进 MVP(PRD 为 P2) | S4 收敛，skill/plugin 移后阶段或空表占位 | 待修复 |
-| MVP-004 | Testability | Major | 10-development, 01-product | 任务初始状态与 draft→ready 流转未规定，未对齐 §7.5 | S1 明确初始 draft/确认置 ready + 测试 | 待修复 |
-| MVP-005 | Completeness | Major | 10-development, 01-product | 缺工时估算；验收未对接 §2.3 硬指标出口门槛 | 补估算与可追溯率/扩展达成出口门槛 | 待修复 |
-| MVP-006 | Completeness | Minor | 10-development, 03-database | publish_records 标可选将丢失版本不漂移保证 | 至少建表 | 待修复 |
+| MVP-001 | Consistency | Major | 10-development, 03-database | S2 缺 workflow_stage_dependencies，"禁止跳阶段"无数据载体 | S2 加该表(线性依赖+无环校验) | 已修复 |
+| MVP-002 | 迁移排序 | Major | 10-development | stage_runs.agent_profile_id FK 指向 S4 才建的 agent_profiles | S2 暂留列不加 FK 或 agent_profiles 提前 | 已修复 |
+| MVP-003 | Scope | Major | 10-development, 01-product | S4 skill/plugin 越级进 MVP(PRD 为 P2) | S4 收敛，skill/plugin 移后阶段或空表占位 | 已修复 |
+| MVP-004 | Testability | Major | 10-development, 01-product | 任务初始状态与 draft→ready 流转未规定，未对齐 §7.5 | S1 明确初始 draft/确认置 ready + 测试 | 已修复 |
+| MVP-005 | Completeness | Major | 10-development, 01-product | 缺工时估算；验收未对接 §2.3 硬指标出口门槛 | 补估算与可追溯率/扩展达成出口门槛 | 已修复 |
+| MVP-006 | Completeness | Minor | 10-development, 03-database | publish_records 标可选将丢失版本不漂移保证 | 至少建表 | 已修复 |
 | MVP-007 | Consistency | Minor | 10-development | content_assets.status 各 Sprint 落地子集含糊 | 澄清 S2/S3 各落地 status | 待修复 |
 | MVP-008 | Completeness | Minor | 10-development | compare/editor-state 端点无表，应注明只读计算 | 标注只读计算端点 | 待修复 |
 | MVP-009 | Completeness | Minor | 10-development | 布局壳层基线 Sprint 未指明 | AppShell 等归入 S1 | 待修复 |
@@ -225,7 +225,7 @@
 | 安全强制点（二轮）| RT-001, RT-002, RT-003, RT-004, RT-005, RT-006 | 实现前统一定义注入隔离、确认绑定、审计防篡改、凭证最小化、插件沙箱、跨项目隔离强制点（已修复，详见 fix-log 批次 8）|
 | UI 核心模块缺口（二轮）| UI-001, UI-002, UI-003, UI-004, UI-005, UI-006, UI-007 | 实时通道 + 工作流设计器/Skill/插件/身份/发布渠道/错误态（已修复）|
 | 回滚与并行（二轮）| WF-003, WF-004, WF-005 | 重试/重做血缘判定、下游失效策略、join 汇聚语义 |
-| MVP 可开发性（二轮）| MVP-001, MVP-002, MVP-003, MVP-004 | 阶段依赖表、外键迁移排序、范围收敛、任务初始状态对齐 DoD |
+| MVP 可开发性（二轮）| MVP-001, MVP-002, MVP-003, MVP-004 | 阶段依赖表、外键迁移排序、范围收敛、任务初始状态对齐 DoD（已修复）|
 
 ## 维护规则
 
@@ -251,3 +251,4 @@
 | 2026-06-03 | 修复批次 8 | RT-001~006（6 Major）→ 已修复；跨域安全强制点落地：注入隔离(trust_level)、确认令牌绑定、审计哈希链、服务身份/凭证隔离、插件供应链沙箱、跨项目 RLS + 敏感表 project_id；红队 Major 清零，未修复 High 17→11；详见 fix-log.md |
 | 2026-06-03 | 修复批次 9 | MCP-001~004（4 Major）→ 已修复；Result Normalizer 入图与网关契约、tool_invocations 补 caller/risk/duration + 枚举对齐、生命周期状态映射表、Manifest 权限四维；MCP Major 清零，未修复 High 11→7；详见 fix-log.md |
 | 2026-06-03 | 修复批次 10 | UI-006/007（2 Major）→ 已修复；补 UI→架构模块映射表与全局错误/加载态；UI Major 清零（含修正批次 6 对 07-ui-review 的同步遗漏），未修复 High 7→5；详见 fix-log.md |
+| 2026-06-03 | 修复批次 11 | MVP-001~005（5 Major）+ MVP-006（Minor）→ 已修复；阶段依赖表入 S2、外键迁移排序、Skill/插件移出 MVP、任务初始态对齐 DoD、出口门槛对接 §2.3；**全部 10 域 Critical/Major 清零**，未修复 High 5→0；详见 fix-log.md |
