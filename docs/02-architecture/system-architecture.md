@@ -195,6 +195,15 @@ flowchart LR
 - 调用后记录输出、错误、耗时和审计事件。
 - 插件失败返回标准错误，不得破坏工作流状态一致性。
 
+### 5.3 插件供应链与沙箱治理
+
+插件作为第三方扩展，治理强度必须与第三方 MCP（`docs/05-mcp/mcp-architecture.md` §11.4）对称，杜绝供应链与提权风险。
+
+- **来源校验**：插件必须声明来源、发布者、版本与内容摘要（checksum）并校验签名；未验证发布者默认 medium/high 风险。
+- **升级重评估**：升级必须重新比对权限差异并重新评估风险，不沿用旧授权。
+- **进程沙箱强制**：`runtime=process` 插件的沙箱（受限工作目录、默认只读、命令白名单、默认禁止出网）由运行时强制，与 Agent 原生工具治理（`docs/04-agent/agent-architecture.md` §9.4）对齐，不依赖插件自律。
+- **禁止提权**：插件经 PluginRuntime 调用 MCP 必须在 Manifest 声明并统一经 MCP Gateway 权限校验，不得借插件运行时绕过网关获得更高权限。
+
 ## 6. Agent 架构
 
 Agent 是能力执行者，不是业务规则所有者。
@@ -444,6 +453,7 @@ flowchart TB
     MCP[MCP 工具]
     RawResult[原始返回]
     Normalize[结果标准化]
+    Sanitize[信任级标注与注入隔离]
     Validate[结果校验]
     Persist[持久化产出]
 
@@ -454,9 +464,12 @@ flowchart TB
     Agent --> RawResult
     MCP --> RawResult
     RawResult --> Normalize
-    Normalize --> Validate
+    Normalize --> Sanitize
+    Sanitize --> Validate
     Validate --> Persist
 ```
+
+> 外部来源返回（MCP 抓取、第三方服务、用户上传）经结果标准化后必须标注来源可信级别（`trust_level`，见 agent §8.1），默认 `untrusted`。untrusted 内容仅作数据持久化与呈现，不得拼入 system/指令上下文，也不得驱动工具授权；指令与数据分离由 ContextBuilder 与 Agent 消息层（agent §8.3）共同强制。结果校验在结构校验之外，还须执行注入特征过滤。
 
 ## 11. 时序图
 
@@ -559,6 +572,7 @@ sequenceDiagram
 - 所有外部请求经 API 层统一认证后才能进入应用服务；前端不持有任何后端凭证。
 - 用户身份对应 `users` 表；会话使用服务端校验的令牌，过期与吊销由认证组件统一管理。
 - CLI Agent、MCP、插件等非人类调用方使用独立服务身份，不复用用户令牌。
+- 服务身份采用短时效令牌，按 Session/任务作用域签发，支持定期轮换与即时吊销；签发记录纳入审计。
 
 ### 13.2 授权模型
 
@@ -569,8 +583,10 @@ sequenceDiagram
 ### 13.3 资源隔离
 
 - 所有业务查询强制带 `project_id` 维度，禁止跨项目读取或写入。
+- 跨项目隔离由数据库层强制：启用行级安全（RLS）或在数据访问层强制注入 `project_id` 谓词，不依赖调用方自觉；含敏感快照的表（`tool_invocations`/`skill_invocations`/`plugin_invocations`/`agent_messages` 等）显式携带并约束 `project_id`。
 - 内容资产存储、日志与配置按项目命名空间隔离。
 - 密钥与令牌只存安全引用（见 §14.3），不进入领域表、日志或上下文包。
+- 跨项目访问须有自动化测试与运行时告警，越界访问视为安全事件。
 
 ## 14. 运行时与部署拓扑
 
@@ -592,7 +608,9 @@ sequenceDiagram
 ### 14.3 密钥与凭证边界
 
 - 密钥集中在凭证管理组件，运行时按需注入执行宿主进程环境，不写入数据库、日志、上下文包或前端。
+- 凭证管理组件与后端主进程信任边界隔离（独立进程或外部 vault），仅对外暴露受控签发/注入接口，不暴露原始密钥；后端主进程被攻陷不直接等同密钥库泄露，限制单点爆炸半径。
 - 跨边界（后端 → WSL/远端）传递凭证使用安全通道与临时作用域，任务结束即失效。
+- 凭证签发与注入经审计并施加速率限制，异常签发频率触发告警与阻断。
 - Agent、MCP、插件只获得完成当前阶段所需的最小凭证子集。
 
 ```mermaid

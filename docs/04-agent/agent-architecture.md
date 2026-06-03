@@ -244,6 +244,7 @@ flowchart LR
 | `attachments` | 文件、资产、上下文引用 |
 | `sequence` | 会话内顺序号 |
 | `visibility` | internal, user_visible, audit_only |
+| `trust_level` | trusted, untrusted；外部来源（MCP 抓取、用户上传、第三方返回）内容标记 untrusted |
 | `created_at` | 创建时间 |
 
 ### 8.2 消息流
@@ -276,6 +277,8 @@ sequenceDiagram
 - 工具结果使用 `tool` 消息，不混入普通文本。
 - Agent 原始输出和标准化输出都必须可追溯。
 - 敏感上下文不得写入用户可见消息。
+- 数据与指令分离：外部来源内容（MCP 抓取、用户上传、第三方返回）标记 `trust_level=untrusted`，仅作数据呈现，不得进入 `system` 或指令通道，不得被解释为对 Agent 的指令。
+- 高风险工具授权不得由 Agent 自由文本驱动，必须经编排器与权限策略（mcp §8.4）校验；Agent 输出仅为调用请求，授权决策权在策略层。
 
 ## 9. Tool 机制
 

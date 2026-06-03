@@ -365,9 +365,17 @@ sequenceDiagram
     else 禁止
         Policy-->>Gateway: deny
     end
-    Gateway->>Audit: 记录授权决策
+    Gateway->>Audit: 记录授权决策（含确认令牌与 input_digest）
+    Gateway->>Policy: 执行前重校验确认令牌
+    Policy-->>Gateway: 一致且未过期放行，否则要求重新确认
     Gateway->>Tool: 执行允许的调用
 ```
+
+确认令牌（confirmation token）规则：
+
+- 人工确认产生的授权令牌绑定 `(tool_id, input_digest, risk_level, stage_run_id)` 四元组，仅对该组合生效，不可跨调用复用。
+- 令牌短时效（TTL），过期作废；执行前 Gateway 重新计算 `input_digest` 并与令牌比对，不一致（含热加载导致的工具定义或输入变更）则令牌失效、必须重新确认，杜绝 TOCTOU 与旧授权复用。
+- 授权与执行的审计事件记录被确认内容摘要与令牌标识，确认链路完整可追溯。
 
 ## 9. MCP 日志
 
@@ -607,6 +615,7 @@ flowchart LR
 - 输入输出日志必须脱敏。
 - 第三方 MCP 必须隔离运行并限制权限。
 - 生产环境调用必须人工确认或管理员策略授权。
+- MCP 返回的外部抓取内容默认标记为 untrusted，仅作数据消费，不得作为指令驱动 Agent 或工具授权（见 `docs/04-agent/agent-architecture.md` §8.3）。
 
 ### 15.2 禁止事项
 

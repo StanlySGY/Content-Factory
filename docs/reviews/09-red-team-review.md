@@ -30,12 +30,12 @@
 
 | ID | 级别 | 类型 | 问题 | 位置 | 状态 |
 | --- | --- | --- | --- | --- | --- |
-| RT-001 | Major | 提示注入 | Output Validator / Result Normalizer 仅校验结构，未防间接提示注入；外部抓取内容入 context_packs/messages 被下游消费，无数据/指令分离 | agent §8/§9, mcp §9.3, arch §10.2 | 待修复 |
-| RT-002 | Major | 授权完整性 | 高风险人工确认未与 (tool_id, input_digest, risk_level, stage_run_id) 绑定，热加载下存在 TOCTOU/旧授权复用 | mcp §8.4, arch §11.3 | 待修复 |
-| RT-003 | Major | 审计完整性 | "禁止删除审计"仅策略约束，audit_events 为普通表，无追加写/哈希链/WORM/权限分离；脱敏依赖调用方自觉 | db §5.18/§11, agent §19 | 待修复 |
-| RT-004 | Major | 凭证/身份 | 服务身份签发/轮换机制未定义；后端集中持有凭证管理为单点高价值目标，爆炸半径无控制 | arch §13.1/§14.3, agent §12.4 | 待修复 |
-| RT-005 | Major | 供应链 | 插件侧缺来源/签名/摘要校验与升级重评估；runtime=process 无进程沙箱强制项（不对称于 §9.4）；插件可经 PluginRuntime 调 MCP 构成提权 | arch §5, mcp §11.4, 宪法 | 待修复 |
-| RT-006 | Major | 隔离 | 跨项目隔离仅应用层约定，无 RLS/强制 project_id 谓词；含敏感快照的 tool_invocations/agent_messages 未在 schema 绑定 project_id | arch §13.3, db 全表 | 待修复 |
+| RT-001 | Major | 提示注入 | Output Validator / Result Normalizer 仅校验结构，未防间接提示注入；外部抓取内容入 context_packs/messages 被下游消费，无数据/指令分离 | agent §8/§9, mcp §9.3, arch §10.2 | 已修复 |
+| RT-002 | Major | 授权完整性 | 高风险人工确认未与 (tool_id, input_digest, risk_level, stage_run_id) 绑定，热加载下存在 TOCTOU/旧授权复用 | mcp §8.4, arch §11.3 | 已修复 |
+| RT-003 | Major | 审计完整性 | "禁止删除审计"仅策略约束，audit_events 为普通表，无追加写/哈希链/WORM/权限分离；脱敏依赖调用方自觉 | db §5.18/§11, agent §19 | 已修复 |
+| RT-004 | Major | 凭证/身份 | 服务身份签发/轮换机制未定义；后端集中持有凭证管理为单点高价值目标，爆炸半径无控制 | arch §13.1/§14.3, agent §12.4 | 已修复 |
+| RT-005 | Major | 供应链 | 插件侧缺来源/签名/摘要校验与升级重评估；runtime=process 无进程沙箱强制项（不对称于 §9.4）；插件可经 PluginRuntime 调 MCP 构成提权 | arch §5, mcp §11.4, 宪法 | 已修复 |
+| RT-006 | Major | 隔离 | 跨项目隔离仅应用层约定，无 RLS/强制 project_id 谓词；含敏感快照的 tool_invocations/agent_messages 未在 schema 绑定 project_id | arch §13.3, db 全表 | 已修复 |
 | RT-007 | Minor | 数据保护 | context_packs.sensitivity_level 脱敏靠写入方自觉，sensitive 上下文到 Provider（含外部 Codex/Gemini）的传播控制未定义 | db §5.8/§9.3 | 待修复 |
 | RT-008 | Minor | 数据保护 | input_digest/脱敏无算法与不可逆要求，敏感值可能在摘要中残留 | mcp §9.2/§9.3, db §5.17 | 待修复 |
 | RT-009 | Minor | 沙箱逃逸 | WSL 路径转换与工作目录沙箱交叉处（符号链接、`..`、`/mnt/c`、UNC）规范化与逃逸防护未明确 | agent §12.2/§9.4 | 待修复 |
@@ -60,3 +60,4 @@
 | 日期 | 审查者 | 动作 | 说明 |
 | --- | --- | --- | --- |
 | 2026-06-03 | 红队 / 安全评审 | 完成审查 | 0 Critical / 6 Major / 4 Minor；结论有条件通过 |
+| 2026-06-03 | 修复跟踪 | 批次 8 修复 | RT-001~006（6 Major）→ 已修复；注入隔离/确认绑定/审计防篡改/凭证最小化/插件供应链/跨项目隔离强制点已落地；详见 fix-log 批次 8 |

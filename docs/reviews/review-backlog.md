@@ -35,8 +35,8 @@
 | 红队 RT | 0 | 6 | 4 | 10 |
 | **总计** | **2** | **50** | **49** | **101** |
 
-- 已修复：36　|　待修复：65
-- 全部 10 域已审查完成；未修复 Critical = 0、Major = 17、Minor = 48
+- 已修复：42　|　待修复：59
+- 全部 10 域已审查完成；未修复 Critical = 0、Major = 11、Minor = 48
 
 ## 优先处理清单（Critical + Major）
 
@@ -57,7 +57,7 @@
 | P1 | WF-001~005 | 两套状态机不一致、回滚血缘/并行汇聚缺失（已修复）|
 | P1 | UI-002~007 | 工作流设计器/Skill/插件/身份/发布渠道/错误态缺口（UI-002~005 已修复，余 UI-006/007）|
 | P1 | MVP-001~005 | 阶段依赖表、外键迁移、范围越级、DoD 对齐、出口门槛 |
-| P1 | RT-001~006 | 提示注入、确认完整性、审计防篡改、凭证最小化、插件供应链、跨项目隔离 |
+| P1 | RT-001~006 | 提示注入、确认完整性、审计防篡改、凭证最小化、插件供应链、跨项目隔离（已修复）|
 
 ## Backlog 主表
 
@@ -198,12 +198,12 @@
 
 | Issue-ID | Issue-Type | Priority | Affected-Docs | Description | Suggested-Fix | Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| RT-001 | Security/注入 | Major | 04-agent, 05-mcp, 02-architecture | 未防间接提示注入，外部内容入上下文被下游消费，无数据/指令分离 | 来源可信级标记+隔离，授权不由 Agent 文本驱动 | 待修复 |
-| RT-002 | Security/授权 | Major | 05-mcp, 02-architecture | 人工确认未与 (tool_id,input_digest,risk,stage_run) 绑定，TOCTOU | 确认令牌绑定摘要+短时效+执行前重校验 | 待修复 |
-| RT-003 | Security/审计 | Major | 03-database, 04-agent | 审计防删/防篡改仅策略，无追加写/哈希链/权限分离；脱敏靠自觉 | 追加写+哈希链+存储分离+统一脱敏管道 | 待修复 |
-| RT-004 | Security/凭证 | Major | 02-architecture, 04-agent | 服务身份签发/轮换未定义，后端凭证管理单点爆炸半径无控 | 短时效令牌+按 Session 下发+凭证管理隔离+速率限制 | 待修复 |
-| RT-005 | Security/供应链 | Major | 02-architecture, 05-mcp | 插件缺来源/签名/摘要校验与进程沙箱强制(不对称 §9.4)，构成提权 | 插件补供应链治理+runtime=process 沙箱强制项 | 待修复 |
-| RT-006 | Security/隔离 | Major | 02-architecture, 03-database | 跨项目隔离仅应用层，无 RLS；敏感快照表未绑 project_id | DB 层 RLS/强制谓词+敏感表绑 project_id+测试告警 | 待修复 |
+| RT-001 | Security/注入 | Major | 04-agent, 05-mcp, 02-architecture | 未防间接提示注入，外部内容入上下文被下游消费，无数据/指令分离 | 来源可信级标记+隔离，授权不由 Agent 文本驱动 | 已修复 |
+| RT-002 | Security/授权 | Major | 05-mcp, 02-architecture | 人工确认未与 (tool_id,input_digest,risk,stage_run) 绑定，TOCTOU | 确认令牌绑定摘要+短时效+执行前重校验 | 已修复 |
+| RT-003 | Security/审计 | Major | 03-database, 04-agent | 审计防删/防篡改仅策略，无追加写/哈希链/权限分离；脱敏靠自觉 | 追加写+哈希链+存储分离+统一脱敏管道 | 已修复 |
+| RT-004 | Security/凭证 | Major | 02-architecture, 04-agent | 服务身份签发/轮换未定义，后端凭证管理单点爆炸半径无控 | 短时效令牌+按 Session 下发+凭证管理隔离+速率限制 | 已修复 |
+| RT-005 | Security/供应链 | Major | 02-architecture, 05-mcp | 插件缺来源/签名/摘要校验与进程沙箱强制(不对称 §9.4)，构成提权 | 插件补供应链治理+runtime=process 沙箱强制项 | 已修复 |
+| RT-006 | Security/隔离 | Major | 02-architecture, 03-database | 跨项目隔离仅应用层，无 RLS；敏感快照表未绑 project_id | DB 层 RLS/强制谓词+敏感表绑 project_id+测试告警 | 已修复 |
 | RT-007 | Security/数据 | Minor | 03-database | sensitivity_level 脱敏靠自觉，到 Provider 传播控制缺失 | 定义传播矩阵+ContextBuilder 强制脱敏 | 待修复 |
 | RT-008 | Security/数据 | Minor | 05-mcp, 03-database | digest/脱敏无算法与不可逆要求 | 定义脱敏标准与 digest 约束 | 待修复 |
 | RT-009 | Security/沙箱 | Minor | 04-agent | WSL 路径转换与沙箱交叉逃逸边界未明确 | 路径规范化+白名单根校验 | 待修复 |
@@ -222,7 +222,7 @@
 | 工作流持久化 | DB-012, DB-013, DB-006 | 并行依赖、回滚血缘、门禁结果、配置快照一并补入数据库 |
 | 状态机一致性（二轮）| WF-001, WF-002, MCP-003, UI-010 | 各状态机统一以领域 §8 为权威，UI 徽章与 MCP 生命周期对齐 |
 | 调用日志与可追溯（二轮）| MCP-002, DB-018, RT-008, UI-009 | tool_invocations 补 caller/risk/duration + 统一脱敏 + 前端追溯视图 |
-| 安全强制点（二轮）| RT-001, RT-002, RT-003, RT-004, RT-005, RT-006 | 实现前统一定义注入隔离、确认绑定、审计防篡改、凭证最小化、插件沙箱、跨项目隔离强制点 |
+| 安全强制点（二轮）| RT-001, RT-002, RT-003, RT-004, RT-005, RT-006 | 实现前统一定义注入隔离、确认绑定、审计防篡改、凭证最小化、插件沙箱、跨项目隔离强制点（已修复，详见 fix-log 批次 8）|
 | UI 核心模块缺口（二轮）| UI-001, UI-002, UI-003, UI-004, UI-005, UI-006, UI-007 | 实时通道 + 工作流设计器/Skill/插件/身份/发布渠道/错误态 |
 | 回滚与并行（二轮）| WF-003, WF-004, WF-005 | 重试/重做血缘判定、下游失效策略、join 汇聚语义 |
 | MVP 可开发性（二轮）| MVP-001, MVP-002, MVP-003, MVP-004 | 阶段依赖表、外键迁移排序、范围收敛、任务初始状态对齐 DoD |
@@ -248,3 +248,4 @@
 | 2026-06-03 | 首轮终审 | 10 终审完成，结论不通过（有放行条件）：须修复 UI-001 与第二轮 26 个 Major 后复审；49 个 Minor 登记排期 |
 | 2026-06-03 | 修复批次 6 | UI-001(Critical) / UI-002 / UI-003 / UI-004 / UI-005 → 已修复；UI 新增实时通道、工作流设计器、Skill/插件管理、身份与访问、发布与渠道管理，并补页面树/信息架构节点；未修复 Critical 1→0；详见 fix-log.md |
 | 2026-06-03 | 修复批次 7 | WF-001~005（5 Major）+ WF-006（Minor）→ 已修复；工作流统一状态机口径、补重试/重做判定、回滚下游失效与分叉血缘、并行汇聚语义；DB 联动 content_assets.stale 与 asset_versions.source_stage_run_id；工作流 Major 清零，未修复 High 22→17；详见 fix-log.md |
+| 2026-06-03 | 修复批次 8 | RT-001~006（6 Major）→ 已修复；跨域安全强制点落地：注入隔离(trust_level)、确认令牌绑定、审计哈希链、服务身份/凭证隔离、插件供应链沙箱、跨项目 RLS + 敏感表 project_id；红队 Major 清零，未修复 High 17→11；详见 fix-log.md |

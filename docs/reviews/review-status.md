@@ -18,7 +18,7 @@
 | 06 | 工作流 | [06-workflow-review.md](./06-workflow-review.md) | 已完成 | 0 | 5 | 5 | 0 | 6 | 2026-06-03 |
 | 07 | UI | [07-ui-review.md](./07-ui-review.md) | 已完成 | 1 | 6 | 4 | 0 | 5 | 2026-06-03 |
 | 08 | MVP | [08-mvp-review.md](./08-mvp-review.md) | 已完成 | 0 | 5 | 5 | 0 | 0 | 2026-06-03 |
-| 09 | 红队 | [09-red-team-review.md](./09-red-team-review.md) | 已完成 | 0 | 6 | 4 | 0 | 0 | 2026-06-03 |
+| 09 | 红队 | [09-red-team-review.md](./09-red-team-review.md) | 已完成 | 0 | 6 | 4 | 0 | 6 | 2026-06-03 |
 | 10 | 终审 | [10-final-review.md](./10-final-review.md) | 已完成 | 0 | 0 | 0 | 0 | 0 | 2026-06-03 |
 
 ## 汇总
@@ -31,7 +31,7 @@
 | 已完成 | 10 |
 | 已修复 | 0 |
 | 未修复 Critical | 0 |
-| 未修复 High | 17 |
+| 未修复 High | 11 |
 
 ## 放行判据
 
@@ -59,3 +59,4 @@
 | 2026-06-03 | 首轮终审 | 结论：不通过（有放行条件）。未修复 Critical=1（UI-001）、High=26，须第二轮修复后复审 |
 | 2026-06-03 | 修复批次 6 | 修复 UI-001(Critical) + UI-002~005；UI 已修复 0→5，未修复 Critical 1→0、High 26→22 |
 | 2026-06-03 | 修复批次 7 | 修复 WF-001~005（5 Major）+ WF-006(Minor)；工作流 Major 清零，DB 联动 stale/source_stage_run_id；未修复 High 22→17 |
+| 2026-06-03 | 修复批次 8 | 修复 RT-001~006（6 Major）；红队 Major 清零，跨域安全强制点落地（注入/确认/审计/凭证/供应链/隔离）；未修复 High 17→11 |

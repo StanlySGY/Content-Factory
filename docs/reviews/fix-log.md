@@ -129,3 +129,23 @@
 - 工作流域（WF）全部 Major 清零；WF-006 因与本批引用强耦合（`publish_records`/`stage_dependencies`）一并关闭，避免 §9 映射与新增引用矛盾。
 - DB 联动两处字段（`content_assets.status` 的 `stale`、`asset_versions.source_stage_run_id`）已同步 ER 与表说明，与 wf §5.4/§5.5 形成闭环。
 - WF 域剩 WF-007/008/009/010 四个 Minor 待后续 Minor 批次。
+
+## 批次 8（2026-06-03）
+
+第二轮修复第三批，聚焦红队 RT 域全部 6 个 Major（跨域安全强制点），跨 `system-architecture.md`、`agent-architecture.md`、`mcp-architecture.md`、`database-design.md` 四文档。
+
+| 修复时间 | 问题编号 | 修改内容 | 影响范围 |
+| --- | --- | --- | --- |
+| 2026-06-03 | RT-001 (Major) | 数据/指令分离：agent §8.1 消息增 `trust_level`、§8.3 加外部内容 untrusted 与授权不由文本驱动原则；arch §10.2 数据边界图增「信任级标注与注入隔离」节点与说明；mcp §15.1 补外部内容 untrusted | agent §8.1/§8.3；arch §10.2；mcp §15.1 |
+| 2026-06-03 | RT-002 (Major) | mcp §8.4 授权时序补「执行前重校验确认令牌」；新增确认令牌规则：绑定 (tool_id,input_digest,risk_level,stage_run_id)+短时效+执行前 digest 重校验，杜绝 TOCTOU | mcp §8.4 |
+| 2026-06-03 | RT-003 (Major) | db §5.18 audit_events 增 `sequence_no`/`prev_hash`/`entry_hash`，约束补 append-only、哈希链防篡改、存储与权限分离 + 统一脱敏管道 | db §5.18 |
+| 2026-06-03 | RT-004 (Major) | arch §13.1 加服务身份短时效令牌+按 Session 签发+轮换/吊销+审计；§14.3 加凭证管理与主进程信任边界隔离（独立进程/vault）、签发审计+速率限制，限制单点爆炸半径 | arch §13.1/§14.3 |
+| 2026-06-03 | RT-005 (Major) | arch 新增 §5.3「插件供应链与沙箱治理」：来源/摘要/签名校验、升级重评估、runtime=process 进程沙箱强制（对齐 agent §9.4）、禁止经 PluginRuntime 绕网关提权 | arch §5.3 |
+| 2026-06-03 | RT-006 (Major) | arch §13.3 加 DB 层 RLS/强制 project_id 谓词 + 敏感表绑 project_id + 跨项目测试告警；db tool/skill/plugin_invocations 与 agent_messages 增 `project_id` 并加 RLS 约束说明 | arch §13.3；db §5.17/§5.20 |
+
+### 批次小结
+
+- 修复 6 项：6 Major。已修复累计 36 → 42；未修复 Critical 保持 0、High（Major）17 → 11、Minor 48（不变）。
+- 红队域（RT）全部 Major 清零；跨域安全强制点（注入隔离/确认绑定/审计防篡改/凭证最小化/插件供应链/跨项目隔离）已在设计层定义并落地强制点。
+- DB 联动：audit_events 哈希链三字段、调用表与 agent_messages 的 project_id（RT-003/006）。
+- RT 域剩 RT-007/008/009/010 四个 Minor（脱敏传播/digest 约束/WSL 路径/远端 TLS）待后续 Minor 批次。

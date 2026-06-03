@@ -571,6 +571,7 @@ Skill 定义表。
 | 字段 | 类型 | 约束 | 说明 |
 | --- | --- | --- | --- |
 | id | uuid | PK | 调用 ID |
+| project_id | uuid | FK projects.id, not null | 所属项目，支撑行级隔离 |
 | stage_run_id | uuid | FK stage_runs.id, not null | 所属阶段 |
 | mcp_tool_id | uuid | FK mcp_tools.id, not null | 被调用工具 |
 | status | varchar(32) | not null | pending, running, succeeded, failed, cancelled |
@@ -589,6 +590,10 @@ Skill 定义表。
 
 字段同 `tool_invocations`，将 `mcp_tool_id` 替换为 `plugin_definition_id`。
 
+约束与说明：
+
+- 三张调用表均含 `project_id`；因含输入/输出快照属敏感数据，启用行级安全（RLS）或强制 `project_id` 谓词访问，禁止跨项目读取（见 `system-architecture.md` §13.3）。
+
 ### 5.18 audit_events
 
 审计事件表。
@@ -604,12 +609,18 @@ Skill 定义表。
 | before_data | jsonb | nullable | 变更前关键数据 |
 | after_data | jsonb | nullable | 变更后关键数据 |
 | metadata | jsonb | not null | IP、来源、请求 ID、风险等级等 |
+| sequence_no | bigint | not null | 项目内单调递增序列，断号即视为篡改 |
+| prev_hash | varchar(128) | nullable | 前序事件 entry_hash，构成哈希链；项目首条为空 |
+| entry_hash | varchar(128) | not null | 本事件规范化内容哈希，链式覆盖 prev_hash |
 | created_at | timestamptz | not null | 创建时间 |
 
 约束与说明：
 
 - `audit_events` 通过 `(subject_type, subject_id)` 多态引用任务、工作流、阶段等实体，不建立指向各实体的外键；引用完整性由应用层在写入时校验。
 - 仅 `project_id`、`actor_id` 为真实外键（见 ER 图）；多态关系不在 ER 图中以外键连线表达。
+- **仅追加（append-only）**：禁止 UPDATE/DELETE，由数据库权限（撤销 update/delete）与触发器强制；物理删除禁止见 §11。
+- **哈希链防篡改**：`entry_hash = H(规范化事件字段 + prev_hash)`，按 `(project_id, sequence_no)` 链接；校验任务定期重算并比对，发现断链或断号即告警。
+- **存储与权限分离**：审计写入经统一脱敏中间件（强制管道，不依赖调用方自觉）；审计数据与业务库以独立权限/实例隔离，写入身份与读取身份分离。
 
 ### 5.19 agent_sessions
 
@@ -649,6 +660,7 @@ Agent 会话消息表，对应 `docs/04-agent/agent-architecture.md` §8.1。
 | 字段 | 类型 | 约束 | 说明 |
 | --- | --- | --- | --- |
 | id | uuid | PK | 消息 ID |
+| project_id | uuid | FK projects.id, not null | 所属项目，支撑行级隔离 |
 | agent_session_id | uuid | FK agent_sessions.id, not null | 所属 Session |
 | role | varchar(32) | not null | system, user, assistant, tool, event |
 | content_type | varchar(32) | not null | text, markdown, json, file_ref, tool_call, error |
