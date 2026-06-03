@@ -110,6 +110,25 @@ AgentAdapter
 
 业务代码只调用 `AgentGateway`，不直接调用任何 Adapter。
 
+### 4.3 Adapter 注册与 Provider 标识
+
+新增 Provider 通过插件式 Adapter 注册，不修改业务代码，且 Provider 不是闭合枚举。
+
+- **Adapter 注册表**：`AdapterRegistry` 在启动时收集所有 `AgentAdapter` 实现（内置或插件提供），按 Provider 标识建立索引；新增 Adapter 仅需注册，不改动 Gateway 与领域层。
+- **Provider 标识**：`AgentProvider` 为开放字符串标识（如 `claude_code`、`codex`、`aider`），不以闭合枚举约束；未注册标识在解析时报错，不影响已注册 Provider。
+- **能力描述驱动**：每个 Adapter 声明 `AgentCapability`（角色、输入输出、运行时、工具支持），由能力描述而非硬编码类型参与阶段匹配（见 §4.4）。
+- **发现与注册分层**：§13 发现解决"环境中是否存在该 Agent 实例"，§14 注册解决"实例配置进项目"，本节解决"Provider 类型如何被代码识别"，三者互补。
+
+### 4.4 能力匹配与 Agent 选择
+
+工作流阶段声明能力需求，由 Gateway 按统一契约选择 Agent，不在业务代码写死 Provider。
+
+- **能力需求**：阶段声明所需角色、输入输出类型、必需工具/Skill/MCP 范围与约束（如只读、沙箱级别）。
+- **候选筛选**：从 `active` 且通过健康检查的 `AgentProfile` 中筛出满足全部硬性需求的候选。
+- **优先级排序**：按匹配度、阶段或工作流配置偏好（§15 优先级）、历史成功率与成本排序，取最优候选。
+- **回退策略**：最优候选不可用（降级、超限、启动失败）时按序回退次优；全部不可用则阶段进入 `failed` 并给出可恢复错误，不静默挂起。
+- **可解释**：选择结果记录候选集、命中需求与落选原因，纳入审计与追溯。
+
 ## 5. 支持的 Agent
 
 ### 5.1 当前支持范围
@@ -133,48 +152,40 @@ AgentAdapter
 
 ## 6. Agent 生命周期
 
+Agent 生命周期分为两个相互独立的平面，各自拥有权威状态机，本节仅作概览，词表不交叉使用：
+
+- **Profile 生命周期**：Agent 配置从被发现到可调度再到归档。流程见发现（§13）、注册（§14）、配置（§15）；稳态状态机见 §16.1。
+- **执行（Session）生命周期**：一次任务从分配到完成的运行过程。权威状态机见 §16.2。
+
 ```mermaid
-stateDiagram-v2
-    [*] --> discovered
-    discovered --> registered: 注册配置
-    registered --> configured: 配置完成
-    configured --> available: 健康检查通过
-    available --> assigned: 分配阶段任务
-    assigned --> starting: 创建 Session
-    starting --> running: 启动成功
-    running --> waiting_tool: 等待工具调用
-    waiting_tool --> running: 工具返回
-    running --> waiting_review: 输出待校验或审查
-    waiting_review --> completed: 审查通过
-    waiting_review --> revision_required: 需要修订
-    revision_required --> running: 继续会话或新会话
-    running --> failed: 执行失败
-    failed --> running: 可恢复重试
-    failed --> unavailable: 不可恢复
-    completed --> available: 释放执行能力
-    unavailable --> available: 健康恢复
-    available --> disabled: 手动禁用
-    disabled --> available: 手动启用
+flowchart LR
+    subgraph ProfilePlane[Profile 生命周期 见 §16.1]
+        Discovered[discovered §13] --> Registered[registered §14]
+        Registered --> Configured[configured §15]
+        Configured --> Active[active 可调度]
+        Active --> Degraded[degraded]
+        Degraded --> Active
+        Active --> Disabled[disabled]
+        Disabled --> Active
+        Active --> Archived[archived]
+    end
+    subgraph ExecPlane[执行生命周期 见 §16.2]
+        Pending[pending] --> Running[running]
+        Running --> WaitingTool[waiting_tool]
+        WaitingTool --> Running
+        Running --> WaitingReview[waiting_review]
+        WaitingReview --> Completed[completed]
+        Running --> Failed[failed]
+    end
+    Active -. 分配执行 .-> Pending
+    Completed -. 释放能力 .-> Active
 ```
 
-生命周期说明：
+规则：
 
-| 状态 | 说明 |
-| --- | --- |
-| discovered | 系统发现本机或远端可用 Agent |
-| registered | Agent 已进入注册表 |
-| configured | 已完成项目级配置 |
-| available | 可被工作流调度 |
-| assigned | 已分配到具体阶段 |
-| starting | 正在创建 Session 或进程 |
-| running | 正在执行任务 |
-| waiting_tool | 等待 Tool、Skill、MCP 调用结果 |
-| waiting_review | 输出已生成，等待校验或审查 |
-| revision_required | 输出需要修订 |
-| completed | 当前任务完成 |
-| failed | 执行失败，可按策略重试 |
-| unavailable | 健康检查失败或依赖不可用 |
-| disabled | 被管理员禁用 |
+- 执行平面不改变 Profile 状态；Profile 的 `active` / `degraded` / `disabled` 仅决定其能否被分配新执行。
+- `discovered` / `registered` / `configured` 是 §16.1 中 `active` 之前的准备阶段，对应 §13 ~ §15 流程。
+- `assigned` / `running` / `waiting_tool` / `waiting_review` / `completed` 仅属执行平面，不出现在 Profile 状态机。
 
 ## 7. Session 机制
 
@@ -193,6 +204,7 @@ stateDiagram-v2
 | `stage_run_id` | 阶段运行 ID |
 | `agent_profile_id` | Agent 配置 ID |
 | `provider` | Agent Provider |
+| `provider_session_ref` | Provider 原生会话句柄，用于恢复与续连（持久化于 `agent_sessions`）|
 | `runtime` | CLI、SDK、remote、wsl 等运行方式 |
 | `working_directory` | 工作目录 |
 | `context_pack_id` | 使用的上下文包版本 |
@@ -271,7 +283,7 @@ sequenceDiagram
 
 | 类型 | 说明 |
 | --- | --- |
-| Built-in Tool | Agent 自带能力，例如读写文件、执行命令 |
+| Built-in Tool | Agent 自带能力，例如读写文件、执行命令；不经 Tool Router，必须由原生工具治理（§9.4）在进程层施加沙箱与权限 |
 | Platform Tool | Content Factory 提供的内部工具，例如读取资产、写审查记录 |
 | MCP Tool | 通过 MCP Server 暴露的外部工具 |
 | Skill Tool | 通过 Skill 体系执行的领域命令 |
@@ -287,6 +299,7 @@ flowchart LR
     Policy[权限策略]
     ToolRouter[Tool Router]
     Platform[Platform Tool]
+    MCPGateway[MCP Gateway]
     MCP[MCP Tool]
     Skill[Skill Tool]
     Plugin[Plugin Tool]
@@ -297,7 +310,8 @@ flowchart LR
     Gateway --> Policy
     Policy --> ToolRouter
     ToolRouter --> Platform
-    ToolRouter --> MCP
+    ToolRouter --> MCPGateway
+    MCPGateway --> MCP
     ToolRouter --> Skill
     ToolRouter --> Plugin
     ToolRouter --> Audit
@@ -307,8 +321,21 @@ flowchart LR
 
 - Tool 调用必须声明权限、输入、输出、超时和错误语义。
 - 高风险 Tool 必须经策略判断或人工确认。
-- Agent 不直接访问业务内部实现，只通过 Tool Router 调用受控能力。
+- Agent 不直接访问业务内部实现；Platform / MCP / Skill / Plugin 工具只经 Tool Router 调用（MCP 经 MCP Gateway），Agent 原生 Built-in 工具则由原生工具治理（§9.4）在进程层强制沙箱与权限。
 - Tool 结果必须以结构化消息返回 Session。
+
+### 9.4 原生工具治理
+
+Built-in Tool 在 Agent 进程内执行，不经过 Tool Router，因此必须在进程层独立治理，确保满足宪法的沙箱与权限约束。Tool Router 治理 Platform / MCP / Skill / Plugin 工具，原生工具治理覆盖 Agent 自带工具，二者共同构成完整工具控制平面，缺一不可。
+
+| 控制项 | 要求 |
+| --- | --- |
+| 沙箱边界 | 每个 Session 绑定受限工作目录，禁止访问目录外路径；密钥与系统目录默认不可见 |
+| 文件权限 | 默认只读，仅在阶段显式授权时开放受限写入；受全局约束的 Provider（如 Codex、Gemini）强制只读，禁止写文件系统 |
+| 命令白名单 | 可执行命令经白名单 / 黑名单校验，破坏性命令默认拒绝 |
+| 网络隔离 | 默认禁止出网，联网须经权限策略与风险确认 |
+| 强制位置 | 由运行时（Process Runner / 沙箱层 / WSL Bridge）通过启动参数、工作目录、环境与文件系统挂载强制，不依赖 Agent 自律 |
+| 审计 | 原生工具的文件写入、命令执行、出网请求必须记录审计事件 |
 
 ## 10. Skill 机制
 
@@ -339,6 +366,7 @@ flowchart TB
     Agent[Agent]
     Adapter[Agent Adapter]
     MCPBridge[MCP Bridge]
+    MCPGateway[MCP Gateway]
     MCPRegistry[MCP Registry]
     RiskPolicy[Risk Policy]
     MCPServer[MCP Server]
@@ -347,12 +375,14 @@ flowchart TB
 
     Agent --> Adapter
     Adapter --> MCPBridge
-    MCPBridge --> MCPRegistry
-    MCPBridge --> RiskPolicy
-    MCPBridge --> MCPServer
+    MCPBridge --> MCPGateway
+    MCPGateway --> MCPRegistry
+    MCPGateway --> RiskPolicy
+    MCPGateway --> MCPServer
     MCPServer --> MCPTool
     MCPTool --> Normalizer
-    Normalizer --> Adapter
+    Normalizer --> MCPGateway
+    MCPGateway --> Adapter
 ```
 
 ### 11.2 MCP 调用原则
@@ -360,7 +390,7 @@ flowchart TB
 - 最小权限、最小上下文、最小数据暴露。
 - 外部网络、敏感数据、生产环境、破坏性操作必须显式授权。
 - MCP 返回结果必须标准化并校验。
-- Agent 只能通过 MCP Bridge 使用 MCP，不直接持有 MCP Server 内部连接。
+- Agent 只能通过 MCP Bridge 转交 MCP Gateway 使用 MCP；MCP Bridge 仅做适配，不直连 MCP Registry / Server，统一由 MCP Gateway 施加权限、风险确认、审计与结果标准化（与 `docs/05-mcp/mcp-architecture.md` 的网关隔离原则一致）。
 
 ## 12. WSL 机制
 
@@ -403,6 +433,13 @@ sequenceDiagram
     Proc-->>Adapter: 标准输出、错误、退出码
     Adapter-->>Gateway: 标准化事件
 ```
+
+### 12.4 执行宿主与密钥边界
+
+- **执行宿主声明**：Agent 运行宿主由配置显式声明，可选本地进程、WSL distro 或远端执行节点；网关经适配器与 Process Runner 统一调度，领域层不感知宿主差异（与 `docs/02-architecture/system-architecture.md` §14 运行时拓扑一致）。
+- **跨边界密钥注入**：后端向 WSL 或远端宿主传递凭证必须经安全通道、最小作用域、任务结束即失效；密钥不写入命令行参数、不落盘、不进入消息或上下文包。
+- **WSL 凭证隔离**：WSL Bridge 注入的环境变量与凭证引用限定在当前 Session，禁止泄漏到宿主用户环境或其他 distro。
+- **失败语义**：宿主不可用、凭证缺失或注入失败必须返回可恢复错误，不得降级为明文传递或跳过沙箱。
 
 ## 13. Agent 发现机制
 
@@ -555,7 +592,7 @@ stateDiagram-v2
 新增 Aider、Cursor Agent、RooCode 或其他 Agent 时必须按以下流程执行：
 
 1. 新增 `AgentAdapter` 实现。
-2. 声明 `AgentProvider` 枚举或配置项。
+2. 声明 Provider 标识（开放字符串，非闭合枚举）并注册到 `AdapterRegistry`（见 §4.3）。
 3. 实现发现、配置校验、启动、消息发送、事件流、停止、状态读取、输出标准化。
 4. 提供默认能力声明和权限模板。
 5. 注册到 `Agent Registry`。
@@ -575,14 +612,14 @@ Agent 架构与数据库设计的映射：
 | 架构对象 | 数据表 |
 | --- | --- |
 | AgentProfile | `agent_profiles` |
-| AgentSession | 后续新增 `agent_sessions` 或复用运行日志表 |
-| AgentMessage | 后续新增 `agent_messages` |
+| AgentSession | `agent_sessions`（含 `provider_session_ref`）|
+| AgentMessage | `agent_messages` |
 | AgentToolCall | `tool_invocations`, `skill_invocations`, `plugin_invocations` |
 | ContextPack | `context_packs` |
 | StageRun | `stage_runs` |
 | AuditEvent | `audit_events` |
 
-当前 `docs/03-database/database-design.md` 已覆盖 Agent Profile 和调用记录。Session 与 Message 表在实现 Agent 运行时前补充数据库迁移设计。
+`docs/03-database/database-design.md` 已覆盖 Agent Profile、Session（§5.19 `agent_sessions`）、Message（§5.20 `agent_messages`）与调用记录；Session 状态值对齐 §16.2，`provider_session_ref` 支持持久会话恢复。
 
 ## 19. 安全与审计
 

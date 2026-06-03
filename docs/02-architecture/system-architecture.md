@@ -37,6 +37,7 @@ flowchart TB
         Orchestrator[工作流编排层]
         Policy[权限与策略]
         Audit[审计与事件]
+        Repository[Repository 接口]
     end
 
     subgraph Extensions[扩展能力]
@@ -65,12 +66,15 @@ flowchart TB
     Orchestrator --> PluginRuntime
     App --> Policy
     App --> Audit
-    Domain --> DB
+    Domain --> Repository
+    Repository --> DB
     App --> ObjectStore
     Orchestrator --> Queue
     Audit --> LogStore
     App --> ConfigStore
 ```
+
+> 依赖方向：领域层只依赖 `Repository` 接口，由基础设施层适配器实现并对接数据库（与 §4.2 依赖倒置一致），领域层不直接耦合具体持久化。
 
 ## 3. 前端架构
 
@@ -546,11 +550,107 @@ sequenceDiagram
 | 插件通过契约扩展 | 插件可组合、可隔离，不破坏核心业务流程。 |
 | 内容资产版本化 | 支持审查、回滚、复盘和复用。 |
 
-## 13. 后续细化文档
+## 13. 身份与访问控制
 
-- 数据模型：`docs/03-database/data-model.md`
-- Agent 角色：`docs/04-agent/agent-roles.md`
-- MCP 工具契约：`docs/05-mcp/tool-contracts.md`
-- Skill 注册：`docs/06-skill/skill-registry.md`
-- 工作流细节：`docs/07-workflow/content-pipeline.md`
-- API 契约：`docs/09-api/api-overview.md`
+身份与访问控制是 API 层与应用层的强制边界，领域层不重复实现认证逻辑。
+
+### 13.1 认证边界
+
+- 所有外部请求经 API 层统一认证后才能进入应用服务；前端不持有任何后端凭证。
+- 用户身份对应 `users` 表；会话使用服务端校验的令牌，过期与吊销由认证组件统一管理。
+- CLI Agent、MCP、插件等非人类调用方使用独立服务身份，不复用用户令牌。
+
+### 13.2 授权模型
+
+- 授权在应用服务层校验：先判定调用方对目标 `project` 的访问权，再判定具体操作权限。
+- MVP 以项目 `owner` 为唯一管理者；表结构预留成员与角色接缝（见 `docs/03-database/database-design.md` DB-005），后续引入 `project_members` 与 RBAC 不需重构领域层。
+- 高风险操作（发布、外部调用、配置变更）在授权之外叠加风险策略与审计。
+
+### 13.3 资源隔离
+
+- 所有业务查询强制带 `project_id` 维度，禁止跨项目读取或写入。
+- 内容资产存储、日志与配置按项目命名空间隔离。
+- 密钥与令牌只存安全引用（见 §14.3），不进入领域表、日志或上下文包。
+
+## 14. 运行时与部署拓扑
+
+### 14.1 运行时组成
+
+| 运行时单元 | 承载 | 说明 |
+| --- | --- | --- |
+| 后端服务 | 常驻进程或容器 | API、应用、领域、编排、网关 |
+| 异步执行器 | 后台 worker | 消费队列，驱动长任务与后台 Session |
+| Agent 执行宿主 | 本地进程 / WSL / 远端 | 实际运行 CLI Agent，由 Agent 网关经适配器调度 |
+| 数据与存储 | DB / 对象存储 / 队列 / 日志 | 持久化与事件 |
+
+### 14.2 Agent 执行宿主
+
+- Agent 网关与 Agent 进程分离：网关在后端服务内，CLI Agent 在受控执行宿主中运行。
+- 执行宿主形态由 Agent 配置声明（本地子进程、WSL、远端执行节点），统一经适配器与 Process Runner 抽象（详见 `docs/04-agent/agent-architecture.md` §12）。
+- 每个 Session 绑定受限工作目录与最小环境，宿主层强制沙箱与权限（见 `docs/04-agent/agent-architecture.md` §9.4）。
+
+### 14.3 密钥与凭证边界
+
+- 密钥集中在凭证管理组件，运行时按需注入执行宿主进程环境，不写入数据库、日志、上下文包或前端。
+- 跨边界（后端 → WSL/远端）传递凭证使用安全通道与临时作用域，任务结束即失效。
+- Agent、MCP、插件只获得完成当前阶段所需的最小凭证子集。
+
+```mermaid
+flowchart TB
+    Client[前端]
+
+    subgraph Service[后端服务]
+        Core2[API / 应用 / 领域 / 编排]
+        AGW[Agent 网关]
+        MGW[MCP 网关]
+        Secrets[凭证管理]
+    end
+
+    subgraph Hosts[Agent 执行宿主]
+        Local[本地进程]
+        WSLHost[WSL]
+        Remote[远端节点]
+    end
+
+    Infra2[(DB / 对象存储 / 队列 / 日志)]
+
+    Client --> Core2
+    Core2 --> AGW
+    Core2 --> MGW
+    AGW --> Local
+    AGW --> WSLHost
+    AGW --> Remote
+    Secrets -. 安全注入 .-> Local
+    Secrets -. 安全注入 .-> WSLHost
+    Secrets -. 安全注入 .-> Remote
+    Core2 --> Infra2
+```
+
+## 15. 并发与一致性
+
+### 15.1 并发场景
+
+- 同一工作流的多个并行阶段（见 `docs/03-database/database-design.md` 的 `workflow_stage_dependencies`）。
+- 后台 Session 异步回写产出与状态。
+- 多用户或多任务同时操作同一项目资源。
+
+### 15.2 一致性规则
+
+- 状态变更必须经领域状态机；单条记录更新使用乐观锁（版本号或 `updated_at` 校验），冲突即重试或拒绝。
+- 阶段产出回写与状态流转在同一事务内完成（见 `docs/03-database/database-design.md` §10.1），避免半完成状态。
+- 并行阶段的汇聚（join）由编排器在所有前置阶段达到终态后触发，不依赖回调时序。
+
+### 15.3 幂等与重试
+
+- Agent、MCP、插件调用以 `stage_run` 与调用键去重，重试不产生重复产出或重复发布。
+- 外部副作用操作（发布、外部写入）必须携带幂等键，由适配层保证至多一次生效。
+- 失败恢复从持久化状态重建，不依赖运行时内存或聊天上下文。
+
+## 16. 后续细化文档
+
+- 数据模型：`docs/03-database/database-design.md`
+- Agent 架构：`docs/04-agent/agent-architecture.md`
+- MCP 架构：`docs/05-mcp/mcp-architecture.md`
+- Skill 注册：`docs/06-skill/skill-registry.md`（待创建）
+- 工作流细节：`docs/07-workflow/content-workflow.md`
+- API 契约：`docs/09-api/api-overview.md`（待创建）

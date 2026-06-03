@@ -56,9 +56,20 @@ erDiagram
     plugin_definitions ||--o{ plugin_invocations : invoked_as
     stage_runs ||--o{ plugin_invocations : invokes
 
-    content_tasks ||--o{ audit_events : audited
-    workflow_runs ||--o{ audit_events : audited
-    stage_runs ||--o{ audit_events : audited
+    projects ||--o{ audit_events : records
+    users ||--o{ audit_events : acts
+
+    workflow_definitions ||--o{ workflow_stage_dependencies : sequences
+    workflow_stages ||--o{ workflow_stage_dependencies : depends
+    agent_profiles ||--o{ agent_sessions : runs
+    stage_runs ||--o{ agent_sessions : drives
+    agent_sessions ||--o{ agent_messages : contains
+    content_assets ||--o{ publish_records : published_as
+    asset_versions ||--o{ publish_records : pins
+    mcp_servers ||--o{ mcp_installations : installs
+    mcp_servers ||--o{ mcp_config_versions : versions
+    plugin_definitions ||--o{ plugin_installations : installs
+    plugin_definitions ||--o{ plugin_config_versions : versions
 
     users {
         uuid id PK
@@ -136,8 +147,11 @@ erDiagram
         uuid workflow_run_id FK
         uuid workflow_stage_id FK
         uuid agent_profile_id FK
+        uuid parent_stage_run_id FK
         string status
         integer attempt_count
+        string parallel_group
+        json gate_result
         datetime started_at
         datetime completed_at
         datetime created_at
@@ -152,6 +166,7 @@ erDiagram
         string title
         string status
         integer current_version
+        uuid current_version_id FK
         datetime created_at
         datetime updated_at
     }
@@ -277,7 +292,7 @@ erDiagram
 | name | varchar(160) | not null | 工作流名称 |
 | version | integer | not null | 版本号，从 1 递增 |
 | status | varchar(32) | not null | draft, active, deprecated, archived |
-| definition_schema | jsonb | not null | 工作流元数据、阶段依赖、默认配置 |
+| definition_schema | jsonb | not null | 工作流元数据、默认配置；阶段依赖以 workflow_stage_dependencies 为权威 |
 | created_at | timestamptz | not null | 创建时间 |
 | updated_at | timestamptz | not null | 更新时间 |
 
@@ -309,6 +324,28 @@ erDiagram
 - `(workflow_definition_id, key)` 唯一。
 - `(workflow_definition_id, position)` 唯一。
 
+> `position` 仅表示展示与默认线性顺序，不表达并行、分支或多前置依赖。真实阶段依赖关系以 `workflow_stage_dependencies`（§5.5.1）为权威。
+
+### 5.5.1 workflow_stage_dependencies
+
+工作流阶段依赖表，承载并行、分支与 DAG 依赖，避免依赖关系只存于 JSON。
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| id | uuid | PK | 依赖 ID |
+| workflow_definition_id | uuid | FK workflow_definitions.id, not null | 所属工作流定义 |
+| stage_id | uuid | FK workflow_stages.id, not null | 下游阶段 |
+| depends_on_stage_id | uuid | FK workflow_stages.id, not null | 上游依赖阶段 |
+| dependency_type | varchar(32) | not null | finish_to_start, join_all, join_any |
+| condition_schema | jsonb | nullable | 条件依赖；满足条件才激活下游 |
+| created_at | timestamptz | not null | 创建时间 |
+
+约束：
+
+- `(stage_id, depends_on_stage_id)` 唯一。
+- 禁止自依赖（`stage_id <> depends_on_stage_id`）。
+- 依赖图必须无环，由领域层在发布工作流定义时校验。
+
 ### 5.6 workflow_runs
 
 工作流运行实例表。
@@ -335,12 +372,21 @@ erDiagram
 | workflow_run_id | uuid | FK workflow_runs.id, not null | 所属工作流实例 |
 | workflow_stage_id | uuid | FK workflow_stages.id, not null | 阶段定义 |
 | agent_profile_id | uuid | FK agent_profiles.id, nullable | 执行 Agent，仅 Agent 阶段使用 |
+| parent_stage_run_id | uuid | FK stage_runs.id, nullable | 回滚/重试/退回重做的来源阶段运行，构成血缘 |
 | status | varchar(32) | not null | 阶段状态 |
 | attempt_count | integer | not null | 执行次数 |
+| parallel_group | varchar(64) | nullable | 并行分组标识，同组阶段可并行执行 |
+| gate_result | jsonb | nullable | 质量门禁结果（结论、得分、命中规则、审查引用）|
 | started_at | timestamptz | nullable | 开始时间 |
 | completed_at | timestamptz | nullable | 完成时间 |
 | created_at | timestamptz | not null | 创建时间 |
 | updated_at | timestamptz | not null | 更新时间 |
+
+约束与说明：
+
+- `parent_stage_run_id` 记录重试与退回重做血缘，根阶段运行为空。
+- `parallel_group` 为空表示串行；同一 `workflow_run_id` 下同组阶段并行调度。
+- `gate_result` 为门禁判定快照；审查结论仍以 `review_records` 为权威，二者不冲突（见 §10.1）。
 
 ### 5.8 context_packs
 
@@ -360,7 +406,10 @@ erDiagram
 
 约束：
 
-- `(content_task_id, scope, version)` 唯一。
+- task 级上下文（`stage_run_id` 为空）：`(content_task_id, scope, version)` 唯一。
+- stage 级上下文（`stage_run_id` 非空）：`(stage_run_id, scope, version)` 唯一。
+- 以两条部分唯一索引实现，消除同一任务下不同阶段共享版本号导致的键歧义。
+- `scope = stage` 时 `stage_run_id` 必须非空；`scope = task` 时 `stage_run_id` 必须为空。
 
 ### 5.9 content_assets
 
@@ -374,9 +423,12 @@ erDiagram
 | asset_type | varchar(64) | not null | research, outline, draft, revision, final |
 | title | varchar(240) | not null | 资产标题 |
 | status | varchar(32) | not null | draft, review_pending, approved, rejected, archived |
-| current_version | integer | not null | 当前版本号 |
+| current_version | integer | not null | 当前版本号（与 current_version_id 对应，便于展示）|
+| current_version_id | uuid | FK asset_versions.id, nullable | 当前版本指针，保证当前版本引用完整性 |
 | created_at | timestamptz | not null | 创建时间 |
 | updated_at | timestamptz | not null | 更新时间 |
+
+> `current_version_id` 与 `asset_versions` 构成当前版本的引用完整性约束；因 `content_assets` 与 `asset_versions` 互相引用，该外键可空并采用延迟约束，新建资产时先插入资产再回填当前版本指针。`current_version` 整数仅作展示冗余，权威指针为 `current_version_id`。
 
 ### 5.10 asset_versions
 
@@ -490,6 +542,10 @@ Skill 定义表。
 | project_id | uuid | FK projects.id, not null | 所属项目 |
 | name | varchar(160) | not null | 插件名称 |
 | version | varchar(40) | not null | 插件版本 |
+| runtime | varchar(32) | not null | 运行时类型，如 process, wasm, service |
+| entrypoint | text | not null | 插件入口（命令、模块或服务地址）|
+| dependency_schema | jsonb | not null | 依赖声明（运行时、外部服务、其他插件）|
+| config_schema | jsonb | not null | 非敏感配置结构 |
 | capability_schema | jsonb | not null | 能力声明 |
 | permission_schema | jsonb | not null | 权限声明 |
 | failure_policy | jsonb | not null | 失败策略 |
@@ -544,6 +600,155 @@ Skill 定义表。
 | after_data | jsonb | nullable | 变更后关键数据 |
 | metadata | jsonb | not null | IP、来源、请求 ID、风险等级等 |
 | created_at | timestamptz | not null | 创建时间 |
+
+约束与说明：
+
+- `audit_events` 通过 `(subject_type, subject_id)` 多态引用任务、工作流、阶段等实体，不建立指向各实体的外键；引用完整性由应用层在写入时校验。
+- 仅 `project_id`、`actor_id` 为真实外键（见 ER 图）；多态关系不在 ER 图中以外键连线表达。
+
+### 5.19 agent_sessions
+
+Agent 会话运行实例表，对应 `docs/04-agent/agent-architecture.md` §7.1，承载 Agent 运行时状态（非工作流权威状态）。
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| id | uuid | PK | Session ID |
+| project_id | uuid | FK projects.id, not null | 所属项目 |
+| content_task_id | uuid | FK content_tasks.id, not null | 内容任务 |
+| workflow_run_id | uuid | FK workflow_runs.id, nullable | 工作流实例 |
+| stage_run_id | uuid | FK stage_runs.id, nullable | 阶段运行 |
+| agent_profile_id | uuid | FK agent_profiles.id, not null | Agent 配置 |
+| provider | varchar(64) | not null | claude_code, codex, gemini, opencode |
+| session_type | varchar(32) | not null | ephemeral, persistent, interactive, background |
+| provider_session_ref | varchar(255) | nullable | Provider 原生会话句柄，用于恢复与续连 |
+| runtime | varchar(32) | not null | cli, sdk, remote, wsl |
+| working_directory | text | nullable | 工作目录 |
+| context_pack_id | uuid | FK context_packs.id, nullable | 使用的上下文包 |
+| status | varchar(32) | not null | 见 `docs/04-agent` §16.2 Session 状态机 |
+| started_at | timestamptz | nullable | 开始时间 |
+| completed_at | timestamptz | nullable | 完成时间 |
+| metadata | jsonb | not null | 模型、成本、环境等运行信息 |
+| profile_snapshot | jsonb | nullable | 启动时 Agent 配置快照，保证历史运行可还原当时配置 |
+| created_at | timestamptz | not null | 创建时间 |
+| updated_at | timestamptz | not null | 更新时间 |
+
+约束与说明：
+
+- 状态值对齐 Agent Session 状态机，工作流权威状态仍由 `workflow_runs` / `stage_runs` 持有。
+- `provider_session_ref` 保存 Provider 原生会话标识，支持持久会话恢复，避免聊天上下文成为唯一来源。
+
+### 5.20 agent_messages
+
+Agent 会话消息表，对应 `docs/04-agent/agent-architecture.md` §8.1。
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| id | uuid | PK | 消息 ID |
+| agent_session_id | uuid | FK agent_sessions.id, not null | 所属 Session |
+| role | varchar(32) | not null | system, user, assistant, tool, event |
+| content_type | varchar(32) | not null | text, markdown, json, file_ref, tool_call, error |
+| content | jsonb | not null | 消息正文或结构化数据 |
+| attachments | jsonb | nullable | 文件、资产、上下文引用 |
+| sequence | integer | not null | 会话内顺序号 |
+| visibility | varchar(32) | not null | internal, user_visible, audit_only |
+| created_at | timestamptz | not null | 创建时间 |
+
+约束：
+
+- `(agent_session_id, sequence)` 唯一。
+- 原始与标准化输出均须可追溯，敏感上下文不得写入 `user_visible` 消息。
+
+### 5.21 publish_records
+
+发布记录表，锚定已发布的具体资产版本与渠道结果。
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| id | uuid | PK | 发布记录 ID |
+| content_task_id | uuid | FK content_tasks.id, not null | 所属任务 |
+| content_asset_id | uuid | FK content_assets.id, not null | 发布资产 |
+| asset_version_id | uuid | FK asset_versions.id, not null | 发布的具体版本（权威指针）|
+| channel | varchar(64) | not null | 渠道标识，如 wechat_mp |
+| status | varchar(32) | not null | pending, publishing, published, failed, withdrawn |
+| external_ref | varchar(255) | nullable | 渠道侧文章或草稿 ID |
+| published_at | timestamptz | nullable | 发布完成时间 |
+| error_data | jsonb | nullable | 发布失败信息 |
+| created_at | timestamptz | not null | 创建时间 |
+| updated_at | timestamptz | not null | 更新时间 |
+
+约束与说明：
+
+- `asset_version_id` 提供「已发布版本」的权威指针，发布内容不随后续修订漂移。
+- 同一 `(content_asset_id, channel)` 的多次发布以多条记录追加，不覆盖历史。
+
+### 5.22 mcp_installations
+
+MCP Server 安装与生命周期状态表。
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| id | uuid | PK | 安装记录 ID |
+| mcp_server_id | uuid | FK mcp_servers.id, not null | 所属 Server |
+| source | varchar(64) | not null | builtin, marketplace, custom |
+| install_status | varchar(32) | not null | pending, installing, installed, failed, disabled, uninstalled |
+| installed_version | varchar(40) | nullable | 已安装版本 |
+| health_status | varchar(32) | not null | unknown, healthy, degraded, unreachable |
+| last_health_at | timestamptz | nullable | 最近健康检查时间 |
+| error_data | jsonb | nullable | 安装或健康检查错误 |
+| created_at | timestamptz | not null | 创建时间 |
+| updated_at | timestamptz | not null | 更新时间 |
+
+### 5.23 mcp_config_versions
+
+MCP 配置版本表，保存被运行引用的非敏感配置快照。
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| id | uuid | PK | 配置版本 ID |
+| mcp_server_id | uuid | FK mcp_servers.id, not null | 所属 Server |
+| version | integer | not null | 配置版本号，从 1 递增 |
+| config_schema | jsonb | not null | 非敏感配置快照 |
+| created_by | uuid | FK users.id, nullable | 创建人；系统生成可为空 |
+| created_at | timestamptz | not null | 创建时间 |
+
+约束：
+
+- `(mcp_server_id, version)` 唯一。
+- 敏感凭证不入本表，只保存安全引用（见 §11 禁止事项）。
+
+### 5.24 plugin_installations
+
+插件安装与生命周期状态表（结构与 §5.22 对称）。
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| id | uuid | PK | 安装记录 ID |
+| plugin_definition_id | uuid | FK plugin_definitions.id, not null | 所属插件 |
+| source | varchar(64) | not null | builtin, marketplace, custom |
+| install_status | varchar(32) | not null | pending, installing, installed, failed, disabled, uninstalled |
+| installed_version | varchar(40) | nullable | 已安装版本 |
+| health_status | varchar(32) | not null | unknown, healthy, degraded, unreachable |
+| last_health_at | timestamptz | nullable | 最近健康检查时间 |
+| error_data | jsonb | nullable | 安装或健康检查错误 |
+| created_at | timestamptz | not null | 创建时间 |
+| updated_at | timestamptz | not null | 更新时间 |
+
+### 5.25 plugin_config_versions
+
+插件配置版本表，保存被运行引用的非敏感配置快照（结构与 §5.23 对称）。
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| id | uuid | PK | 配置版本 ID |
+| plugin_definition_id | uuid | FK plugin_definitions.id, not null | 所属插件 |
+| version | integer | not null | 配置版本号，从 1 递增 |
+| config_schema | jsonb | not null | 非敏感配置快照 |
+| created_by | uuid | FK users.id, nullable | 创建人；系统生成可为空 |
+| created_at | timestamptz | not null | 创建时间 |
+
+约束：
+
+- `(plugin_definition_id, version)` 唯一。
 
 ## 6. 字段设计规范
 
@@ -619,6 +824,15 @@ JSON 字段只用于可扩展契约和低频查询数据：
 | tool_invocations | `idx_tool_invocations_stage_status(stage_run_id, status)` | 阶段工具调用追踪 |
 | skill_invocations | `idx_skill_invocations_stage_status(stage_run_id, status)` | 阶段 Skill 调用追踪 |
 | plugin_invocations | `idx_plugin_invocations_stage_status(stage_run_id, status)` | 阶段插件调用追踪 |
+| workflow_stage_dependencies | `idx_stage_deps_stage(stage_id)` / `idx_stage_deps_upstream(depends_on_stage_id)` | DAG 依赖加载与拓扑校验 |
+| agent_sessions | `idx_agent_sessions_stage_status(stage_run_id, status)` | 阶段会话状态追踪 |
+| agent_sessions | `idx_agent_sessions_task(content_task_id)` | 任务维度会话查询 |
+| agent_messages | `idx_agent_messages_session_seq(agent_session_id, sequence)` unique | 会话消息顺序加载 |
+| publish_records | `idx_publish_records_task_channel(content_task_id, channel)` | 任务发布记录查询 |
+| mcp_installations | `idx_mcp_installations_server(mcp_server_id, install_status)` | MCP 安装状态查询 |
+| mcp_config_versions | `idx_mcp_config_versions_server_version(mcp_server_id, version)` unique | MCP 配置版本查询 |
+| plugin_installations | `idx_plugin_installations_plugin(plugin_definition_id, install_status)` | 插件安装状态查询 |
+| plugin_config_versions | `idx_plugin_config_versions_plugin_version(plugin_definition_id, version)` unique | 插件配置版本查询 |
 
 ### 7.3 JSON 索引原则
 
@@ -740,14 +954,14 @@ stateDiagram-v2
 
 ### 9.2 资产版本
 
-- `content_assets.current_version` 指向当前版本号。
+- `content_assets.current_version_id` 外键指向 `asset_versions` 当前版本，保证引用完整性；`current_version` 整数仅作展示冗余。
 - 每次 Agent 生成、人工修改、审查修订都创建新的 `asset_versions`。
 - `asset_versions` 不允许更新正文引用，只允许追加新版本。
 - `checksum` 用于检测内容是否变化和防止重复写入。
 
 ### 9.3 上下文版本
 
-- `context_packs.version` 记录上下文包版本。
+- `context_packs.version` 记录上下文包版本；stage 级上下文版本唯一性以 `stage_run_id` 为键，task 级以 `content_task_id` 为键（见 §5.8）。
 - 每次进入阶段执行前生成新的上下文包快照。
 - 上下文包必须记录 `source_refs`，用于追溯输入来源。
 - 敏感数据必须在写入 `data` 前按策略脱敏或裁剪。
@@ -755,8 +969,8 @@ stateDiagram-v2
 ### 9.4 配置版本
 
 - Agent、MCP、Skill、插件配置默认按记录更新。
-- 当配置被工作流实例引用时，运行记录必须保存必要快照或引用可追溯版本。
-- 后续若配置频繁变更，再引入独立 `*_versions` 表。
+- 运行记录必须绑定配置快照或可追溯版本，历史运行不受后续配置变更影响：Agent 配置经 `agent_sessions.profile_snapshot` 固化，MCP 配置经 `mcp_config_versions` 版本化，Skill/插件调用经 invocation 表 `input_data` 快照留痕。
+- 配置频繁变更的对象提供独立配置版本表（见 `mcp_config_versions`、`plugin_config_versions`）。
 
 ## 10. 一致性与事务边界
 

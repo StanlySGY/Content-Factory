@@ -1,0 +1,93 @@
+# Fix Log
+
+记录所有按 [review-backlog.md](./review-backlog.md) 执行的修复。每条含：修复时间、问题编号、修改内容、影响范围。Backlog 为问题权威源，本文件为修复留痕。
+
+## 批次 1（2026-06-03）
+
+聚焦 Critical 与高优先 Major（1 Critical + 4 Major）。
+
+| 修复时间 | 问题编号 | 修改内容 | 影响范围 |
+| --- | --- | --- | --- |
+| 2026-06-03 | AGENT-001 (Critical) | 新增 §9.4「原生工具治理」（沙箱边界、文件权限按 Provider 降级、命令白名单、网络隔离、运行时强制、审计）；§9.1 Built-in 行注明不经 Tool Router、受 §9.4 约束；修正 §9.3 消除与 §9.1 的矛盾 | `docs/04-agent/agent-architecture.md` §9.1 / §9.3 / §9.4；落实宪法与全局沙箱约束（Codex/Gemini 强制只读）；与 ARCH-004、AGENT-007 运行时治理相关联 |
+| 2026-06-03 | AGENT-002 (Major) | §9.2 调用链路图与 §11.1 集成图改为 MCP 经 MCP Gateway；§11.2 原则改为 MCP Bridge 仅适配、统一经 Gateway 施加权限/风险/审计/标准化 | `docs/04-agent/agent-architecture.md` §9.2 / §11.1 / §11.2；与 `docs/05-mcp/mcp-architecture.md` 网关隔离原则对齐 |
+| 2026-06-03 | AGENT-003 (Major) | §6 重构为 Profile 生命周期与 执行(Session) 生命周期两个平面的概览，词表对齐 §16.1 / §16.2，移除混淆 Profile 与 Session 的单一状态图 | `docs/04-agent/agent-architecture.md` §6；交叉引用 §13 ~ §16 |
+| 2026-06-03 | ARCH-002 (Major) | §2 高层架构图新增 `Repository 接口` 节点，`Domain → DB` 改为 `Domain → Repository → DB`，并补依赖方向说明 | `docs/02-architecture/system-architecture.md` §2；与 §4.2 依赖倒置一致 |
+| 2026-06-03 | ARCH-001 (Major) | §13 后续细化链接更正为实际文件名（database-design / agent-architecture / mcp-architecture / content-workflow），未创建文档标注「待创建」 | `docs/02-architecture/system-architecture.md` §13。说明：README「典型文档」列为示例性命名（非硬链接），按文档约定保留，不在本次修正范围 |
+
+### 批次小结
+
+- 修复 5 项：1 Critical + 4 Major。
+- 未修复 Critical：1 → 0；未修复 High：24 → 20。
+- 同源死链簇（PROD-009 / AGENT-012 / DB-020）尚未处理，留待后续批次统一修复。
+
+## 批次 2（2026-06-03）
+
+聚焦数据库 Major（数据正确性 + 工作流持久化 + 核心表缺失），共 5 个 Major，集中于 `docs/03-database/database-design.md`。
+
+| 修复时间 | 问题编号 | 修改内容 | 影响范围 |
+| --- | --- | --- | --- |
+| 2026-06-03 | DB-002 (Major) | §5.8 context_packs 唯一键按 scope 拆分：task 级 `(content_task_id, scope, version)`、stage 级 `(stage_run_id, scope, version)`，以部分唯一索引实现并约束 stage_run_id 与 scope 的对应关系；§9.3 同步说明 | `docs/03-database/database-design.md` §5.8 / §9.3；消除同任务跨阶段共享版本号的键歧义 |
+| 2026-06-03 | DB-008 (Major) | §5.9 content_assets 增 `current_version_id` 外键指向 asset_versions，§5.10 前补充互引用延迟约束说明，current_version 整数降级为展示冗余；ER 字段块与 §9.2 同步 | `docs/03-database/database-design.md` §3 ER / §5.9 / §5.10 / §9.2；保证当前版本引用完整性 |
+| 2026-06-03 | DB-012 (Major) | 新增 §5.5.1 workflow_stage_dependencies 表承载并行/分支/DAG 依赖（含 dependency_type、condition_schema、无环校验）；§5.5 加 position 仅线性序说明；§5.4 definition_schema 不再作为依赖权威；ER 与 §7.2 索引同步 | `docs/03-database/database-design.md` §3 ER / §5.4 / §5.5 / §5.5.1 / §7.2；解决依赖只存 JSON |
+| 2026-06-03 | DB-013 (Major) | §5.7 stage_runs 增 `parent_stage_run_id`（回滚血缘）、`parallel_group`（并行分组）、`gate_result`（门禁结果快照），补约束说明并声明门禁结果与 review_records 不冲突；ER 字段块同步 | `docs/03-database/database-design.md` §3 ER / §5.7；支撑回滚、并行与门禁持久化 |
+| 2026-06-03 | DB-004 (Major) | 新增 §5.19~§5.23：agent_sessions（含 provider_session_ref）、agent_messages、publish_records（锚定 asset_version）、mcp_installations、mcp_config_versions；ER 关系与 §7.2 索引同步 | `docs/03-database/database-design.md` §3 ER / §5.19~§5.23 / §7.2；填补 Session/Message、发布、MCP 生命周期核心表 |
+
+### 批次小结
+
+- 修复 5 项：5 Major（DB 域）。已修复累计 5 → 10；未修复 High 20 → 15；未修复 Critical 保持 0。
+- 关联说明：DB-004 已落地 agent_sessions/agent_messages（含 provider_session_ref），AGENT-004 仅剩 `docs/04-agent` §18 映射与 §7.1 字段对齐，留待后续批次；publish_records 已为 DB-009「已发布版本权威指针」提供结构，待 Minor 批次正式关闭。
+- 工作流持久化簇（DB-012 / DB-013）已修复，余 DB-006（运行绑定配置快照）待后续批次。
+
+## 批次 3（2026-06-03）
+
+聚焦「运行时 / WSL / 认证」跨域簇与核心表簇收尾，共 5 个 Major，跨 `system-architecture.md` 与 `agent-architecture.md`。
+
+| 修复时间 | 问题编号 | 修改内容 | 影响范围 |
+| --- | --- | --- | --- |
+| 2026-06-03 | ARCH-003 (Major) | 新增 §13「身份与访问控制」：认证边界（统一认证、服务身份）、授权模型（项目级 + 预留 RBAC 接缝呼应 DB-005）、资源隔离（强制 project_id、密钥只存引用） | `docs/02-architecture/system-architecture.md` §13 |
+| 2026-06-03 | ARCH-004 (Major) | 新增 §14「运行时与部署拓扑」：运行时组成、Agent 执行宿主（本地/WSL/远端）、密钥凭证边界，并配拓扑图；衔接 Agent §12 与 §9.4 | `docs/02-architecture/system-architecture.md` §14；联动 AGENT-007 |
+| 2026-06-03 | ARCH-005 (Major) | 新增 §15「并发与一致性」：并发场景、领域状态机 + 乐观锁 + 单事务、幂等键与失败恢复；原「后续细化文档」顺延为 §16 | `docs/02-architecture/system-architecture.md` §15 / §16（编号顺延） |
+| 2026-06-03 | AGENT-007 (Major) | 新增 §12.4「执行宿主与密钥边界」：宿主显式声明、跨边界安全注入、WSL 凭证隔离、失败语义 | `docs/04-agent/agent-architecture.md` §12.4；与架构 §14 一致 |
+| 2026-06-03 | AGENT-004 (Major) | §7.1 Session 字段补 `provider_session_ref`；§18 数据模型映射对齐批次 2 已落地的 `agent_sessions`（§5.19）/`agent_messages`（§5.20），状态值对齐 §16.2 | `docs/04-agent/agent-architecture.md` §7.1 / §18；与 `database-design.md` 形成闭环 |
+
+### 批次小结
+
+- 修复 5 项：5 Major。已修复累计 10 → 15；未修复 High 15 → 10；未修复 Critical 保持 0。
+- 簇闭环：「运行时/WSL/认证」（ARCH-003/004/005 + AGENT-007）与「核心表缺失」（AGENT-004 + DB-004）两个跨域簇均已修复。
+- 架构文档新增三个顶层小节后，「后续细化文档」由 §13 顺延至 §16；§1~§12 编号不变，其余未修复项对旧编号的引用不受影响。
+
+## 批次 4（2026-06-03）
+
+聚焦产品域全部 Major，共 5 个，集中于 `docs/01-product/product-requirements.md`，全部以追加子节方式落地，零既有编号顺延。
+
+| 修复时间 | 问题编号 | 修改内容 | 影响范围 |
+| --- | --- | --- | --- |
+| 2026-06-03 | PROD-001 (Major) | 新增 §2.3「量化成功指标」：北极星周成稿数 + 任务完成率/一次通过率/修订轮次/端到端周期等，过程可追溯率与扩展达成设为硬性约束 | `docs/01-product/product-requirements.md` §2.3 |
+| 2026-06-03 | PROD-002 (Major) | 新增 §7.5「完成定义（DoD）与可测试验收」：统一 DoD + Given-When-Then 可测试用例（覆盖 P0~P2 关键功能） | `docs/01-product/product-requirements.md` §7.5 |
+| 2026-06-03 | PROD-003 (Major) | 新增 §4.5「用户优先级与目标市场」：主/次要/支撑用户分级，声明 MVP 目标市场为公众号图文中文内容个人与小团队 | `docs/01-product/product-requirements.md` §4.5 |
+| 2026-06-03 | PROD-004 (Major) | 新增 §3.2「竞品与差异化」：竞品类别对比表 + 五条差异化价值主张 | `docs/01-product/product-requirements.md` §3.2 |
+| 2026-06-03 | PROD-005 (Major) | 新增 §6.12「发布与渠道管理」功能项：渠道配置、发布草稿、锚定 `publish_records` 版本、状态/重试/撤回、授权审计、插件化渠道 | `docs/01-product/product-requirements.md` §6.12；与 publish_records、发布阶段、公众号工作台对齐，消除一致性缺口 |
+
+### 批次小结
+
+- 修复 5 项：5 Major。已修复累计 15 → 20；未修复 High 10 → 5；未修复 Critical 保持 0。
+- 产品域（PROD）Major 全部清零；PROD-005 通过补 PRD 发布功能项消除与 07-workflow / 08-ui / 10-development 的一致性缺口。
+- 剩余 5 个 Major 集中于扩展性与数据库：AGENT-005 / AGENT-006 / DB-001 / DB-006 / DB-016。
+
+## 批次 5（2026-06-03）
+
+清空全部剩余 Major（扩展性 + 数据库一致性/版本/插件），共 5 个，跨 `agent-architecture.md` 与 `database-design.md`。
+
+| 修复时间 | 问题编号 | 修改内容 | 影响范围 |
+| --- | --- | --- | --- |
+| 2026-06-03 | AGENT-005 (Major) | 新增 §4.3「Adapter 注册与 Provider 标识」：AdapterRegistry 插件式注册、Provider 改开放字符串（非闭合枚举）、能力描述驱动；修正 §17 第 2 步 | `docs/04-agent/agent-architecture.md` §4.3 / §17 |
+| 2026-06-03 | AGENT-006 (Major) | 新增 §4.4「能力匹配与 Agent 选择」：能力需求 → 候选筛选 → 优先级排序 → 回退策略 → 可解释，纳入审计 | `docs/04-agent/agent-architecture.md` §4.4 |
+| 2026-06-03 | DB-001 (Major) | ER 将 audit_events 三条伪外键关系改为真实 FK（projects/users）；§5.18 补多态完整性说明（subject 多态不建外键，应用层校验） | `docs/03-database/database-design.md` §3 ER / §5.18 |
+| 2026-06-03 | DB-006 (Major) | §5.19 agent_sessions 增 `profile_snapshot`；§9.4 改为强约束：运行记录必须绑定配置快照/版本（Agent 快照、MCP/插件版本表、invocation input_data） | `docs/03-database/database-design.md` §5.19 / §9.4 |
+| 2026-06-03 | DB-016 (Major) | §5.16 plugin_definitions 增 runtime/entrypoint/dependency_schema/config_schema；新增 §5.24 plugin_installations、§5.25 plugin_config_versions；ER 与 §7.2 索引同步 | `docs/03-database/database-design.md` §5.16 / §5.24 / §5.25 / §3 ER / §7.2 |
+
+### 批次小结
+
+- 修复 5 项：5 Major。已修复累计 20 → 25；**未修复 Critical = 0、未修复 High（Major）= 0**。
+- 四个已审查域（架构 / 产品 / Agent / 数据库）的 Critical 与 Major 全部清零，达成放行判据中的「未修复 Critical = 0、未修复 High = 0」。
+- Backlog 剩余 27 项全部为 Minor；尚有 04 MCP / 06 工作流 / 07 UI / 08 MVP / 09 红队 / 10 终审 六个域待审查（问题待补充）。
