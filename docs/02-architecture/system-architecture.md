@@ -75,6 +75,8 @@ flowchart TB
 ```
 
 > 依赖方向：领域层只依赖 `Repository` 接口，由基础设施层适配器实现并对接数据库（与 §4.2 依赖倒置一致），领域层不直接耦合具体持久化。
+>
+> 组件命名：`SkillRuntime` 为顶层 Skill 运行时，Agent 内经 `SkillBridge` 桥接到它（类比 `MCPBridge` → `MCPGateway`），全仓统一此命名。MCP 为多调用方资源：Agent / Skill / Plugin / 工作流均经 `MCPGateway` 访问，高层图以编排层为代表，完整多调用方路径见 `docs/05-mcp/mcp-architecture.md` §14。
 
 ## 3. 前端架构
 
@@ -95,6 +97,7 @@ flowchart TB
 - 前端状态用于交互体验，不作为工作流权威状态。
 - 表单校验可以在前端做即时反馈，但后端必须重复校验。
 - 审查、发布、外部调用等关键动作必须有确认与审计。
+- 长任务与 Agent 流式输出经实时通道（SSE/WS，回退轮询）推送，前端按 task/stage_run/session 粒度订阅（详见 `docs/08-ui/ui-design.md` §22）；实时状态仅供呈现，不作权威。
 
 ```mermaid
 flowchart LR
@@ -562,6 +565,7 @@ sequenceDiagram
 | 工作流状态持久化 | 避免依赖聊天上下文，支持恢复、审查和追溯。 |
 | 插件通过契约扩展 | 插件可组合、可隔离，不破坏核心业务流程。 |
 | 内容资产版本化 | 支持审查、回滚、复盘和复用。 |
+| 全链路可观测 | 统一关联 ID（task / workflow_run / stage_run / session）贯穿日志、调用、审计与链路追踪，支持端到端追溯。 |
 
 ## 13. 身份与访问控制
 
@@ -669,6 +673,6 @@ flowchart TB
 - 数据模型：`docs/03-database/database-design.md`
 - Agent 架构：`docs/04-agent/agent-architecture.md`
 - MCP 架构：`docs/05-mcp/mcp-architecture.md`
-- Skill 注册：`docs/06-skill/skill-registry.md`（待创建）
+- Skill 注册：`docs/06-skill/skill-registry.md`（待创建）——Skill 体系（注册/契约/门禁）尚未设计，架构中 `SkillRuntime`/`SkillBridge` 为前置占位接口，待该文档定义后回链对齐。
 - 工作流细节：`docs/07-workflow/content-workflow.md`
 - API 契约：`docs/09-api/api-overview.md`（待创建）

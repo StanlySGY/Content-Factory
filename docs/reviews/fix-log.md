@@ -202,3 +202,20 @@
 - MVP 域全部 Major 清零；MVP-006 因与 MVP-003 同段强耦合一并关闭。
 - **至此全部 10 域的 Critical 与 Major 全部清零**，达成放行判据「未修复 Critical = 0、未修复 High = 0」，可进入终审（10-final-review）复审。
 - MVP 域剩 MVP-007/008/009/010 四个 Minor；全仓剩 47 项 Minor 均已排期、允许带入开发跟踪。
+
+## 批次 12（2026-06-03）
+
+Minor 清理第一批：架构域 5 个 Minor + 跨域命名簇 AGENT-008，集中于 `system-architecture.md`，联动 agent/mcp 命名统一。
+
+| 修复时间 | 问题编号 | 修改内容 | 影响范围 |
+| --- | --- | --- | --- |
+| 2026-06-03 | ARCH-006 (Minor) | §12 决策表加「全链路可观测」：统一关联 ID 贯穿日志/调用/审计/链路追踪 | arch §12 |
+| 2026-06-03 | ARCH-007 (Minor) | §3.2 加前端实时通道原则（SSE/WS 回退轮询、订阅粒度、实时仅呈现），回链 ui §22 | arch §3.2 |
+| 2026-06-03 | ARCH-008 / AGENT-008 (Minor) | 统一命名：arch §2 加组件命名说明（SkillRuntime 顶层 + SkillBridge 桥接，类比 MCP）；agent「Skill Bridge」→「SkillBridge」、§10.1 补单路径与 Skill 体系回链；mcp §3 图 SkillRuntime | arch §2；agent §3/§10；mcp §3 |
+| 2026-06-03 | ARCH-009 (Minor) | §16 标注 Skill 体系（注册/契约/门禁）未设计，SkillRuntime/SkillBridge 为前置占位接口，待 06-skill 回链 | arch §16 |
+| 2026-06-03 | ARCH-010 (Minor) | §2 图后说明 MCP 多调用方（Agent/Skill/Plugin/工作流）经 MCPGateway，高层图以编排层为代表，详见 mcp §14 | arch §2 |
+
+### 批次小结
+
+- 修复 6 项 Minor（ARCH-006~010 + AGENT-008）。已修复累计 54 → 60；未修复 Critical/Major 保持 0；Minor 47 → 41。
+- 跨域命名漂移簇（ARCH-008/AGENT-008）一次闭合，全仓 Skill 命名统一为 SkillRuntime/SkillBridge，无残留旧写法。

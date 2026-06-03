@@ -35,8 +35,8 @@
 | 红队 RT | 0 | 6 | 4 | 10 |
 | **总计** | **2** | **50** | **49** | **101** |
 
-- 已修复：54　|　待修复：47
-- 全部 10 域已审查完成；未修复 Critical = 0、Major = 0、Minor = 47
+- 已修复：60　|　待修复：41
+- 全部 10 域已审查完成；未修复 Critical = 0、Major = 0、Minor = 41
 
 ## 优先处理清单（Critical + Major）
 
@@ -70,11 +70,11 @@
 | ARCH-003 | Security/Completeness | Major | 02-architecture | 缺认证与授权边界（认证入口/身份/会话/项目隔离） | 新增"身份与访问控制"小节 | 已修复 |
 | ARCH-004 | Completeness | Major | 02-architecture | 缺运行时与部署拓扑（后端与本地 CLI Agent 承载关系） | 新增"运行时与部署拓扑"小节，衔接 Agent WSL | 已修复 |
 | ARCH-005 | Concurrency | Major | 02-architecture | 缺并发/幂等/竞态控制（多 Agent 并行 + 后台 Session） | 新增"并发与一致性"小节 | 已修复 |
-| ARCH-006 | Observability | Minor | 02-architecture | 架构层可观测性不足（无关联 ID/链路追踪） | §12 增加可观测性决策 | 待修复 |
-| ARCH-007 | Completeness | Minor | 02-architecture | 前端实时更新通道（WS/SSE）未定义 | §3 补充实时通道 | 待修复 |
-| ARCH-008 | Consistency | Minor | 02-architecture, 04-agent | 命名漂移 SkillRuntime/SkillBridge | 统一术语 | 待修复 |
-| ARCH-009 | Dependency | Minor | 02-architecture, 06-skill | 依赖尚未设计的 Skill 体系 | §13 标注前置依赖，待 Skill 设计回链 | 待修复 |
-| ARCH-010 | Consistency | Minor | 02-architecture | 高层图未体现 MCP 多调用方路径 | §2 加注/补线 | 待修复 |
+| ARCH-006 | Observability | Minor | 02-architecture | 架构层可观测性不足（无关联 ID/链路追踪） | §12 增加可观测性决策 | 已修复 |
+| ARCH-007 | Completeness | Minor | 02-architecture | 前端实时更新通道（WS/SSE）未定义 | §3 补充实时通道 | 已修复 |
+| ARCH-008 | Consistency | Minor | 02-architecture, 04-agent | 命名漂移 SkillRuntime/SkillBridge | 统一术语 | 已修复 |
+| ARCH-009 | Dependency | Minor | 02-architecture, 06-skill | 依赖尚未设计的 Skill 体系 | §13 标注前置依赖，待 Skill 设计回链 | 已修复 |
+| ARCH-010 | Consistency | Minor | 02-architecture | 高层图未体现 MCP 多调用方路径 | §2 加注/补线 | 已修复 |
 
 ### 产品 PROD
 
@@ -103,7 +103,7 @@
 | AGENT-005 | Extensibility | Major | 04-agent | Adapter 注册/发现机制未定义，Provider 枚举张力 | 定义插件式注册，Provider 用字符串+能力描述 | 已修复 |
 | AGENT-006 | Completeness | Major | 04-agent | 能力→Agent 匹配规则缺失 | 定义能力匹配契约（候选/优先级/回退） | 已修复 |
 | AGENT-007 | Security/WSL | Major | 04-agent, 02-architecture | WSL 执行宿主未定，密钥跨边界传递未规定 | 联动 ARCH-004 声明宿主，密钥经安全通道注入 | 已修复 |
-| AGENT-008 | Consistency | Minor | 04-agent, 06-skill | Skill 双路径+依赖未设计体系+命名漂移 | 统一单路径与命名，回链 Skill 体系 | 待修复 |
+| AGENT-008 | Consistency | Minor | 04-agent, 06-skill | Skill 双路径+依赖未设计体系+命名漂移 | 统一单路径与命名，回链 Skill 体系 | 已修复 |
 | AGENT-009 | Completeness | Minor | 04-agent | Tool 缺输入校验/大小/幂等策略 | 定义校验/截断/幂等键 | 待修复 |
 | AGENT-010 | Completeness | Minor | 04-agent | Session 超时/孤儿清理/并发分组未定义 | 定义心跳/超时/清理/分组 | 待修复 |
 | AGENT-011 | WSL | Minor | 04-agent | WSL 换行/编码/进程树终止未涉及 | 规定编码与进程树终止 | 待修复 |
@@ -216,7 +216,7 @@
 | 死链 | ARCH-001, PROD-009, AGENT-012, DB-020 | 全仓"后续细化文档"链接同源错误，统一校正为实际文件名，未建文档标注"待创建"，同步 `docs/README.md` |
 | 核心表缺失 | AGENT-004, DB-004 | agent_sessions/agent_messages、publish_records、mcp 生命周期/安装/配置版本表统一排期进数据库设计 |
 | MCP 网关一致性 | AGENT-002, DB-018 | Agent/Skill/Plugin 调用统一经 MCPGateway；调用表补 caller 维度与 MCP 日志契约对齐 |
-| 命名漂移 | ARCH-008, AGENT-008 | 统一 Skill 运行时术语（SkillRuntime vs SkillBridge） |
+| 命名漂移 | ARCH-008, AGENT-008 | 统一 Skill 运行时术语（SkillRuntime vs SkillBridge）（已修复）|
 | 运行时/WSL/认证 | ARCH-003, ARCH-004, AGENT-007 | 联动定义认证边界、运行时拓扑、WSL 宿主与密钥传递 |
 | 阶段术语/范围 | PROD-005, PROD-006, PROD-010 | 统一阶段术语并收敛 MVP 范围，补发布与渠道功能项 |
 | 工作流持久化 | DB-012, DB-013, DB-006 | 并行依赖、回滚血缘、门禁结果、配置快照一并补入数据库 |
@@ -252,3 +252,4 @@
 | 2026-06-03 | 修复批次 9 | MCP-001~004（4 Major）→ 已修复；Result Normalizer 入图与网关契约、tool_invocations 补 caller/risk/duration + 枚举对齐、生命周期状态映射表、Manifest 权限四维；MCP Major 清零，未修复 High 11→7；详见 fix-log.md |
 | 2026-06-03 | 修复批次 10 | UI-006/007（2 Major）→ 已修复；补 UI→架构模块映射表与全局错误/加载态；UI Major 清零（含修正批次 6 对 07-ui-review 的同步遗漏），未修复 High 7→5；详见 fix-log.md |
 | 2026-06-03 | 修复批次 11 | MVP-001~005（5 Major）+ MVP-006（Minor）→ 已修复；阶段依赖表入 S2、外键迁移排序、Skill/插件移出 MVP、任务初始态对齐 DoD、出口门槛对接 §2.3；**全部 10 域 Critical/Major 清零**，未修复 High 5→0；详见 fix-log.md |
+| 2026-06-03 | Minor 批次 12 | 架构 ARCH-006~010 + AGENT-008（命名漂移簇）→ 已修复；全仓 Skill 命名统一为 SkillRuntime/SkillBridge；Minor 47→41；详见 fix-log.md |
