@@ -15,7 +15,7 @@
 | 03 | Agent | [03-agent-review.md](./03-agent-review.md) | 已完成 | 1 | 6 | 5 | 0 | 12 | 2026-06-03 |
 | 04 | MCP | [04-mcp-review.md](./04-mcp-review.md) | 已完成 | 0 | 4 | 4 | 0 | 8 | 2026-06-03 |
 | 05 | 数据库 | [05-database-review.md](./05-database-review.md) | 已完成 | 0 | 8 | 11 | 0 | 19 | 2026-06-03 |
-| 06 | 工作流 | [06-workflow-review.md](./06-workflow-review.md) | 已完成 | 0 | 5 | 5 | 0 | 6 | 2026-06-03 |
+| 06 | 工作流 | [06-workflow-review.md](./06-workflow-review.md) | 已完成 | 0 | 5 | 5 | 0 | 10 | 2026-06-03 |
 | 07 | UI | [07-ui-review.md](./07-ui-review.md) | 已完成 | 1 | 6 | 4 | 0 | 7 | 2026-06-03 |
 | 08 | MVP | [08-mvp-review.md](./08-mvp-review.md) | 已完成 | 0 | 5 | 5 | 0 | 6 | 2026-06-03 |
 | 09 | 红队 | [09-red-team-review.md](./09-red-team-review.md) | 已完成 | 0 | 6 | 4 | 0 | 6 | 2026-06-03 |
@@ -69,3 +69,4 @@
 | 2026-06-03 | Minor 批次 14 | Agent 域 AGENT-009~012（4 Minor）→ 已修复；Agent 域 12 项全清；Minor 35→31 |
 | 2026-06-03 | Minor 批次 15 | 数据库域 11 Minor（DB-003~020 余项）→ 已修复；DB 域 19 项全清；死链簇全闭合；Minor 31→20 |
 | 2026-06-03 | Minor 批次 16 | MCP 域 MCP-005~008（4 Minor）→ 已修复；MCP 域 8 项全清；Minor 20→16 |
+| 2026-06-03 | Minor 批次 17 | 工作流域 WF-007~010（4 Minor）→ 已修复；WF 域 10 项全清；Minor 16→12 |

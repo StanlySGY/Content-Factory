@@ -430,7 +430,7 @@ erDiagram
 | id | uuid | PK | 资产 ID |
 | content_task_id | uuid | FK content_tasks.id, not null | 所属任务 |
 | stage_run_id | uuid | FK stage_runs.id, nullable | 来源阶段 |
-| asset_type | varchar(64) | not null | research, outline, draft, revision, final |
+| asset_type | varchar(64) | not null | 受控词表 topic_brief/research_report/outline/draft/polished_draft/image_plan/image_asset/layout_draft（与 workflow §3 对齐；审核/发布产出走 review_records/publish_records）|
 | title | varchar(240) | not null | 资产标题 |
 | status | varchar(32) | not null | draft, review_pending, approved, rejected, stale, archived |
 | current_version | integer | not null | 当前版本号（与 current_version_id 对应，便于展示）|

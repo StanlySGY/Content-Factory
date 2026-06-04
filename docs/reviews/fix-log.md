@@ -292,3 +292,19 @@ Minor 清理第五批：MCP 域 4 个 Minor，集中于 `mcp-architecture.md`。
 
 - 修复 4 项 Minor（MCP-005~008）。已修复累计 81 → 85；未修复 Critical/Major 保持 0；Minor 20 → 16。
 - MCP 域全部 8 项（4 Major + 4 Minor）清零。
+
+## 批次 17（2026-06-03）
+
+Minor 清理第六批：工作流域 4 个 Minor，集中于 `content-workflow.md`，联动 db §5.9 asset_type 词表。
+
+| 修复时间 | 问题编号 | 修改内容 | 影响范围 |
+| --- | --- | --- | --- |
+| 2026-06-03 | WF-007 (Minor) | §2 加九阶段↔架构 §8.2 抽象骨架映射说明（抽象↔实例关系）| wf §2 ↔ arch §8.2 |
+| 2026-06-03 | WF-008 (Minor) | wf §3.8/§3.9 审核/发布产出改标独立表；db §5.9 asset_type 统一受控词表与 wf §3 对齐 | wf §3 ↔ db §5.9 |
+| 2026-06-03 | WF-009 (Minor) | §5.3 加配置回滚引用既有版本机制（workflow_version/*_config_versions/profile_snapshot）| wf §5.3 |
+| 2026-06-03 | WF-010 (Minor) | §4.1 注明取消允许态集合（非终态可取消，终态不可）| wf §4.1 |
+
+### 批次小结
+
+- 修复 4 项 Minor（WF-007~010）。已修复累计 85 → 89；未修复 Critical/Major 保持 0；Minor 16 → 12。
+- 工作流域全部 10 项（5 Major + 5 Minor）清零；asset_type 受控词表跨 wf/db 对齐。

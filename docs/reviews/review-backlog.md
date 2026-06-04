@@ -35,8 +35,8 @@
 | 红队 RT | 0 | 6 | 4 | 10 |
 | **总计** | **2** | **50** | **49** | **101** |
 
-- 已修复：85　|　待修复：16
-- 全部 10 域已审查完成；未修复 Critical = 0、Major = 0、Minor = 16
+- 已修复：89　|　待修复：12
+- 全部 10 域已审查完成；未修复 Critical = 0、Major = 0、Minor = 12
 
 ## 优先处理清单（Critical + Major）
 
@@ -158,10 +158,10 @@
 | WF-004 | Workflow/版本 | Major | 07-workflow | 回滚致下游资产失效策略与分叉血缘未定义 | 定义下游失效/重算策略与分支血缘表达 | 已修复 |
 | WF-005 | Workflow | Major | 07-workflow, 03-database | 并行汇聚(join)未定义为显式阶段，join_any/gate 聚合缺失 | 定义汇总阶段门禁与合并、对齐 dependency_type | 已修复 |
 | WF-006 | Consistency | Minor | 07-workflow, 03-database | §9 映射过时(publish_records 已落地)，缺 sessions/deps 映射 | 更新映射为权威表 | 已修复 |
-| WF-007 | Consistency | Minor | 07-workflow, 02-architecture | 九阶段与架构 §8.2 抽象命名/粒度不一 | 互标抽象/实例关系或统一术语 | 待修复 |
-| WF-008 | Consistency | Minor | 07-workflow, 03-database | asset_type 词表与 DB §5.9 不一致 | 统一受控词表 | 待修复 |
-| WF-009 | Completeness | Minor | 07-workflow | 配置回滚未引用既有版本机制 | 引用 workflow_version/*_config_versions/profile_snapshot | 待修复 |
-| WF-010 | Completeness | Minor | 07-workflow | cancelled 仅部分阶段有出边 | 明确取消允许态集合 | 待修复 |
+| WF-007 | Consistency | Minor | 07-workflow, 02-architecture | 九阶段与架构 §8.2 抽象命名/粒度不一 | 互标抽象/实例关系或统一术语 | 已修复 |
+| WF-008 | Consistency | Minor | 07-workflow, 03-database | asset_type 词表与 DB §5.9 不一致 | 统一受控词表 | 已修复 |
+| WF-009 | Completeness | Minor | 07-workflow | 配置回滚未引用既有版本机制 | 引用 workflow_version/*_config_versions/profile_snapshot | 已修复 |
+| WF-010 | Completeness | Minor | 07-workflow | cancelled 仅部分阶段有出边 | 明确取消允许态集合 | 已修复 |
 
 ### UI
 
@@ -257,3 +257,4 @@
 | 2026-06-03 | Minor 批次 14 | Agent AGENT-009~012 → 已修复；补会话生命周期/Tool 校验幂等/WSL 编码进程树，校正 §20 死链；Agent 域全清；Minor 35→31；详见 fix-log.md |
 | 2026-06-03 | Minor 批次 15 | 数据库 DB-003/005/007/009/011/014/015/017/018/019/020 → 已修复；ER 范围/RBAC 接缝/schema_version/发布指针/active 索引/当前阶段指针/单一真相源/统一视图/引擎声明/死链；DB 域全清；死链簇全闭合；Minor 31→20；详见 fix-log.md |
 | 2026-06-03 | Minor 批次 16 | MCP MCP-005~008 → 已修复；Manifest integrity/§14 补 MCPBridge/状态机终态语义/数据映射落点决策；MCP 域全清；Minor 20→16；详见 fix-log.md |
+| 2026-06-03 | Minor 批次 17 | 工作流 WF-007~010 → 已修复；九阶段↔架构骨架映射/asset_type 词表对齐/配置回滚版本机制/取消允许态；WF 域全清；Minor 16→12；详见 fix-log.md |

@@ -40,6 +40,8 @@ flowchart LR
     Publish --> Archive
 ```
 
+> §2 九阶段是架构 §8.2 抽象生产骨架（需求→研究→提纲→初稿→审查→修订→最终→发布准备）在公众号图文场景的具体实例：选题对应"需求结构化"、写作对应"初稿生成"，润色/配图/排版为图文制作的细化阶段，审核对应"质量审查 + 修订"，发布对应"发布准备"。架构骨架定义通用阶段语义，本文定义可执行的内容生产阶段，二者为抽象↔实例关系。
+
 ## 3. 阶段设计
 
 ### 3.1 选题
@@ -178,7 +180,7 @@ flowchart LR
 | 输出 | 审核结论、修改意见、发布许可或退回原因 |
 | 主要执行者 | Reviewer Agent、人工审核人 |
 | 质量门禁 | 人工或策略通过 |
-| 资产类型 | `review_record` |
+| 资产类型 | 审核结论存 `review_records` 独立表（非 `content_assets`）|
 
 规则：
 
@@ -196,7 +198,7 @@ flowchart LR
 | 输出 | 发布记录、渠道链接、发布状态、失败原因 |
 | 主要执行者 | Publishing Agent、发布插件、人工负责人 |
 | 质量门禁 | 审核通过、授权通过、渠道配置有效 |
-| 资产类型 | `publish_record` |
+| 资产类型 | 发布记录存 `publish_records` 独立表（非 `content_assets`）|
 
 规则：
 
@@ -242,7 +244,7 @@ stateDiagram-v2
     terminated --> archived: 归档
 ```
 
-> §4.1 是面向内容生产的业务阶段视图（任务进度），非状态机权威。其阶段态映射数据库权威运行状态机（`database-design.md` §8.2）的抽象状态：阶段推进对应 `running`、阶段间审查对应 `waiting_review`，`revision_required` 对应退回，`publish_failed` 是 `publishing` 内 `failed` 的业务细分，`terminated` 为人工终止。审查结论（DB §8.4）业务落点：`approved` 推进发布、`revision_required` 进入 `revision_required` 退回重做、`rejected`（拒绝并作废当前产出）进入 `revision_required` 并强制新建 `stage_run` 重做（见 §5.4）、`terminated` 进入 `terminated`。**工作流运行的权威状态机以 DB §8.2 为准**，本图仅用于业务进度呈现。
+> §4.1 是面向内容生产的业务阶段视图（任务进度），非状态机权威。其阶段态映射数据库权威运行状态机（`database-design.md` §8.2）的抽象状态：阶段推进对应 `running`、阶段间审查对应 `waiting_review`，`revision_required` 对应退回，`publish_failed` 是 `publishing` 内 `failed` 的业务细分，`terminated` 为人工终止。审查结论（DB §8.4）业务落点：`approved` 推进发布、`revision_required` 进入 `revision_required` 退回重做、`rejected`（拒绝并作废当前产出）进入 `revision_required` 并强制新建 `stage_run` 重做（见 §5.4）、`terminated` 进入 `terminated`。**工作流运行的权威状态机以 DB §8.2 为准**，本图仅用于业务进度呈现。取消（`cancelled`）允许从所有未完成的非终态发起（`draft` 至 `layouting`、`reviewing`、`revision_required`），图中仅画代表性入边以免冗余；终态（`published`/`archived`/`terminated`/`cancelled`）不可再取消。
 
 ### 4.2 阶段状态
 
@@ -304,6 +306,7 @@ flowchart LR
 - 回滚必须记录原因、操作者、目标版本和影响范围。
 - 已发布内容回滚必须生成发布修正记录，不直接覆盖历史发布记录。
 - 回滚后重新执行的阶段必须生成新的 `stage_run` 和资产版本。
+- 配置回滚必须引用既有版本化机制：工作流配置经 `workflow_definitions.version`、MCP/插件配置经 `*_config_versions`、Agent 配置经 `agent_sessions.profile_snapshot`，为切换到指定历史版本而非原地改写。
 
 ### 5.4 重试与重做判定
 
