@@ -237,3 +237,19 @@ Minor 清理第二批：产品域 6 个 Minor，集中于 `product-requirements.
 
 - 修复 6 项 Minor（PROD-006~011）。已修复累计 60 → 66；未修复 Critical/Major 保持 0；Minor 41 → 35。
 - 产品域全部 11 项（5 Major + 6 Minor）清零；PROD-009 为死链同源簇成员，余 AGENT-012/DB-020 待后续批次闭合。
+
+## 批次 14（2026-06-03）
+
+Minor 清理第三批：Agent 域 4 个 Minor，集中于 `agent-architecture.md`。
+
+| 修复时间 | 问题编号 | 修改内容 | 影响范围 |
+| --- | --- | --- | --- |
+| 2026-06-03 | AGENT-009 (Minor) | §9 新增 §9.5「输入校验、结果大小与幂等」：Schema 校验/超限截断引用/流式/幂等键去重 | agent §9.5 |
+| 2026-06-03 | AGENT-010 (Minor) | §7 新增 §7.4「会话生命周期管理」：心跳超时/孤儿清理/并发分组(parallel_group) | agent §7.4 |
+| 2026-06-03 | AGENT-011 (Minor) | §12 新增 §12.5「编码与进程管理」：UTF-8/LF 规范化、wsl 进程树整树终止、资源回收 | agent §12.5 |
+| 2026-06-03 | AGENT-012 (Minor) | §20 死链校正：tool-contracts→mcp-architecture、content-pipeline→content-workflow，agent-roles/skill-registry 标「待创建」 | agent §20 |
+
+### 批次小结
+
+- 修复 4 项 Minor（AGENT-009~012）。已修复累计 66 → 70；未修复 Critical/Major 保持 0；Minor 35 → 31。
+- Agent 域全部 12 项（1 Critical + 6 Major + 5 Minor）清零；死链同源簇再闭合一员（AGENT-012），仅余 DB-020。

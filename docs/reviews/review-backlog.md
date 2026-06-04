@@ -35,8 +35,8 @@
 | 红队 RT | 0 | 6 | 4 | 10 |
 | **总计** | **2** | **50** | **49** | **101** |
 
-- 已修复：66　|　待修复：35
-- 全部 10 域已审查完成；未修复 Critical = 0、Major = 0、Minor = 35
+- 已修复：70　|　待修复：31
+- 全部 10 域已审查完成；未修复 Critical = 0、Major = 0、Minor = 31
 
 ## 优先处理清单（Critical + Major）
 
@@ -104,10 +104,10 @@
 | AGENT-006 | Completeness | Major | 04-agent | 能力→Agent 匹配规则缺失 | 定义能力匹配契约（候选/优先级/回退） | 已修复 |
 | AGENT-007 | Security/WSL | Major | 04-agent, 02-architecture | WSL 执行宿主未定，密钥跨边界传递未规定 | 联动 ARCH-004 声明宿主，密钥经安全通道注入 | 已修复 |
 | AGENT-008 | Consistency | Minor | 04-agent, 06-skill | Skill 双路径+依赖未设计体系+命名漂移 | 统一单路径与命名，回链 Skill 体系 | 已修复 |
-| AGENT-009 | Completeness | Minor | 04-agent | Tool 缺输入校验/大小/幂等策略 | 定义校验/截断/幂等键 | 待修复 |
-| AGENT-010 | Completeness | Minor | 04-agent | Session 超时/孤儿清理/并发分组未定义 | 定义心跳/超时/清理/分组 | 待修复 |
-| AGENT-011 | WSL | Minor | 04-agent | WSL 换行/编码/进程树终止未涉及 | 规定编码与进程树终止 | 待修复 |
-| AGENT-012 | Dead-link | Minor | 04-agent | §20 死链 | 修正死链 | 待修复 |
+| AGENT-009 | Completeness | Minor | 04-agent | Tool 缺输入校验/大小/幂等策略 | 定义校验/截断/幂等键 | 已修复 |
+| AGENT-010 | Completeness | Minor | 04-agent | Session 超时/孤儿清理/并发分组未定义 | 定义心跳/超时/清理/分组 | 已修复 |
+| AGENT-011 | WSL | Minor | 04-agent | WSL 换行/编码/进程树终止未涉及 | 规定编码与进程树终止 | 已修复 |
+| AGENT-012 | Dead-link | Minor | 04-agent | §20 死链 | 修正死链 | 已修复 |
 
 ### 数据库 DB
 
@@ -213,7 +213,7 @@
 
 | 簇 | 关联 Issue | 统一处理建议 |
 | --- | --- | --- |
-| 死链 | ARCH-001, PROD-009, AGENT-012, DB-020 | 全仓"后续细化文档"链接同源错误，统一校正为实际文件名，未建文档标注"待创建"，同步 `docs/README.md` |
+| 死链 | ARCH-001, PROD-009, AGENT-012, DB-020 | 全仓"后续细化文档"链接同源错误，统一校正为实际文件名，未建文档标注"待创建"，同步 `docs/README.md`（ARCH-001/PROD-009/AGENT-012 已修，余 DB-020）|
 | 核心表缺失 | AGENT-004, DB-004 | agent_sessions/agent_messages、publish_records、mcp 生命周期/安装/配置版本表统一排期进数据库设计 |
 | MCP 网关一致性 | AGENT-002, DB-018 | Agent/Skill/Plugin 调用统一经 MCPGateway；调用表补 caller 维度与 MCP 日志契约对齐 |
 | 命名漂移 | ARCH-008, AGENT-008 | 统一 Skill 运行时术语（SkillRuntime vs SkillBridge）（已修复）|
@@ -254,3 +254,4 @@
 | 2026-06-03 | 修复批次 11 | MVP-001~005（5 Major）+ MVP-006（Minor）→ 已修复；阶段依赖表入 S2、外键迁移排序、Skill/插件移出 MVP、任务初始态对齐 DoD、出口门槛对接 §2.3；**全部 10 域 Critical/Major 清零**，未修复 High 5→0；详见 fix-log.md |
 | 2026-06-03 | Minor 批次 12 | 架构 ARCH-006~010 + AGENT-008（命名漂移簇）→ 已修复；全仓 Skill 命名统一为 SkillRuntime/SkillBridge；Minor 47→41；详见 fix-log.md |
 | 2026-06-03 | Minor 批次 13 | 产品 PROD-006~011 → 已修复；补 MVP 聚焦/异常旅程/合规版权/术语映射/需求兜底，校正 §11 死链；产品域全清；Minor 41→35；详见 fix-log.md |
+| 2026-06-03 | Minor 批次 14 | Agent AGENT-009~012 → 已修复；补会话生命周期/Tool 校验幂等/WSL 编码进程树，校正 §20 死链；Agent 域全清；Minor 35→31；详见 fix-log.md |

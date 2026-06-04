@@ -12,7 +12,7 @@
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 01 | 架构 | [01-architecture-review.md](./01-architecture-review.md) | 已完成 | 0 | 5 | 5 | 0 | 10 | 2026-06-03 |
 | 02 | 产品 | [02-product-review.md](./02-product-review.md) | 已完成 | 0 | 5 | 6 | 0 | 11 | 2026-06-03 |
-| 03 | Agent | [03-agent-review.md](./03-agent-review.md) | 已完成 | 1 | 6 | 5 | 0 | 8 | 2026-06-03 |
+| 03 | Agent | [03-agent-review.md](./03-agent-review.md) | 已完成 | 1 | 6 | 5 | 0 | 12 | 2026-06-03 |
 | 04 | MCP | [04-mcp-review.md](./04-mcp-review.md) | 已完成 | 0 | 4 | 4 | 0 | 4 | 2026-06-03 |
 | 05 | 数据库 | [05-database-review.md](./05-database-review.md) | 已完成 | 0 | 8 | 11 | 0 | 8 | 2026-06-03 |
 | 06 | 工作流 | [06-workflow-review.md](./06-workflow-review.md) | 已完成 | 0 | 5 | 5 | 0 | 6 | 2026-06-03 |
@@ -66,3 +66,4 @@
 | 2026-06-03 | 终审复审 | 2 Critical + 50 Major 全部清零，终审结论 不通过 → 有条件通过，准予进入 MVP 开发；47 Minor 带入实现期跟踪 |
 | 2026-06-03 | Minor 批次 12 | 架构域 ARCH-006~010 + AGENT-008（命名簇）→ 已修复；Minor 47→41 |
 | 2026-06-03 | Minor 批次 13 | 产品域 PROD-006~011（6 Minor）→ 已修复；产品域 11 项全清；Minor 41→35 |
+| 2026-06-03 | Minor 批次 14 | Agent 域 AGENT-009~012（4 Minor）→ 已修复；Agent 域 12 项全清；Minor 35→31 |
