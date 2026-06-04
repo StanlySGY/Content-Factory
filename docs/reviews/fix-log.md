@@ -308,3 +308,19 @@ Minor 清理第六批：工作流域 4 个 Minor，集中于 `content-workflow.m
 
 - 修复 4 项 Minor（WF-007~010）。已修复累计 85 → 89；未修复 Critical/Major 保持 0；Minor 16 → 12。
 - 工作流域全部 10 项（5 Major + 5 Minor）清零；asset_type 受控词表跨 wf/db 对齐。
+
+## 批次 18（2026-06-03）
+
+Minor 清理第七批：UI 域 4 个 Minor，集中于 `ui-design.md`。
+
+| 修复时间 | 问题编号 | 修改内容 | 影响范围 |
+| --- | --- | --- | --- |
+| 2026-06-03 | UI-008 (Minor) | §3 声明信息架构图为高层导航骨架、页面树为完整路由权威，消除图↔树叶子节点不一致 | ui §3 |
+| 2026-06-03 | UI-009 (Minor) | 新增 §3.2「调用追溯视图」：按 stage_run 聚合 agent/tool/skill/plugin 调用（源 db v_invocations），对接 PRD §6.5/§7.5 | ui §3.2 |
+| 2026-06-03 | UI-010 (Minor) | §10.3 加状态徽章↔db §8.1 任务状态机映射表，补 failed/cancelled/terminated 表达 | ui §10.3 |
+| 2026-06-03 | UI-011 (Minor) | §20 声明高风险确认由后端风险策略驱动、前端仅渲染风险元数据，不硬编码业务规则 | ui §20 |
+
+### 批次小结
+
+- 修复 4 项 Minor（UI-008~011）。已修复累计 89 → 93；未修复 Critical/Major 保持 0；Minor 12 → 8。
+- UI 域全部 11 项（1 Critical + 6 Major + 4 Minor）清零；**状态机一致性簇（WF-001/002/MCP-003/UI-010）全部闭合**；调用日志可追溯簇仅余 RT-008。
