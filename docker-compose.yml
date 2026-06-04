@@ -1,0 +1,25 @@
+# Content Factory — 开发期 PostgreSQL（隔离实例，宿主端口 5433 避让系统 5432）
+# 仅本地开发；密码为 dev-only 占位，真实凭证不入仓（setup.md §4.2）
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cf_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: content_factory
+      # 跨 Windows↔WSL 统一 UTF-8（setup.md §5.2）
+      LANG: C.UTF-8
+    ports:
+      - "5433:5432"
+    volumes:
+      - cf_pgdata:/var/lib/postgresql/data
+      - ./db/docker-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d content_factory"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  cf_pgdata:

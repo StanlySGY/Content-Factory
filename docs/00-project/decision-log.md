@@ -27,7 +27,7 @@
 | ADR-016 | MVP 边界：插件/Skill 仅建表，不实现真实执行 | 已确定（Sprint 0）| RC C2 / roadmap §7.3 |
 | ADR-017 | MVP 九阶段裁剪：6 必建 + 3 可配可跳过 | 已确定（Sprint 0）| RC C2 / roadmap §9 |
 | ADR-018 | 工作流设计器 MVP 降级为配置/JSON 编辑 | 已确定（Sprint 0）| RC C2 |
-| ADR-019 | 应用技术栈推荐 TypeScript + Node + React | 建议待确认（Sprint 0）| roadmap §4.7 |
+| ADR-019 | 应用技术栈 TypeScript + Node/Fastify + React/Vite + Drizzle + node-pg-migrate | 已确定（Sprint 1）| sprint-1-stack-decision |
 | ADR-020 | 迁移排序：stage_runs.agent_profile_id FK 延后至 S4 | 已确定 | roadmap §5.3 |
 | ADR-021 | 真实 Provider 端到端验证在 S4 壳层前完成 1 条链路 | 已确定（Sprint 0）| RC R3 |
 | ADR-022 | 调用幂等键 = stage_run_id + 输入摘要 | 已确定 | arch §15.3 / agent §9.5 |
@@ -153,10 +153,18 @@
 
 ## ADR-019 应用技术栈
 
-- **状态**：建议待确认（Sprint 0 新增）
-- **背景**：roadmap §4.7 要求"选择当前最熟悉且可快速交付的栈"，未锁定具体框架。
-- **决策（建议）**：推荐 **TypeScript** 全栈——后端 Node.js（NestJS 或 Fastify）、前端 React + Vite、ORM 选支持 DEFERRABLE 约束与 PG 的方案（如 Drizzle / Prisma，须验证 ADR-007 延迟约束支持）。理由：MCP/Agent CLI 生态以 JS/TS 为主，单人全栈同语言降低切换成本。
-- **后果**：此为建议，最终由开发者确认；setup.md 中标 Provider 栈相关步骤为"参考实现栈（待确认）"。**列入 Sprint 0 遗留待确认项。**
+- **状态**：已确定（Sprint 1 确认，取代原「建议待确认」）
+- **背景**：roadmap §4.7 要求"选择当前最熟悉且可快速交付的栈"，未锁定具体框架；ADR-019 原为建议项，列入 Sprint 0 遗留待确认。
+- **决策**：经 Sprint 1 启动日确认（`docs/reviews/sprint-1-stack-decision.md`），采用 **TypeScript 全栈**：
+  - 后端 **Node.js 22 + Fastify 4**（手工分层 API→Application→Domain→Infrastructure）；
+  - 前端 **React 18 + Vite 5**（React Router + TanStack Query）；
+  - 数据层 **Drizzle ORM**（RLS 上下文经事务 `SET LOCAL` 注入）；
+  - 迁移 **node-pg-migrate**（up/down + 原生 SQL，承载 RLS/触发器/哈希链/DEFERRABLE）；
+  - 校验 **TypeBox**（运行时校验 + 静态类型单源，Fastify 原生）；
+  - 测试 **Vitest**（+ Fastify inject + React Testing Library）。
+  - 数据库 **PostgreSQL 16** 经 Docker Compose 隔离实例供给（端口 5433，无需 sudo）。
+- **理由**：MCP/Agent CLI 生态以 JS/TS 为主，单人全栈同语言降低切换成本；框架级选择以「精简高效、无冗余」为准（Fastify 轻于 NestJS、TypeBox 单源、Drizzle 对 RLS 透明、node-pg-migrate 满足可回滚 + 原生安全 DDL）。逐项理由见 stack-decision 文档。
+- **后果**：setup.md 中标「参考实现栈（待确认）」的步骤随本确认转为既定；R4（DEFERRABLE）由 node-pg-migrate 原生 SQL 在 S2 落地，S1 无循环外键不阻塞。
 
 ## ADR-020 迁移排序
 

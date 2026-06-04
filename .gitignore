@@ -1,0 +1,17 @@
+# deps / build
+node_modules/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# env / secrets (real values never committed; use .env.example)
+.env
+.env.*
+!.env.example
+
+# tooling
+.ace-tool/
+.playwright-mcp/
+.DS_Store
+*.log

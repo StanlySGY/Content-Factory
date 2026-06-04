@@ -1,0 +1,37 @@
+{
+  "name": "content-factory",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Content Factory — AI 内容生产平台（Sprint 1：任务管理基础）",
+  "engines": {
+    "node": ">=22"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
+  },
+  "scripts": {
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:wait": "until docker compose exec -T postgres pg_isready -U postgres -d content_factory; do sleep 1; done",
+    "migrate:up": "dotenv -e .env -- node-pg-migrate up -m db/migrations -j js -d DATABASE_ADMIN_URL",
+    "migrate:down": "dotenv -e .env -- node-pg-migrate down -m db/migrations -j js -d DATABASE_ADMIN_URL",
+    "migrate:up:test": "dotenv -e .env -- node-pg-migrate up -m db/migrations -j js -d DATABASE_ADMIN_URL_TEST",
+    "migrate:redo": "pnpm migrate:down && pnpm migrate:up",
+    "dev:api": "pnpm --filter @cf/api dev",
+    "dev:web": "pnpm --filter @cf/web dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "lint": "eslint .",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.18.0",
+    "dotenv-cli": "^7.4.4",
+    "eslint": "^9.18.0",
+    "globals": "^15.14.0",
+    "node-pg-migrate": "^7.9.1",
+    "pg": "^8.13.1",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.20.0"
+  }
+}
