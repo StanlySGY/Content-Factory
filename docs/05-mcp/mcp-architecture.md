@@ -96,9 +96,13 @@ stateDiagram-v2
     reloading --> failed: 重载失败
     running --> stopping: 停止
     stopping --> stopped: 停止成功
+    running --> failed: 运行崩溃
     running --> degraded: 部分工具不可用
     degraded --> running: 健康恢复
+    degraded --> stopping: 停止降级实例
+    degraded --> failed: 持续恶化
     failed --> stopped: 修复后重置
+    failed --> uninstalled: 不可恢复卸载
     stopped --> disabled: 禁用
     disabled --> stopped: 启用
     stopped --> uninstalled: 卸载
@@ -122,6 +126,13 @@ stateDiagram-v2
 | failed | MCP Server 异常 |
 | disabled | 被管理员禁用 |
 | uninstalled | 已卸载 |
+
+状态转换补充语义：
+
+- **禁用/启用**：`disabled` 仅管理员操作，保留安装与配置；启用回到 `stopped` 重走启动流程。
+- **degraded**：健康恢复回 `running`，持续恶化转 `failed`，或被主动 `stopping` 下线。
+- **failed**：可修复后重置回 `stopped`，不可恢复时直接 `uninstalled`。
+- **可达终态**：任一状态均可经 `stopped → uninstalled` 或 `failed → uninstalled` 到达 `[*]`，无悬挂态。
 
 生命周期状态 → 数据表字段映射（持久态落库，运行瞬态由 Runtime Manager 内存持有）：
 
@@ -179,6 +190,10 @@ permissions:
   user_confirmation: false
   context_scope: stage | task | project
 risk_level: low | medium | high
+integrity:
+  checksum: sha256:<digest>     # 包/二进制内容摘要，安装时校验
+  signature: <optional>         # 发布者签名，校验来源完整性
+  publisher_key: <optional>     # 发布者公钥指纹，与 publisher 绑定
 hot_reload: true
 health_check:
   type: tool_call | process | http
@@ -186,6 +201,7 @@ health_check:
 ```
 
 > `permissions` 八维（filesystem/network/secrets/external_services/production/destructive/user_confirmation/context_scope）与 §8.2 权限维度一致，注册期由 Contract Validator 校验，并与 `mcp_tools.permission_schema`（db §5.14）对齐。
+> `integrity` 提供包摘要/签名/发布者公钥，供 §6.2 安装校验、§5.4 注册校验值留存与 §11.4 第三方治理使用；远端 runtime 无包体时以端点指纹替代。
 
 ### 5.3 注册流程
 
@@ -595,25 +611,25 @@ MCPGateway
 
 ## 13. 数据模型映射
 
-当前数据库设计已包含：
+已落地数据表：
 
 | MCP 架构对象 | 数据表 |
 | --- | --- |
 | MCP Server | `mcp_servers` |
 | MCP Tool | `mcp_tools` |
 | MCP Tool Invocation | `tool_invocations` |
+| MCP 安装记录 | `mcp_installations`（db §5.22）|
+| MCP 配置版本 | `mcp_config_versions`（db §5.23）|
 | Audit Event | `audit_events` |
 | Project | `projects` |
 | Stage Run | `stage_runs` |
 
-后续实现前需要补充：
+未落地项与落点决策：
 
-| 对象 | 建议表 |
+| 对象 | 决策 |
 | --- | --- |
-| MCP 安装记录 | `mcp_installations` |
-| MCP 配置版本 | `mcp_config_versions` |
-| MCP 市场缓存 | `mcp_marketplace_entries` |
-| MCP 生命周期日志 | 可复用 `audit_events` 或新增 `mcp_lifecycle_logs` |
+| MCP 生命周期日志 | 复用 `audit_events`（统一审计 + 哈希链，db §5.18），不新增表 |
+| MCP 市场缓存 `mcp_marketplace_entries` | 市场为 P2（MVP 外），届时落表；MVP 市场发现走运行时缓存，不持久化 |
 
 ## 14. 与 Agent / Skill / 插件的关系
 
@@ -623,11 +639,13 @@ flowchart LR
     Skill[Skill]
     Plugin[Plugin]
     Workflow[Workflow]
+    MCPBridge[MCPBridge]
     MCPGateway[MCP Gateway]
     Tool[MCP Tool]
     Audit[审计]
 
-    Agent --> MCPGateway
+    Agent --> MCPBridge
+    MCPBridge --> MCPGateway
     Skill --> MCPGateway
     Plugin --> MCPGateway
     Workflow --> MCPGateway

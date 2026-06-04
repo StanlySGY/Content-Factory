@@ -276,3 +276,19 @@ Minor 清理第四批：数据库域 11 个 Minor，集中于 `database-design.m
 
 - 修复 11 项 Minor（DB-003/005/007/009/011/014/015/017/018/019/020）。已修复累计 70 → 81；未修复 Critical/Major 保持 0；Minor 31 → 20。
 - 数据库域全部 19 项（8 Major + 11 Minor）清零；**死链同源簇（ARCH-001/PROD-009/AGENT-012/DB-020）全部闭合**。
+
+## 批次 16（2026-06-03）
+
+Minor 清理第五批：MCP 域 4 个 Minor，集中于 `mcp-architecture.md`。
+
+| 修复时间 | 问题编号 | 修改内容 | 影响范围 |
+| --- | --- | --- | --- |
+| 2026-06-03 | MCP-005 (Minor) | §5.2 Manifest 加 integrity（checksum/signature/publisher_key），供 §6.2/§5.4/§11.4 校验；远端以端点指纹替代 | mcp §5.2 |
+| 2026-06-03 | MCP-006 (Minor) | §14 关系图补 MCPBridge 节点，Agent→MCPBridge→MCPGateway，与文字及 agent §11.1 一致 | mcp §14 |
+| 2026-06-03 | MCP-007 (Minor) | §4 状态机补 running→failed、degraded→stopping/failed、failed→uninstalled，并加禁用/启用/降级/失败终态语义 | mcp §4 |
+| 2026-06-03 | MCP-008 (Minor) | §13 重构：installations/config_versions 移入已落地；生命周期日志复用 audit_events，市场缓存随 P2 落表 | mcp §13 |
+
+### 批次小结
+
+- 修复 4 项 Minor（MCP-005~008）。已修复累计 81 → 85；未修复 Critical/Major 保持 0；Minor 20 → 16。
+- MCP 域全部 8 项（4 Major + 4 Minor）清零。

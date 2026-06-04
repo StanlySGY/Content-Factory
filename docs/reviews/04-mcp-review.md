@@ -22,7 +22,7 @@
 - [ ] 生命周期状态机与数据表字段无映射（MCP-003）
 - [ ] 日志 / 调用字段与 `tool_invocations` 枚举、字段不一致（MCP-002）
 - [ ] 权限维度与 Manifest 契约不闭环（MCP-004）
-- [ ] 签名 / 摘要校验缺契约字段（MCP-005）
+- [x] 签名 / 摘要校验缺契约字段（MCP-005，已修复）
 - [ ] 数据模型映射明确，缺口已标注（部分缺失，见 MCP-002/003/008）
 
 ## 4. 发现的问题
@@ -33,10 +33,10 @@
 | MCP-002 | Major | Consistency/数据映射 | 调用日志状态枚举（denied/timeout）与字段（caller_type/caller_id/risk_level/duration_ms/digest）和 `tool_invocations` 不一致，无落库位 | mcp §9.2/§12 ↔ db §5.17 | 已修复 |
 | MCP-003 | Major | 状态机/数据映射 | §4 生命周期 13 态与 `mcp_servers.status`(3 态)/`mcp_installations.install_status` 无映射，运行态无承载位 | mcp §4 ↔ db §5.13/§5.22 | 已修复 |
 | MCP-004 | Major | 契约缺口 | §8.2 权限维度（production/destructive/user_confirmation/context_scope）未在 §5.2 Manifest 声明，注册期无法校验 | mcp §8.2 ↔ §5.2 | 已修复 |
-| MCP-005 | Minor | 完整性 | §6.2 要求校验签名、§5.4/§11.4 记录校验值，但 Manifest §5.2 无 integrity（checksum/signature/publisher_key）字段 | mcp §5.2 | 待修复 |
-| MCP-006 | Minor | 图示一致性 | §14 图为 `Agent → MCPGateway`，缺 `MCPBridge`，与本节文字及 agent §11.1 不一致 | mcp §14 | 待修复 |
-| MCP-007 | Minor | 完整性 | 状态机禁用/启用语义、failed/degraded 可达终态路径不完整 | mcp §4 | 待修复 |
-| MCP-008 | Minor | 完整性 | `mcp_marketplace_entries`、`mcp_lifecycle_logs` 列为"后续补充"，市场缓存与生命周期审计无持久化落点 | mcp §13 | 待修复 |
+| MCP-005 | Minor | 完整性 | §6.2 要求校验签名、§5.4/§11.4 记录校验值，但 Manifest §5.2 无 integrity（checksum/signature/publisher_key）字段 | mcp §5.2 | 已修复 |
+| MCP-006 | Minor | 图示一致性 | §14 图为 `Agent → MCPGateway`，缺 `MCPBridge`，与本节文字及 agent §11.1 不一致 | mcp §14 | 已修复 |
+| MCP-007 | Minor | 完整性 | 状态机禁用/启用语义、failed/degraded 可达终态路径不完整 | mcp §4 | 已修复 |
+| MCP-008 | Minor | 完整性 | `mcp_marketplace_entries`、`mcp_lifecycle_logs` 列为"后续补充"，市场缓存与生命周期审计无持久化落点 | mcp §13 | 已修复 |
 
 ## 5. 修复建议
 
@@ -56,3 +56,4 @@
 | --- | --- | --- | --- |
 | 2026-06-03 | 架构评审 | 完成审查 | 0 Critical / 4 Major / 4 Minor；结论有条件通过 |
 | 2026-06-03 | 修复跟踪 | 批次 9 修复 | MCP-001~004（4 Major）→ 已修复；Result Normalizer/调用日志对齐/生命周期映射/Manifest 权限四维；详见 fix-log 批次 9 |
+| 2026-06-03 | 修复跟踪 | 批次 16 修复 | MCP-005~008（4 Minor）→ 已修复；Manifest integrity、§14 MCPBridge、状态机终态语义、数据映射落点；MCP 域全清；详见 fix-log 批次 16 |

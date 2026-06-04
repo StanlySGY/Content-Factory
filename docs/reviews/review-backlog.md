@@ -35,8 +35,8 @@
 | 红队 RT | 0 | 6 | 4 | 10 |
 | **总计** | **2** | **50** | **49** | **101** |
 
-- 已修复：81　|　待修复：20
-- 全部 10 域已审查完成；未修复 Critical = 0、Major = 0、Minor = 20
+- 已修复：85　|　待修复：16
+- 全部 10 域已审查完成；未修复 Critical = 0、Major = 0、Minor = 16
 
 ## 优先处理清单（Critical + Major）
 
@@ -143,10 +143,10 @@
 | MCP-002 | Consistency/数据映射 | Major | 05-mcp, 03-database | 调用日志状态枚举/字段与 tool_invocations 不一致，denied/timeout/caller 无落库 | 统一枚举，tool_invocations 补 caller/risk/duration，权限与生命周期日志落表 | 已修复 |
 | MCP-003 | Workflow/状态机 | Major | 05-mcp, 03-database | 生命周期 13 态与 mcp_servers/mcp_installations 无映射 | 增"状态→数据表字段"映射表 | 已修复 |
 | MCP-004 | Completeness/契约 | Major | 05-mcp | 权限维度(production/destructive/user_confirmation/context_scope)未在 Manifest 声明 | Manifest permissions 补四维并与 mcp_tools.permission_schema 对齐 | 已修复 |
-| MCP-005 | Completeness | Minor | 05-mcp | Manifest 缺 integrity(checksum/signature/publisher_key) | 增 integrity 字段 | 待修复 |
-| MCP-006 | Consistency | Minor | 05-mcp, 04-agent | §14 图缺 MCPBridge，与文字/agent §11.1 不一致 | 图补 MCPBridge 节点 | 待修复 |
-| MCP-007 | Completeness | Minor | 05-mcp | 状态机禁用/启用语义、failed/degraded 终态路径不完整 | 补状态语义与可达终态 | 待修复 |
-| MCP-008 | Completeness | Minor | 05-mcp, 03-database | mcp_marketplace_entries/mcp_lifecycle_logs 无落点 | 明确落地或引用专项文档 | 待修复 |
+| MCP-005 | Completeness | Minor | 05-mcp | Manifest 缺 integrity(checksum/signature/publisher_key) | 增 integrity 字段 | 已修复 |
+| MCP-006 | Consistency | Minor | 05-mcp, 04-agent | §14 图缺 MCPBridge，与文字/agent §11.1 不一致 | 图补 MCPBridge 节点 | 已修复 |
+| MCP-007 | Completeness | Minor | 05-mcp | 状态机禁用/启用语义、failed/degraded 终态路径不完整 | 补状态语义与可达终态 | 已修复 |
+| MCP-008 | Completeness | Minor | 05-mcp, 03-database | mcp_marketplace_entries/mcp_lifecycle_logs 无落点 | 明确落地或引用专项文档 | 已修复 |
 
 ### 工作流 WF
 
@@ -256,3 +256,4 @@
 | 2026-06-03 | Minor 批次 13 | 产品 PROD-006~011 → 已修复；补 MVP 聚焦/异常旅程/合规版权/术语映射/需求兜底，校正 §11 死链；产品域全清；Minor 41→35；详见 fix-log.md |
 | 2026-06-03 | Minor 批次 14 | Agent AGENT-009~012 → 已修复；补会话生命周期/Tool 校验幂等/WSL 编码进程树，校正 §20 死链；Agent 域全清；Minor 35→31；详见 fix-log.md |
 | 2026-06-03 | Minor 批次 15 | 数据库 DB-003/005/007/009/011/014/015/017/018/019/020 → 已修复；ER 范围/RBAC 接缝/schema_version/发布指针/active 索引/当前阶段指针/单一真相源/统一视图/引擎声明/死链；DB 域全清；死链簇全闭合；Minor 31→20；详见 fix-log.md |
+| 2026-06-03 | Minor 批次 16 | MCP MCP-005~008 → 已修复；Manifest integrity/§14 补 MCPBridge/状态机终态语义/数据映射落点决策；MCP 域全清；Minor 20→16；详见 fix-log.md |
