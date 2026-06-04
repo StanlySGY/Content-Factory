@@ -14,6 +14,8 @@
 
 ## 2. 存储边界
 
+**目标引擎**：MVP 采用 **PostgreSQL（≥14）**，下文 `jsonb`、`timestamptz`、部分唯一索引（`WHERE` 谓词）、行级安全（RLS）等均为 PostgreSQL 方言；迁移工具与具体版本见 `docs/10-development/`。
+
 | 存储对象 | 存储方式 | 说明 |
 | --- | --- | --- |
 | 任务、工作流、阶段、审查、配置 | 关系型数据库 | 需要事务、关联查询、状态一致性 |
@@ -136,6 +138,7 @@ erDiagram
         uuid content_task_id FK
         uuid workflow_definition_id FK
         integer workflow_version
+        uuid current_stage_run_id FK
         string status
         datetime started_at
         datetime completed_at
@@ -196,6 +199,8 @@ erDiagram
         datetime created_at
     }
 ```
+
+> **ER 图范围**：上图完整表达全部实体间关系；字段块聚焦核心业务主干表（users / projects / content_tasks / workflow_definitions / workflow_stages / workflow_runs / stage_runs / content_assets / asset_versions / review_records）。其余实体（context_packs、agent_profiles、mcp_servers、mcp_tools、skill_definitions、plugin_definitions、tool/skill/plugin_invocations、audit_events、workflow_stage_dependencies、agent_sessions、agent_messages、publish_records、mcp/plugin_installations、mcp/plugin_config_versions）的完整字段以 §5 表结构为权威，不在 ER 重复展开，避免与 §5 形成双源漂移。
 
 ## 4. 实体关系
 
@@ -263,6 +268,8 @@ erDiagram
 | status | varchar(32) | not null | active, archived |
 | created_at | timestamptz | not null | 创建时间 |
 | updated_at | timestamptz | not null | 更新时间 |
+
+**扩展接缝**：MVP 以 `owner_id` 为单一管理者；后续多人协作经 `project_members(user_id, project_id, role, created_at)`（user↔project 多对多 + 角色）接入，访问控制由 owner 单点平滑升级为成员 + RBAC，不改动既有外键（呼应 `system-architecture.md` §13）。
 
 ### 5.3 content_tasks
 
@@ -358,6 +365,7 @@ erDiagram
 | content_task_id | uuid | FK content_tasks.id, not null | 对应内容任务 |
 | workflow_definition_id | uuid | FK workflow_definitions.id, not null | 使用的工作流定义 |
 | workflow_version | integer | not null | 启动时使用的定义版本 |
+| current_stage_run_id | uuid | FK stage_runs.id, nullable | 当前阶段冗余指针，加速状态展示（权威仍为 stage_runs，延迟约束）|
 | status | varchar(32) | not null | 工作流运行状态 |
 | started_at | timestamptz | nullable | 开始时间 |
 | completed_at | timestamptz | nullable | 完成时间 |
@@ -597,6 +605,8 @@ Skill 定义表。
 约束与说明：
 
 - 三张调用表均含 `project_id`；因含输入/输出快照属敏感数据，启用行级安全（RLS）或强制 `project_id` 谓词访问，禁止跨项目读取（见 `system-architecture.md` §13.3）。
+- 三表均含 `caller_type` / `caller_id`，与 MCP 调用日志契约（`mcp-architecture.md` §9.2/§9.3）字段一致，支撑按调用方（workflow/agent/skill/plugin/user）归因。
+- **统一执行时间线**：提供只读联合视图 `v_invocations`（UNION 三表的 `stage_run_id` / `caller_type` / `caller_id` / `status` / `risk_level` / `started_at` / `duration_ms` + `kind` 区分 tool/skill/plugin），支撑单阶段跨类型执行时间线查询；明细仍以三张物理表为权威。
 
 ### 5.18 audit_events
 
@@ -805,6 +815,8 @@ JSON 字段只用于可扩展契约和低频查询数据：
 
 禁止将核心状态、关联关系、审查结论等高频查询字段只保存在 JSON 中。
 
+关键 JSON 契约字段（`definition_schema`、`input_schema`、`output_schema`、`gate_schema`、`capability_schema`、`permission_schema`、`requirement_data` 等）须内含 `schema_version`，演进时据此判定兼容与迁移路径，避免无版本的隐式 schema 漂移。
+
 ### 6.5 软删除与归档
 
 - 业务数据不做物理删除，使用 `status = archived` 或 `archived_at`。
@@ -854,6 +866,7 @@ JSON 字段只用于可扩展契约和低频查询数据：
 | mcp_config_versions | `idx_mcp_config_versions_server_version(mcp_server_id, version)` unique | MCP 配置版本查询 |
 | plugin_installations | `idx_plugin_installations_plugin(plugin_definition_id, install_status)` | 插件安装状态查询 |
 | plugin_config_versions | `idx_plugin_config_versions_plugin_version(plugin_definition_id, version)` unique | 插件配置版本查询 |
+| workflow_definitions | `idx_workflow_definitions_active_unique(project_id, name) WHERE status='active'` unique | 强制同项目同名仅一个 active 版本（§9.1）|
 
 ### 7.3 JSON 索引原则
 
@@ -964,6 +977,8 @@ stateDiagram-v2
 | revision_required | 退回修改 |
 | terminated | 终止工作流 |
 
+**单一真相源**：审查"是否通过"以 `review_records.decision` 为权威；`stage_runs.status`（approved/revision_required）由审查结论在同一事务内驱动同步（见 §10.1），不反向写回。结论产生前 stage_run 停留 `waiting_review`。
+
 ## 9. 版本设计
 
 ### 9.1 工作流版本
@@ -992,6 +1007,11 @@ stateDiagram-v2
 - Agent、MCP、Skill、插件配置默认按记录更新。
 - 运行记录必须绑定配置快照或可追溯版本，历史运行不受后续配置变更影响：Agent 配置经 `agent_sessions.profile_snapshot` 固化，MCP 配置经 `mcp_config_versions` 版本化，Skill/插件调用经 invocation 表 `input_data` 快照留痕。
 - 配置频繁变更的对象提供独立配置版本表（见 `mcp_config_versions`、`plugin_config_versions`）。
+
+### 9.5 发布版本指针
+
+- "哪个版本被发布"以 `publish_records.asset_version_id`（不可变外键）为权威指针，发布后不可改写。
+- 工作流回滚（`content-workflow.md` §5）以该指针为已发布锚点：回滚生成新版本，原发布记录保留，重新发布另立记录，杜绝已发布版本漂移。
 
 ## 10. 一致性与事务边界
 
@@ -1025,8 +1045,8 @@ stateDiagram-v2
 
 ## 12. 后续细化
 
-- 具体数据库选型与迁移工具：`docs/10-development/setup.md`
-- API 契约：`docs/09-api/api-overview.md`
-- 工作流执行细节：`docs/07-workflow/content-pipeline.md`
-- Agent 配置细节：`docs/04-agent/agent-roles.md`
-- MCP 工具契约：`docs/05-mcp/tool-contracts.md`
+- 工作流执行细节：`docs/07-workflow/content-workflow.md`
+- MCP 工具契约：`docs/05-mcp/mcp-architecture.md`
+- Agent 配置细节：`docs/04-agent/agent-architecture.md` §15
+- 具体数据库选型与迁移工具：`docs/10-development/setup.md`（待创建）
+- API 契约：`docs/09-api/api-overview.md`（待创建）

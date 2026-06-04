@@ -35,8 +35,8 @@
 | 红队 RT | 0 | 6 | 4 | 10 |
 | **总计** | **2** | **50** | **49** | **101** |
 
-- 已修复：70　|　待修复：31
-- 全部 10 域已审查完成；未修复 Critical = 0、Major = 0、Minor = 31
+- 已修复：81　|　待修复：20
+- 全部 10 域已审查完成；未修复 Critical = 0、Major = 0、Minor = 20
 
 ## 优先处理清单（Critical + Major）
 
@@ -115,23 +115,23 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | DB-001 | Consistency | Major | 03-database | audit_events 多态关系与 ER 不符 | ER 改多态注记，§5.18 说明多态完整性 | 已修复 |
 | DB-002 | Integrity | Major | 03-database | context_packs 双父键与版本唯一性歧义 | 唯一键改 (stage_run_id, version) 或含 stage_run_id | 已修复 |
-| DB-003 | Completeness | Minor | 03-database | ER 字段块不完整（仅 10/20 表） | 补全 ER 字段块或拆子图 | 待修复 |
+| DB-003 | Completeness | Minor | 03-database | ER 字段块不完整（仅 10/20 表） | 补全 ER 字段块或拆子图 | 已修复 |
 | DB-004 | Completeness | Major | 03-database, 04-agent, 07-workflow, 05-mcp | 缺 agent_sessions/messages、publish_records、mcp 生命周期表 | 排期补充相关迁移设计 | 已修复 |
-| DB-005 | Extensibility | Minor | 03-database | 缺成员/RBAC 接缝，项目单 owner | 预留 project_members 接缝 | 待修复 |
+| DB-005 | Extensibility | Minor | 03-database | 缺成员/RBAC 接缝，项目单 owner | 预留 project_members 接缝 | 已修复 |
 | DB-006 | Versioning | Major | 03-database | 配置版本延后，历史运行引用可变配置 | 运行记录绑定配置快照/版本 | 已修复 |
-| DB-007 | Extensibility | Minor | 03-database | JSON 字段缺 schema 版本 | 加 schema_version | 待修复 |
+| DB-007 | Extensibility | Minor | 03-database | JSON 字段缺 schema 版本 | 加 schema_version | 已修复 |
 | DB-008 | Integrity | Major | 03-database | content_assets.current_version 缺完整性约束 | 加 current_version_id 外键 | 已修复 |
-| DB-009 | Completeness | Minor | 03-database | 缺已发布版本权威指针 | 引入 publish_records 锚定 asset_version | 待修复 |
-| DB-011 | Integrity | Minor | 03-database | active 工作流版本未由 schema 强制 | 加 WHERE status='active' 部分唯一索引 | 待修复 |
+| DB-009 | Completeness | Minor | 03-database | 缺已发布版本权威指针 | 引入 publish_records 锚定 asset_version | 已修复 |
+| DB-011 | Integrity | Minor | 03-database | active 工作流版本未由 schema 强制 | 加 WHERE status='active' 部分唯一索引 | 已修复 |
 | DB-012 | Workflow | Major | 03-database | 并行/DAG 阶段依赖仅存 JSON | 增 workflow_stage_dependencies 表 | 已修复 |
 | DB-013 | Workflow | Major | 03-database | stage_runs 缺回滚血缘/并行分组/门禁结果 | 增 parent_stage_run_id/分组/gate_result | 已修复 |
-| DB-014 | Performance | Minor | 03-database | 缺 workflow_run 当前阶段指针 | 可选增 current_stage_run_id | 待修复 |
-| DB-015 | Consistency | Minor | 03-database | 审查结论与阶段状态双真相源 | 定义单一真相源与同步方向 | 待修复 |
+| DB-014 | Performance | Minor | 03-database | 缺 workflow_run 当前阶段指针 | 可选增 current_stage_run_id | 已修复 |
+| DB-015 | Consistency | Minor | 03-database | 审查结论与阶段状态双真相源 | 定义单一真相源与同步方向 | 已修复 |
 | DB-016 | Plugin | Major | 03-database | plugin_definitions 过浅（缺运行时/入口/依赖/安装/版本史） | 扩展字段+plugin_installations/config_versions | 已修复 |
-| DB-017 | Observability | Minor | 03-database | 三 invocation 表重复，统一时间线难 | 评估统一 invocations 视图 | 待修复 |
-| DB-018 | Consistency | Minor | 03-database, 05-mcp | invocation 表缺 caller 维度，与 MCP 日志不一致 | 加 caller_type/caller_id | 待修复 |
-| DB-019 | Completeness | Minor | 03-database | 引擎/方言未声明（jsonb/timestamptz 预设 PG） | §2 声明 PostgreSQL | 待修复 |
-| DB-020 | Dead-link | Minor | 03-database | §12 死链 | 修正死链 | 待修复 |
+| DB-017 | Observability | Minor | 03-database | 三 invocation 表重复，统一时间线难 | 评估统一 invocations 视图 | 已修复 |
+| DB-018 | Consistency | Minor | 03-database, 05-mcp | invocation 表缺 caller 维度，与 MCP 日志不一致 | 加 caller_type/caller_id | 已修复 |
+| DB-019 | Completeness | Minor | 03-database | 引擎/方言未声明（jsonb/timestamptz 预设 PG） | §2 声明 PostgreSQL | 已修复 |
+| DB-020 | Dead-link | Minor | 03-database | §12 死链 | 修正死链 | 已修复 |
 
 > 注：DB-010 在数据库审查中已并入 DB-002（context_packs 版本唯一性），不单列。
 
@@ -213,7 +213,7 @@
 
 | 簇 | 关联 Issue | 统一处理建议 |
 | --- | --- | --- |
-| 死链 | ARCH-001, PROD-009, AGENT-012, DB-020 | 全仓"后续细化文档"链接同源错误，统一校正为实际文件名，未建文档标注"待创建"，同步 `docs/README.md`（ARCH-001/PROD-009/AGENT-012 已修，余 DB-020）|
+| 死链 | ARCH-001, PROD-009, AGENT-012, DB-020 | 全仓"后续细化文档"链接同源错误，统一校正为实际文件名，未建文档标注"待创建"，同步 `docs/README.md`（已修复）|
 | 核心表缺失 | AGENT-004, DB-004 | agent_sessions/agent_messages、publish_records、mcp 生命周期/安装/配置版本表统一排期进数据库设计 |
 | MCP 网关一致性 | AGENT-002, DB-018 | Agent/Skill/Plugin 调用统一经 MCPGateway；调用表补 caller 维度与 MCP 日志契约对齐 |
 | 命名漂移 | ARCH-008, AGENT-008 | 统一 Skill 运行时术语（SkillRuntime vs SkillBridge）（已修复）|
@@ -255,3 +255,4 @@
 | 2026-06-03 | Minor 批次 12 | 架构 ARCH-006~010 + AGENT-008（命名漂移簇）→ 已修复；全仓 Skill 命名统一为 SkillRuntime/SkillBridge；Minor 47→41；详见 fix-log.md |
 | 2026-06-03 | Minor 批次 13 | 产品 PROD-006~011 → 已修复；补 MVP 聚焦/异常旅程/合规版权/术语映射/需求兜底，校正 §11 死链；产品域全清；Minor 41→35；详见 fix-log.md |
 | 2026-06-03 | Minor 批次 14 | Agent AGENT-009~012 → 已修复；补会话生命周期/Tool 校验幂等/WSL 编码进程树，校正 §20 死链；Agent 域全清；Minor 35→31；详见 fix-log.md |
+| 2026-06-03 | Minor 批次 15 | 数据库 DB-003/005/007/009/011/014/015/017/018/019/020 → 已修复；ER 范围/RBAC 接缝/schema_version/发布指针/active 索引/当前阶段指针/单一真相源/统一视图/引擎声明/死链；DB 域全清；死链簇全闭合；Minor 31→20；详见 fix-log.md |

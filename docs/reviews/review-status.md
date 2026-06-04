@@ -14,7 +14,7 @@
 | 02 | 产品 | [02-product-review.md](./02-product-review.md) | 已完成 | 0 | 5 | 6 | 0 | 11 | 2026-06-03 |
 | 03 | Agent | [03-agent-review.md](./03-agent-review.md) | 已完成 | 1 | 6 | 5 | 0 | 12 | 2026-06-03 |
 | 04 | MCP | [04-mcp-review.md](./04-mcp-review.md) | 已完成 | 0 | 4 | 4 | 0 | 4 | 2026-06-03 |
-| 05 | 数据库 | [05-database-review.md](./05-database-review.md) | 已完成 | 0 | 8 | 11 | 0 | 8 | 2026-06-03 |
+| 05 | 数据库 | [05-database-review.md](./05-database-review.md) | 已完成 | 0 | 8 | 11 | 0 | 19 | 2026-06-03 |
 | 06 | 工作流 | [06-workflow-review.md](./06-workflow-review.md) | 已完成 | 0 | 5 | 5 | 0 | 6 | 2026-06-03 |
 | 07 | UI | [07-ui-review.md](./07-ui-review.md) | 已完成 | 1 | 6 | 4 | 0 | 7 | 2026-06-03 |
 | 08 | MVP | [08-mvp-review.md](./08-mvp-review.md) | 已完成 | 0 | 5 | 5 | 0 | 6 | 2026-06-03 |
@@ -67,3 +67,4 @@
 | 2026-06-03 | Minor 批次 12 | 架构域 ARCH-006~010 + AGENT-008（命名簇）→ 已修复；Minor 47→41 |
 | 2026-06-03 | Minor 批次 13 | 产品域 PROD-006~011（6 Minor）→ 已修复；产品域 11 项全清；Minor 41→35 |
 | 2026-06-03 | Minor 批次 14 | Agent 域 AGENT-009~012（4 Minor）→ 已修复；Agent 域 12 项全清；Minor 35→31 |
+| 2026-06-03 | Minor 批次 15 | 数据库域 11 Minor（DB-003~020 余项）→ 已修复；DB 域 19 项全清；死链簇全闭合；Minor 31→20 |

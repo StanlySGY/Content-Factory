@@ -253,3 +253,26 @@ Minor 清理第三批：Agent 域 4 个 Minor，集中于 `agent-architecture.md
 
 - 修复 4 项 Minor（AGENT-009~012）。已修复累计 66 → 70；未修复 Critical/Major 保持 0；Minor 35 → 31。
 - Agent 域全部 12 项（1 Critical + 6 Major + 5 Minor）清零；死链同源簇再闭合一员（AGENT-012），仅余 DB-020。
+
+## 批次 15（2026-06-03）
+
+Minor 清理第四批：数据库域 11 个 Minor，集中于 `database-design.md`。
+
+| 修复时间 | 问题编号 | 修改内容 | 影响范围 |
+| --- | --- | --- | --- |
+| 2026-06-03 | DB-003 (Minor) | §3 ER 图加「范围说明」：关系全覆盖 20 表，字段块聚焦核心主干表，其余以 §5 为权威避免双源 | db §3 |
+| 2026-06-03 | DB-005 (Minor) | §5.2 加 project_members 扩展接缝（user↔project 多对多+角色），owner 平滑升级 RBAC | db §5.2 |
+| 2026-06-03 | DB-007 (Minor) | §6.4 规定关键 JSON 契约字段须内含 schema_version | db §6.4 |
+| 2026-06-03 | DB-009 (Minor) | §9 新增 §9.5「发布版本指针」：publish_records.asset_version_id 不可变权威指针 | db §9.5 |
+| 2026-06-03 | DB-011 (Minor) | §7.2 加 workflow_definitions active 部分唯一索引（WHERE status='active'）| db §7.2 |
+| 2026-06-03 | DB-014 (Minor) | §5.6 + ER 加 workflow_runs.current_stage_run_id 冗余指针（权威仍 stage_runs）| db §3/§5.6 |
+| 2026-06-03 | DB-015 (Minor) | §8.4 定义单一真相源：审查通过以 review_records.decision 为权威，驱动 stage_runs.status | db §8.4 |
+| 2026-06-03 | DB-017 (Minor) | §5.17 加只读联合视图 v_invocations 支撑跨类型执行时间线 | db §5.17 |
+| 2026-06-03 | DB-018 (Minor) | §5.17 注明三表 caller_type/caller_id 与 mcp §9.2/9.3 契约对齐（字段批次 9 已落地）| db §5.17 |
+| 2026-06-03 | DB-019 (Minor) | §2 声明目标引擎 PostgreSQL≥14 与方言假设 | db §2 |
+| 2026-06-03 | DB-020 (Minor) | §12 死链校正为实际文件名，setup/api-overview 标「待创建」 | db §12 |
+
+### 批次小结
+
+- 修复 11 项 Minor（DB-003/005/007/009/011/014/015/017/018/019/020）。已修复累计 70 → 81；未修复 Critical/Major 保持 0；Minor 31 → 20。
+- 数据库域全部 19 项（8 Major + 11 Minor）清零；**死链同源簇（ARCH-001/PROD-009/AGENT-012/DB-020）全部闭合**。
