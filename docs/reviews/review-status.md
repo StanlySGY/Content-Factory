@@ -11,7 +11,7 @@
 | 编号 | 审查域 | 文档 | 状态 | Critical | High | Medium | Low | 已修复 | 最近更新 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 01 | 架构 | [01-architecture-review.md](./01-architecture-review.md) | 已完成 | 0 | 5 | 5 | 0 | 10 | 2026-06-03 |
-| 02 | 产品 | [02-product-review.md](./02-product-review.md) | 已完成 | 0 | 5 | 6 | 0 | 5 | 2026-06-03 |
+| 02 | 产品 | [02-product-review.md](./02-product-review.md) | 已完成 | 0 | 5 | 6 | 0 | 11 | 2026-06-03 |
 | 03 | Agent | [03-agent-review.md](./03-agent-review.md) | 已完成 | 1 | 6 | 5 | 0 | 8 | 2026-06-03 |
 | 04 | MCP | [04-mcp-review.md](./04-mcp-review.md) | 已完成 | 0 | 4 | 4 | 0 | 4 | 2026-06-03 |
 | 05 | 数据库 | [05-database-review.md](./05-database-review.md) | 已完成 | 0 | 8 | 11 | 0 | 8 | 2026-06-03 |
@@ -65,3 +65,4 @@
 | 2026-06-03 | 修复批次 11 | 修复 MVP-001~005（5 Major）+ MVP-006(Minor)；MVP Major 清零，全部 10 域 Critical/Major 清零达放行判据；未修复 High 5→0 |
 | 2026-06-03 | 终审复审 | 2 Critical + 50 Major 全部清零，终审结论 不通过 → 有条件通过，准予进入 MVP 开发；47 Minor 带入实现期跟踪 |
 | 2026-06-03 | Minor 批次 12 | 架构域 ARCH-006~010 + AGENT-008（命名簇）→ 已修复；Minor 47→41 |
+| 2026-06-03 | Minor 批次 13 | 产品域 PROD-006~011（6 Minor）→ 已修复；产品域 11 项全清；Minor 41→35 |

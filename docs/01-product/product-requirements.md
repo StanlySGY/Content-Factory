@@ -70,6 +70,8 @@ Content Factory 是面向内容生产、内容运营和 AI Agent 编排的工作
 - 直接绑定单一模型供应商或单一 Agent 工具。
 - 在无授权情况下自动调用生产环境 API 或外部发布渠道。
 
+**MVP 聚焦**：首要渠道为微信公众号图文，首要内容类型为图文文章（`article`）；`post`/`script` 等内容类型与其他发布渠道经可扩展机制延后接入（见 §4.5、§7、§9.2）。
+
 ### 3.2 竞品与差异化
 
 | 竞品类别 | 代表形态 | 局限 |
@@ -209,6 +211,16 @@ Content Factory 是面向内容生产、内容运营和 AI Agent 编排的工作
 - 明确哪个阶段产生问题。
 - 支持后续优化工作流。
 
+### 5.7 异常与失败旅程
+
+正向场景之外，系统需对关键失败路径给出明确预期行为：
+
+- **产出质量不达标**：审查未通过时退回上一阶段重做（新建运行、保留血缘），不覆盖历史版本。
+- **审查反复退回**：超过约定轮次时升级提示，允许人工接管编辑或终止任务。
+- **发布准备失败**：渠道适配或授权校验失败时停在发布准备阶段并记录原因，不产生半发布状态。
+- **内容合规风险**：命中合规/版权风险时阻断流转并提示人工确认（见 §9.6）。
+- **Agent / 工具失败**：失败可重试或退回，任务状态始终可恢复，中间产物已持久化（见 §9.5）。
+
 ## 6. 核心功能
 
 ### 6.1 内容任务管理
@@ -231,6 +243,7 @@ Content Factory 是面向内容生产、内容运营和 AI Agent 编排的工作
 - 提取内容目标、受众、渠道、格式、约束和验收标准。
 - 生成任务摘要和缺失信息提示。
 - 支持用户确认或补充需求。
+- 解析结果标注置信度；低置信或信息不足时必须提示缺失项并要求人工确认后方可推进，不依赖高精度自动解析。
 - 禁止将一次性聊天上下文作为唯一需求来源。
 
 ### 6.3 工作流管理
@@ -349,6 +362,8 @@ Content Factory 是面向内容生产、内容运营和 AI Agent 编排的工作
 - 渠道为可扩展能力，新增渠道通过插件接入，不修改核心流程。
 
 ## 7. 功能优先级
+
+> **阶段术语映射**：本节 P0 = §8.1 MVP 阶段 = `development-roadmap.md` Sprint 1-4，三者指同一范围；P1/P2/P3 依次对应 Alpha/Beta/生产化（§8.2~§8.4）。后文统一以此映射为准。
 
 ### 7.1 P0：MVP 必须实现
 
@@ -512,6 +527,12 @@ Content Factory 是面向内容生产、内容运营和 AI Agent 编排的工作
 - Agent 或插件失败不得导致任务状态不可恢复。
 - 中间产物必须持久化，避免依赖聊天上下文。
 
+### 9.6 合规、版权与数据
+
+- 生成内容须可附合规与事实核查门禁，高风险内容阻断流转并要求人工确认。
+- 引用的素材与配图须可追溯来源与授权状态，未授权素材不得进入发布准备。
+- 用户数据与生成内容归属用户；数据留存、导出与删除须有明确策略，不默认外泄给 Agent 或外部服务。
+
 ## 10. 关键约束
 
 - 后续开发必须遵守 `docs/00-project/project-constitution.md`。
@@ -525,11 +546,11 @@ Content Factory 是面向内容生产、内容运营和 AI Agent 编排的工作
 
 以下内容在后续阶段分别进入对应专题文档：
 
-- 系统架构：`docs/02-architecture/system-overview.md`
-- 数据模型：`docs/03-database/data-model.md`
-- Agent 角色：`docs/04-agent/agent-roles.md`
-- MCP 工具契约：`docs/05-mcp/tool-contracts.md`
-- Skill 注册：`docs/06-skill/skill-registry.md`
-- 内容生产工作流：`docs/07-workflow/content-pipeline.md`
-- UI 信息架构：`docs/08-ui/information-architecture.md`
-- API 契约：`docs/09-api/api-overview.md`
+- 系统架构：`docs/02-architecture/system-architecture.md`
+- 数据模型：`docs/03-database/database-design.md`
+- Agent 角色：`docs/04-agent/agent-architecture.md`
+- MCP 工具契约：`docs/05-mcp/mcp-architecture.md`
+- 内容生产工作流：`docs/07-workflow/content-workflow.md`
+- UI 设计：`docs/08-ui/ui-design.md`
+- Skill 注册：`docs/06-skill/skill-registry.md`（待创建）
+- API 契约：`docs/09-api/api-overview.md`（待创建）

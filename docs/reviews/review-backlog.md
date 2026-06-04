@@ -35,8 +35,8 @@
 | 红队 RT | 0 | 6 | 4 | 10 |
 | **总计** | **2** | **50** | **49** | **101** |
 
-- 已修复：60　|　待修复：41
-- 全部 10 域已审查完成；未修复 Critical = 0、Major = 0、Minor = 41
+- 已修复：66　|　待修复：35
+- 全部 10 域已审查完成；未修复 Critical = 0、Major = 0、Minor = 35
 
 ## 优先处理清单（Critical + Major）
 
@@ -85,12 +85,12 @@
 | PROD-003 | Completeness | Major | 01-product | 缺主要用户与目标市场 | 明确 MVP 主用户与次要用户 | 已修复 |
 | PROD-004 | Completeness | Major | 01-product | 缺竞品分析与差异化价值主张 | 增补竞品与差异化小节 | 已修复 |
 | PROD-005 | Consistency | Major | 01-product, 07-workflow, 08-ui, 10-development | §6 缺"发布与渠道管理"功能项，与公众号工作台/发布阶段不一致 | §6 增加发布与渠道管理功能项 | 已修复 |
-| PROD-006 | Scope | Minor | 01-product, 08-ui | 内容类型与 MVP 首要渠道未聚焦 | 声明 MVP 首要渠道（公众号图文）与内容类型 | 待修复 |
-| PROD-007 | Completeness | Minor | 01-product | 用户场景缺异常/失败旅程 | §5 补充异常旅程 | 待修复 |
-| PROD-008 | Compliance | Minor | 01-product | 缺合规/版权/数据留存产品要求 | 增补合规与版权小节 | 待修复 |
-| PROD-009 | Dead-link | Minor | 01-product | §11 死链 | 修正为实际文件名 | 待修复 |
-| PROD-010 | Consistency | Minor | 01-product, 10-development | 三套阶段术语并存，映射未声明 | 声明 P0=MVP=Sprint 1-4 | 待修复 |
-| PROD-011 | Robustness | Minor | 01-product | 需求结构化缺兜底规则 | 定义缺失项提示+人工确认+置信度 | 待修复 |
+| PROD-006 | Scope | Minor | 01-product, 08-ui | 内容类型与 MVP 首要渠道未聚焦 | 声明 MVP 首要渠道（公众号图文）与内容类型 | 已修复 |
+| PROD-007 | Completeness | Minor | 01-product | 用户场景缺异常/失败旅程 | §5 补充异常旅程 | 已修复 |
+| PROD-008 | Compliance | Minor | 01-product | 缺合规/版权/数据留存产品要求 | 增补合规与版权小节 | 已修复 |
+| PROD-009 | Dead-link | Minor | 01-product | §11 死链 | 修正为实际文件名 | 已修复 |
+| PROD-010 | Consistency | Minor | 01-product, 10-development | 三套阶段术语并存，映射未声明 | 声明 P0=MVP=Sprint 1-4 | 已修复 |
+| PROD-011 | Robustness | Minor | 01-product | 需求结构化缺兜底规则 | 定义缺失项提示+人工确认+置信度 | 已修复 |
 
 ### Agent
 
@@ -253,3 +253,4 @@
 | 2026-06-03 | 修复批次 10 | UI-006/007（2 Major）→ 已修复；补 UI→架构模块映射表与全局错误/加载态；UI Major 清零（含修正批次 6 对 07-ui-review 的同步遗漏），未修复 High 7→5；详见 fix-log.md |
 | 2026-06-03 | 修复批次 11 | MVP-001~005（5 Major）+ MVP-006（Minor）→ 已修复；阶段依赖表入 S2、外键迁移排序、Skill/插件移出 MVP、任务初始态对齐 DoD、出口门槛对接 §2.3；**全部 10 域 Critical/Major 清零**，未修复 High 5→0；详见 fix-log.md |
 | 2026-06-03 | Minor 批次 12 | 架构 ARCH-006~010 + AGENT-008（命名漂移簇）→ 已修复；全仓 Skill 命名统一为 SkillRuntime/SkillBridge；Minor 47→41；详见 fix-log.md |
+| 2026-06-03 | Minor 批次 13 | 产品 PROD-006~011 → 已修复；补 MVP 聚焦/异常旅程/合规版权/术语映射/需求兜底，校正 §11 死链；产品域全清；Minor 41→35；详见 fix-log.md |
