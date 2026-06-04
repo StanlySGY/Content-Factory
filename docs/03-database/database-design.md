@@ -1001,6 +1001,7 @@ stateDiagram-v2
 - 每次进入阶段执行前生成新的上下文包快照。
 - 上下文包必须记录 `source_refs`，用于追溯输入来源。
 - 敏感数据必须在写入 `data` 前按策略脱敏或裁剪。
+- `sensitivity_level` 驱动到 Provider 的传播控制（由 ContextBuilder 强制，非写入方自觉）：`public` 可入任意 Provider；`internal` 仅受信任本地 Provider；`sensitive` 默认不出本地、禁止注入外部 Provider（如外部 Codex/Gemini），必经脱敏或裁剪后方可传播，违反则拒绝构建上下文。
 
 ### 9.4 配置版本
 

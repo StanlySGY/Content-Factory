@@ -18,7 +18,7 @@
 | 06 | 工作流 | [06-workflow-review.md](./06-workflow-review.md) | 已完成 | 0 | 5 | 5 | 0 | 10 | 2026-06-03 |
 | 07 | UI | [07-ui-review.md](./07-ui-review.md) | 已完成 | 1 | 6 | 4 | 0 | 11 | 2026-06-03 |
 | 08 | MVP | [08-mvp-review.md](./08-mvp-review.md) | 已完成 | 0 | 5 | 5 | 0 | 10 | 2026-06-03 |
-| 09 | 红队 | [09-red-team-review.md](./09-red-team-review.md) | 已完成 | 0 | 6 | 4 | 0 | 6 | 2026-06-03 |
+| 09 | 红队 | [09-red-team-review.md](./09-red-team-review.md) | 已完成 | 0 | 6 | 4 | 0 | 10 | 2026-06-03 |
 | 10 | 终审 | [10-final-review.md](./10-final-review.md) | 已完成 | 0 | 0 | 0 | 0 | 0 | 2026-06-03 |
 
 ## 汇总
@@ -72,3 +72,4 @@
 | 2026-06-03 | Minor 批次 17 | 工作流域 WF-007~010（4 Minor）→ 已修复；WF 域 10 项全清；Minor 16→12 |
 | 2026-06-03 | Minor 批次 18 | UI 域 UI-008~011（4 Minor）→ 已修复；UI 域 11 项全清；状态机一致性簇闭合；Minor 12→8 |
 | 2026-06-03 | Minor 批次 19 | MVP 域 MVP-007~010（4 Minor）→ 已修复；MVP 域 10 项全清；Minor 8→4 |
+| 2026-06-03 | Minor 批次 20 | 红队域 RT-007~010（4 Minor）→ 已修复；RT 域 10 项全清；**全部 10 域 101 项问题清零**；Minor 4→0 |

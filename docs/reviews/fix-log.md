@@ -340,3 +340,26 @@ Minor 清理第八批：MVP 域 4 个 Minor，集中于 `development-roadmap.md`
 
 - 修复 4 项 Minor（MVP-007~010）。已修复累计 93 → 97；未修复 Critical/Major 保持 0；Minor 8 → 4。
 - MVP 域全部 10 项（5 Major + 5 Minor）清零；仅余红队 RT-007~010 四个 Minor。
+
+## 批次 20（2026-06-03，收官）
+
+Minor 清理收官批：红队 RT 域 4 个 Minor，跨 db/mcp/agent。
+
+| 修复时间 | 问题编号 | 修改内容 | 影响范围 |
+| --- | --- | --- | --- |
+| 2026-06-03 | RT-007 (Minor) | db §9.3 定义 sensitivity_level→Provider 传播矩阵，ContextBuilder 强制脱敏，sensitive 禁入外部 Provider | db §9.3 |
+| 2026-06-03 | RT-008 (Minor) | mcp §9.3 规定 digest 单向不可逆（SHA-256）、摘要前先脱敏、统一脱敏管道（对齐 agent §8.3/db §5.18）| mcp §9.3 |
+| 2026-06-03 | RT-009 (Minor) | agent §12.5 加路径沙箱：WSL↔Windows 路径规范化（符号链接/`..`/`/mnt/c`/UNC）+ 工作目录白名单根校验 | agent §12.5 |
+| 2026-06-03 | RT-010 (Minor) | mcp §6.3 远端 http/sse MCP 强制 TLS + 服务端身份校验（对齐 §5.2 integrity）| mcp §6.3 |
+
+### 批次小结
+
+- 修复 4 项 Minor（RT-007~010）。已修复累计 97 → 101；未修复 Critical/Major/Minor 均为 0。
+- 红队域全部 10 项（6 Major + 4 Minor）清零；调用日志可追溯簇全闭合。
+
+## 收官总结（2026-06-03）
+
+- **全部 10 域、101 项问题（2 Critical + 50 Major + 49 Minor）全部已修复**，待修复 = 0。
+- 修复历程：批次 1~11 清零 2 Critical + 50 Major（达放行判据，终审 不通过→有条件通过）；批次 12~20 清零 49 Minor。
+- 四个跨域问题簇全部闭合：死链（ARCH-001/PROD-009/AGENT-012/DB-020）、命名漂移（ARCH-008/AGENT-008）、状态机一致性（WF-001/002/MCP-003/UI-010）、调用日志可追溯（MCP-002/DB-018/RT-008/UI-009）。
+- 设计文档已达开发就绪，无遗留缺陷。

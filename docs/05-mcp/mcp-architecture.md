@@ -276,6 +276,7 @@ sequenceDiagram
 - 密钥只保存引用，不写入 Manifest 或普通配置。
 - 安装脚本不得默认执行破坏性操作。
 - 生产环境安装必须通过人工确认或管理员策略。
+- 远端 MCP（`http`/`sse` runtime）连接必须强制 TLS 并校验服务端身份（证书 / 端点指纹，对齐 §5.2 `integrity` 的 `publisher_key`），禁止明文传输；身份校验失败拒绝连接与调用。
 
 ## 7. MCP 启停
 
@@ -453,6 +454,8 @@ sequenceDiagram
 
 - 不记录明文密钥和敏感正文。
 - 输入输出默认记录摘要，必要时记录脱敏快照。
+- `input_digest`/`output_digest` 必须为单向不可逆摘要（如 SHA-256），仅用于比对与去重，不得由摘要还原明文；摘要计算前先脱敏，杜绝敏感值在摘要中残留。
+- 脱敏采用统一管道（与 agent §8.3、db §5.18 一致）：按字段敏感级别掩码/截断/移除，确保密钥、令牌、敏感正文不入日志与摘要。
 - 高风险调用必须记录完整授权链路。
 - 日志应能关联任务、工作流、阶段、Agent Session 和审查记录。
 - 落库映射：`invocation_log` 落 `tool_invocations`（含 caller_type/caller_id/risk_level/duration_ms，状态枚举一致，见 db §5.17）；`permission_log` 与 `lifecycle_log` 落 `audit_events`（以 action 区分，见 db §5.18）。

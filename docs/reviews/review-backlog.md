@@ -35,8 +35,8 @@
 | 红队 RT | 0 | 6 | 4 | 10 |
 | **总计** | **2** | **50** | **49** | **101** |
 
-- 已修复：97　|　待修复：4
-- 全部 10 域已审查完成；未修复 Critical = 0、Major = 0、Minor = 4
+- 已修复：101　|　待修复：0
+- 全部 10 域已审查完成；未修复 Critical = 0、Major = 0、Minor = 0；**101 项问题全部已修复**。
 
 ## 优先处理清单（Critical + Major）
 
@@ -204,10 +204,10 @@
 | RT-004 | Security/凭证 | Major | 02-architecture, 04-agent | 服务身份签发/轮换未定义，后端凭证管理单点爆炸半径无控 | 短时效令牌+按 Session 下发+凭证管理隔离+速率限制 | 已修复 |
 | RT-005 | Security/供应链 | Major | 02-architecture, 05-mcp | 插件缺来源/签名/摘要校验与进程沙箱强制(不对称 §9.4)，构成提权 | 插件补供应链治理+runtime=process 沙箱强制项 | 已修复 |
 | RT-006 | Security/隔离 | Major | 02-architecture, 03-database | 跨项目隔离仅应用层，无 RLS；敏感快照表未绑 project_id | DB 层 RLS/强制谓词+敏感表绑 project_id+测试告警 | 已修复 |
-| RT-007 | Security/数据 | Minor | 03-database | sensitivity_level 脱敏靠自觉，到 Provider 传播控制缺失 | 定义传播矩阵+ContextBuilder 强制脱敏 | 待修复 |
-| RT-008 | Security/数据 | Minor | 05-mcp, 03-database | digest/脱敏无算法与不可逆要求 | 定义脱敏标准与 digest 约束 | 待修复 |
-| RT-009 | Security/沙箱 | Minor | 04-agent | WSL 路径转换与沙箱交叉逃逸边界未明确 | 路径规范化+白名单根校验 | 待修复 |
-| RT-010 | Security/传输 | Minor | 05-mcp, 03-database | 远端/HTTP/SSE MCP 未要求 TLS 与身份校验 | 远端传输强制 TLS+端点身份校验 | 待修复 |
+| RT-007 | Security/数据 | Minor | 03-database | sensitivity_level 脱敏靠自觉，到 Provider 传播控制缺失 | 定义传播矩阵+ContextBuilder 强制脱敏 | 已修复 |
+| RT-008 | Security/数据 | Minor | 05-mcp, 03-database | digest/脱敏无算法与不可逆要求 | 定义脱敏标准与 digest 约束 | 已修复 |
+| RT-009 | Security/沙箱 | Minor | 04-agent | WSL 路径转换与沙箱交叉逃逸边界未明确 | 路径规范化+白名单根校验 | 已修复 |
+| RT-010 | Security/传输 | Minor | 05-mcp, 03-database | 远端/HTTP/SSE MCP 未要求 TLS 与身份校验 | 远端传输强制 TLS+端点身份校验 | 已修复 |
 
 ## 跨域问题簇（建议批量修复）
 
@@ -221,7 +221,7 @@
 | 阶段术语/范围 | PROD-005, PROD-006, PROD-010 | 统一阶段术语并收敛 MVP 范围，补发布与渠道功能项 |
 | 工作流持久化 | DB-012, DB-013, DB-006 | 并行依赖、回滚血缘、门禁结果、配置快照一并补入数据库 |
 | 状态机一致性（二轮）| WF-001, WF-002, MCP-003, UI-010 | 各状态机统一以领域 §8 为权威，UI 徽章与 MCP 生命周期对齐（已修复）|
-| 调用日志与可追溯（二轮）| MCP-002, DB-018, RT-008, UI-009 | tool_invocations 补 caller/risk/duration + 统一脱敏 + 前端追溯视图（余 RT-008）|
+| 调用日志与可追溯（二轮）| MCP-002, DB-018, RT-008, UI-009 | tool_invocations 补 caller/risk/duration + 统一脱敏 + 前端追溯视图（已修复）|
 | 安全强制点（二轮）| RT-001, RT-002, RT-003, RT-004, RT-005, RT-006 | 实现前统一定义注入隔离、确认绑定、审计防篡改、凭证最小化、插件沙箱、跨项目隔离强制点（已修复，详见 fix-log 批次 8）|
 | UI 核心模块缺口（二轮）| UI-001, UI-002, UI-003, UI-004, UI-005, UI-006, UI-007 | 实时通道 + 工作流设计器/Skill/插件/身份/发布渠道/错误态（已修复）|
 | 回滚与并行（二轮）| WF-003, WF-004, WF-005 | 重试/重做血缘判定、下游失效策略、join 汇聚语义 |
@@ -260,3 +260,4 @@
 | 2026-06-03 | Minor 批次 17 | 工作流 WF-007~010 → 已修复；九阶段↔架构骨架映射/asset_type 词表对齐/配置回滚版本机制/取消允许态；WF 域全清；Minor 16→12；详见 fix-log.md |
 | 2026-06-03 | Minor 批次 18 | UI UI-008~011 → 已修复；信息架构骨架声明/调用追溯视图/状态徽章映射/确认后端驱动；UI 域全清；状态机簇闭合；Minor 12→8；详见 fix-log.md |
 | 2026-06-03 | Minor 批次 19 | MVP MVP-007~010 → 已修复；status 子集/只读计算端点/壳层 S1 基线/必建阶段子集；MVP 域全清；Minor 8→4；详见 fix-log.md |
+| 2026-06-03 | Minor 批次 20 | 红队 RT-007~010 → 已修复；sensitivity 传播矩阵/digest 不可逆脱敏/WSL 路径沙箱/远端 TLS；RT 域全清；**全部 101 项问题清零**；Minor 4→0；详见 fix-log.md |
