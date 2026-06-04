@@ -35,8 +35,8 @@
 | 红队 RT | 0 | 6 | 4 | 10 |
 | **总计** | **2** | **50** | **49** | **101** |
 
-- 已修复：93　|　待修复：8
-- 全部 10 域已审查完成；未修复 Critical = 0、Major = 0、Minor = 8
+- 已修复：97　|　待修复：4
+- 全部 10 域已审查完成；未修复 Critical = 0、Major = 0、Minor = 4
 
 ## 优先处理清单（Critical + Major）
 
@@ -189,10 +189,10 @@
 | MVP-004 | Testability | Major | 10-development, 01-product | 任务初始状态与 draft→ready 流转未规定，未对齐 §7.5 | S1 明确初始 draft/确认置 ready + 测试 | 已修复 |
 | MVP-005 | Completeness | Major | 10-development, 01-product | 缺工时估算；验收未对接 §2.3 硬指标出口门槛 | 补估算与可追溯率/扩展达成出口门槛 | 已修复 |
 | MVP-006 | Completeness | Minor | 10-development, 03-database | publish_records 标可选将丢失版本不漂移保证 | 至少建表 | 已修复 |
-| MVP-007 | Consistency | Minor | 10-development | content_assets.status 各 Sprint 落地子集含糊 | 澄清 S2/S3 各落地 status | 待修复 |
-| MVP-008 | Completeness | Minor | 10-development | compare/editor-state 端点无表，应注明只读计算 | 标注只读计算端点 | 待修复 |
-| MVP-009 | Completeness | Minor | 10-development | 布局壳层基线 Sprint 未指明 | AppShell 等归入 S1 | 待修复 |
-| MVP-010 | Consistency | Minor | 10-development | MVP 九阶段必建子集未明确 | 明确 MVP 必建阶段子集 | 待修复 |
+| MVP-007 | Consistency | Minor | 10-development | content_assets.status 各 Sprint 落地子集含糊 | 澄清 S2/S3 各落地 status | 已修复 |
+| MVP-008 | Completeness | Minor | 10-development | compare/editor-state 端点无表，应注明只读计算 | 标注只读计算端点 | 已修复 |
+| MVP-009 | Completeness | Minor | 10-development | 布局壳层基线 Sprint 未指明 | AppShell 等归入 S1 | 已修复 |
+| MVP-010 | Consistency | Minor | 10-development | MVP 九阶段必建子集未明确 | 明确 MVP 必建阶段子集 | 已修复 |
 
 ### 红队 RT
 
@@ -259,3 +259,4 @@
 | 2026-06-03 | Minor 批次 16 | MCP MCP-005~008 → 已修复；Manifest integrity/§14 补 MCPBridge/状态机终态语义/数据映射落点决策；MCP 域全清；Minor 20→16；详见 fix-log.md |
 | 2026-06-03 | Minor 批次 17 | 工作流 WF-007~010 → 已修复；九阶段↔架构骨架映射/asset_type 词表对齐/配置回滚版本机制/取消允许态；WF 域全清；Minor 16→12；详见 fix-log.md |
 | 2026-06-03 | Minor 批次 18 | UI UI-008~011 → 已修复；信息架构骨架声明/调用追溯视图/状态徽章映射/确认后端驱动；UI 域全清；状态机簇闭合；Minor 12→8；详见 fix-log.md |
+| 2026-06-03 | Minor 批次 19 | MVP MVP-007~010 → 已修复；status 子集/只读计算端点/壳层 S1 基线/必建阶段子集；MVP 域全清；Minor 8→4；详见 fix-log.md |

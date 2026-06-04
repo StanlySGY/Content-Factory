@@ -324,3 +324,19 @@ Minor 清理第七批：UI 域 4 个 Minor，集中于 `ui-design.md`。
 
 - 修复 4 项 Minor（UI-008~011）。已修复累计 89 → 93；未修复 Critical/Major 保持 0；Minor 12 → 8。
 - UI 域全部 11 项（1 Critical + 6 Major + 4 Minor）清零；**状态机一致性簇（WF-001/002/MCP-003/UI-010）全部闭合**；调用日志可追溯簇仅余 RT-008。
+
+## 批次 19（2026-06-03）
+
+Minor 清理第八批：MVP 域 4 个 Minor，集中于 `development-roadmap.md`。
+
+| 修复时间 | 问题编号 | 修改内容 | 影响范围 |
+| --- | --- | --- | --- |
+| 2026-06-03 | MVP-007 (Minor) | §5.3 注明 S2 status 子集（draft/archived）、§6.3 明确 S3 补齐至全集（对齐 db §5.9）| roadmap §5.3/§6.3 |
+| 2026-06-03 | MVP-008 (Minor) | §6.4 注明 editor-state/compare 为只读计算端点，无独立表，聚合现有表实时计算 | roadmap §6.4 |
+| 2026-06-03 | MVP-009 (Minor) | §8.2 声明布局壳层（AppShell 等）在 S1 建立基线、后续复用 | roadmap §8.2 |
+| 2026-06-03 | MVP-010 (Minor) | §9 明确 MVP 必建阶段子集（选题/调研/大纲/写作/审核/发布准备），润色/配图/排版可选 | roadmap §9 |
+
+### 批次小结
+
+- 修复 4 项 Minor（MVP-007~010）。已修复累计 93 → 97；未修复 Critical/Major 保持 0；Minor 8 → 4。
+- MVP 域全部 10 项（5 Major + 5 Minor）清零；仅余红队 RT-007~010 四个 Minor。

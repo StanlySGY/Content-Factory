@@ -32,10 +32,10 @@
 | MVP-004 | Major | DoD 对齐 | PRD §7.5 规定任务创建后置 `ready`，但 S1 未规定初始状态与 draft→ready 确认流转归属 | roadmap §4.3 ↔ PRD §7.5 | 已修复 |
 | MVP-005 | Major | Sprint 完整性 | 缺工时/周期估算；各 Sprint 验收未对接 PRD §2.3 硬指标（可追溯率 100%、扩展达成）作为出口门槛 | roadmap 全篇 ↔ PRD §2.3 | 已修复 |
 | MVP-006 | Minor | 完整性 | `publish_records` 标为可选/可用审计替代，将丢失"已发布版本不漂移"保证（DB §5.21 asset_version_id） | roadmap §7.3 | 已修复 |
-| MVP-007 | Minor | 一致性 | S3 称 content_assets.status"完善"，但 S2 已落地该表，未澄清各 Sprint 落地的 status 子集 | roadmap §6.3 | 待修复 |
-| MVP-008 | Minor | 完整性 | `/api/assets/:id/compare`、`/api/tasks/:id/editor-state` 无对应表，应注明为只读计算端点 | roadmap §6.4 | 待修复 |
-| MVP-009 | Minor | 完整性 | 跨 Sprint 前端引用 AppShell/SidebarNav/TopBar/ContextPanel，未指明布局壳层基线 Sprint | roadmap §8.2 | 待修复 |
-| MVP-010 | Minor | 一致性 | MVP 列九阶段工作流，S2 仅笼统建模、§9 演示仅四阶段，未明确 MVP 必建子集 | roadmap §2.1/§9 | 待修复 |
+| MVP-007 | Minor | 一致性 | S3 称 content_assets.status"完善"，但 S2 已落地该表，未澄清各 Sprint 落地的 status 子集 | roadmap §6.3 | 已修复 |
+| MVP-008 | Minor | 完整性 | `/api/assets/:id/compare`、`/api/tasks/:id/editor-state` 无对应表，应注明为只读计算端点 | roadmap §6.4 | 已修复 |
+| MVP-009 | Minor | 完整性 | 跨 Sprint 前端引用 AppShell/SidebarNav/TopBar/ContextPanel，未指明布局壳层基线 Sprint | roadmap §8.2 | 已修复 |
+| MVP-010 | Minor | 一致性 | MVP 列九阶段工作流，S2 仅笼统建模、§9 演示仅四阶段，未明确 MVP 必建子集 | roadmap §2.1/§9 | 已修复 |
 
 ## 5. 修复建议
 
@@ -56,3 +56,4 @@
 | --- | --- | --- | --- |
 | 2026-06-03 | 工程管理评审 | 完成审查 | 0 Critical / 5 Major / 5 Minor；结论有条件通过 |
 | 2026-06-03 | 修复跟踪 | 批次 11 修复 | MVP-001~005（5 Major）+ MVP-006(Minor) → 已修复；阶段依赖表/迁移排序/范围收敛/任务初始态/出口门槛；详见 fix-log 批次 11 |
+| 2026-06-03 | 修复跟踪 | 批次 19 修复 | MVP-007~010（4 Minor）→ 已修复；status 子集/只读端点/壳层基线/必建阶段子集；MVP 域全清；详见 fix-log 批次 19 |
