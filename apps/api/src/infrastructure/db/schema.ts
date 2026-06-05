@@ -2,6 +2,7 @@
 import {
   bigint,
   index,
+  integer,
   jsonb,
   pgTable,
   text,
@@ -10,6 +11,10 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 import type { RequirementData } from "@cf/shared";
+
+/** 含 schema_version 的 JSON 契约（ADR-015）；完整校验在 API 边界（TypeBox），DB 侧 CHECK 兜底存在性 */
+type JsonContract = { schema_version: number } & Record<string, unknown>;
+type JsonRecord = Record<string, unknown>;
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -73,3 +78,116 @@ export const auditEvents = pgTable("audit_events", {
 });
 
 export type ContentTaskRow = typeof contentTasks.$inferSelect;
+
+// ── Sprint-2：工作流 / 资产 / 上下文（DDL 与约束以 db/migrations 0006–0009 为权威）──
+
+export const workflowDefinitions = pgTable("workflow_definitions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  projectId: uuid("project_id").notNull(),
+  name: varchar("name", { length: 160 }).notNull(),
+  version: integer("version").notNull(),
+  status: varchar("status", { length: 32 }).notNull().default("draft"),
+  definitionSchema: jsonb("definition_schema").$type<JsonContract>().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const workflowStages = pgTable("workflow_stages", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  workflowDefinitionId: uuid("workflow_definition_id").notNull(),
+  key: varchar("key", { length: 80 }).notNull(),
+  name: varchar("name", { length: 160 }).notNull(),
+  position: integer("position").notNull(),
+  executorType: varchar("executor_type", { length: 32 }).notNull(),
+  inputSchema: jsonb("input_schema").$type<JsonContract>().notNull(),
+  outputSchema: jsonb("output_schema").$type<JsonContract>().notNull(),
+  gateSchema: jsonb("gate_schema").$type<JsonContract>().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const workflowStageDependencies = pgTable("workflow_stage_dependencies", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  workflowDefinitionId: uuid("workflow_definition_id").notNull(),
+  stageId: uuid("stage_id").notNull(),
+  dependsOnStageId: uuid("depends_on_stage_id").notNull(),
+  dependencyType: varchar("dependency_type", { length: 32 }).notNull(),
+  conditionSchema: jsonb("condition_schema").$type<JsonContract>(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const workflowRuns = pgTable("workflow_runs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  contentTaskId: uuid("content_task_id").notNull(),
+  workflowDefinitionId: uuid("workflow_definition_id").notNull(),
+  workflowVersion: integer("workflow_version").notNull(),
+  currentStageRunId: uuid("current_stage_run_id"),
+  status: varchar("status", { length: 32 }).notNull().default("pending"),
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const stageRuns = pgTable("stage_runs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  workflowRunId: uuid("workflow_run_id").notNull(),
+  workflowStageId: uuid("workflow_stage_id").notNull(),
+  agentProfileId: uuid("agent_profile_id"),
+  parentStageRunId: uuid("parent_stage_run_id"),
+  status: varchar("status", { length: 32 }).notNull().default("pending"),
+  attemptCount: integer("attempt_count").notNull().default(1),
+  parallelGroup: varchar("parallel_group", { length: 64 }),
+  gateResult: jsonb("gate_result").$type<JsonRecord>(),
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const contentAssets = pgTable("content_assets", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  contentTaskId: uuid("content_task_id").notNull(),
+  stageRunId: uuid("stage_run_id"),
+  assetType: varchar("asset_type", { length: 64 }).notNull(),
+  title: varchar("title", { length: 240 }).notNull(),
+  status: varchar("status", { length: 32 }).notNull().default("draft"),
+  currentVersion: integer("current_version").notNull().default(0),
+  currentVersionId: uuid("current_version_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// 只追加：无 updated_at（asset_versions 永不修改，§9.2/§11）
+export const assetVersions = pgTable("asset_versions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  contentAssetId: uuid("content_asset_id").notNull(),
+  version: integer("version").notNull(),
+  storageUri: text("storage_uri").notNull(),
+  checksum: varchar("checksum", { length: 128 }).notNull(),
+  metadata: jsonb("metadata").$type<JsonContract>().notNull(),
+  sourceStageRunId: uuid("source_stage_run_id"),
+  createdBy: uuid("created_by"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const contextPacks = pgTable("context_packs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  contentTaskId: uuid("content_task_id").notNull(),
+  stageRunId: uuid("stage_run_id"),
+  version: integer("version").notNull(),
+  scope: varchar("scope", { length: 64 }).notNull(),
+  data: jsonb("data").$type<JsonRecord>().notNull(),
+  sourceRefs: jsonb("source_refs").$type<JsonRecord>().notNull(),
+  sensitivityLevel: varchar("sensitivity_level", { length: 32 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type WorkflowDefinitionRow = typeof workflowDefinitions.$inferSelect;
+export type WorkflowStageRow = typeof workflowStages.$inferSelect;
+export type WorkflowStageDependencyRow = typeof workflowStageDependencies.$inferSelect;
+export type WorkflowRunRow = typeof workflowRuns.$inferSelect;
+export type StageRunRow = typeof stageRuns.$inferSelect;
+export type ContentAssetRow = typeof contentAssets.$inferSelect;
+export type AssetVersionRow = typeof assetVersions.$inferSelect;
+export type ContextPackRow = typeof contextPacks.$inferSelect;
