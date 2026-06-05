@@ -23,11 +23,23 @@ export const REQUIREMENT_SCHEMA_VERSION = 1 as const;
 
 /** 审计多态主体类型（db §5.18） */
 export const AUDIT_SUBJECT_TASK = "content_task" as const;
+export const AUDIT_SUBJECT_WORKFLOW_DEFINITION = "workflow_definition" as const;
+export const AUDIT_SUBJECT_WORKFLOW_RUN = "workflow_run" as const;
+export const AUDIT_SUBJECT_STAGE_RUN = "stage_run" as const;
+export const AUDIT_SUBJECT_CONTENT_ASSET = "content_asset" as const;
 
-/** 审计动作（S1） */
+/** 审计动作（S1 + S2 工作流引擎） */
 export const AUDIT_ACTIONS = {
   taskCreated: "content_task.created",
   taskUpdated: "content_task.updated",
+  workflowDefinitionCreated: "workflow_definition.created",
+  workflowDefinitionActivated: "workflow_definition.activated",
+  workflowRunStarted: "workflow_run.started",
+  workflowRunStatusChanged: "workflow_run.status_changed",
+  stageRunStatusChanged: "stage_run.status_changed",
+  assetCreated: "content_asset.created",
+  assetVersionCreated: "asset_version.created",
+  assetVersionPublished: "asset_version.published",
 } as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];
 

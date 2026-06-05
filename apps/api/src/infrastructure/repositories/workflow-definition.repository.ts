@@ -1,6 +1,13 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import type { Db } from "../db/client.js";
-import { workflowDefinitions, type WorkflowDefinitionRow } from "../db/schema.js";
+import {
+  workflowDefinitions,
+  workflowStageDependencies,
+  workflowStages,
+  type WorkflowDefinitionRow,
+  type WorkflowStageDependencyRow,
+  type WorkflowStageRow,
+} from "../db/schema.js";
 
 // WorkflowDefinitionRepository：SQL + 映射 + project 隔离（直接 project_id 谓词）+ 事务。
 // 不做 schema_version / DAG / 状态机校验（Domain 负责）。活跃唯一由 DB 部分唯一索引强制。
@@ -151,4 +158,88 @@ export async function activateVersion(
     .where(eq(workflowDefinitions.id, id))
     .returning();
   return row ?? null;
+}
+
+// ── 阶段 / 依赖（定义聚合的从属行）：写入由 Service 在已 scoped 的 definitionId 下编排；
+//    读取经 definition 的 project 谓词隔离。DAG/版本/合法性校验归 Domain。──
+
+export interface StageWrite {
+  key: string;
+  name: string;
+  position: number;
+  executor_type: string;
+  input_schema: JsonContract;
+  output_schema: JsonContract;
+  gate_schema: JsonContract;
+}
+
+export interface DependencyWrite {
+  stage_id: string;
+  depends_on_stage_id: string;
+  dependency_type: string;
+}
+
+export async function createStage(
+  db: Db,
+  definitionId: string,
+  w: StageWrite,
+): Promise<WorkflowStageRow> {
+  const [row] = await db
+    .insert(workflowStages)
+    .values({
+      workflowDefinitionId: definitionId,
+      key: w.key,
+      name: w.name,
+      position: w.position,
+      executorType: w.executor_type,
+      inputSchema: w.input_schema,
+      outputSchema: w.output_schema,
+      gateSchema: w.gate_schema,
+    })
+    .returning();
+  return row!;
+}
+
+export async function createDependency(
+  db: Db,
+  definitionId: string,
+  w: DependencyWrite,
+): Promise<WorkflowStageDependencyRow> {
+  const [row] = await db
+    .insert(workflowStageDependencies)
+    .values({
+      workflowDefinitionId: definitionId,
+      stageId: w.stage_id,
+      dependsOnStageId: w.depends_on_stage_id,
+      dependencyType: w.dependency_type,
+    })
+    .returning();
+  return row!;
+}
+
+/** 列出定义的阶段（按 position 升序）；经 definition 的 project 谓词隔离（跨项目返回空）*/
+export async function listStages(
+  db: Db,
+  projectId: string,
+  definitionId: string,
+): Promise<WorkflowStageRow[]> {
+  if (!(await getById(db, projectId, definitionId))) return [];
+  return db
+    .select()
+    .from(workflowStages)
+    .where(eq(workflowStages.workflowDefinitionId, definitionId))
+    .orderBy(asc(workflowStages.position));
+}
+
+/** 列出定义的阶段依赖；经 definition 的 project 谓词隔离（跨项目返回空）*/
+export async function listDependencies(
+  db: Db,
+  projectId: string,
+  definitionId: string,
+): Promise<WorkflowStageDependencyRow[]> {
+  if (!(await getById(db, projectId, definitionId))) return [];
+  return db
+    .select()
+    .from(workflowStageDependencies)
+    .where(eq(workflowStageDependencies.workflowDefinitionId, definitionId));
 }
