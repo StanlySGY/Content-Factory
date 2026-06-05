@@ -27,8 +27,9 @@ export const AUDIT_SUBJECT_WORKFLOW_DEFINITION = "workflow_definition" as const;
 export const AUDIT_SUBJECT_WORKFLOW_RUN = "workflow_run" as const;
 export const AUDIT_SUBJECT_STAGE_RUN = "stage_run" as const;
 export const AUDIT_SUBJECT_CONTENT_ASSET = "content_asset" as const;
+export const AUDIT_SUBJECT_REVIEW = "review_record" as const;
 
-/** 审计动作（S1 + S2 工作流引擎） */
+/** 审计动作（S1 + S2 工作流引擎 + S3 评审；仅追加，不改既有值） */
 export const AUDIT_ACTIONS = {
   taskCreated: "content_task.created",
   taskUpdated: "content_task.updated",
@@ -40,6 +41,10 @@ export const AUDIT_ACTIONS = {
   assetCreated: "content_asset.created",
   assetVersionCreated: "asset_version.created",
   assetVersionPublished: "asset_version.published",
+  // ── S3 评审 ──
+  assetStatusChanged: "content_asset.status_changed",
+  reviewApproved: "review_record.approved",
+  reviewRevisionRequested: "review_record.revision_requested",
 } as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];
 
@@ -120,3 +125,20 @@ export const SUPPORTED_SCHEMA_VERSIONS: Record<
   output_schema: [1],
   gate_schema: [1],
 };
+
+// ── Sprint-3 评审层值集（镜像 DB CHECK；转换规则归后端领域层，ADR-006）──
+
+/** 内容资产状态全集（db content_assets_status_chk；S2 子集仅 draft/archived）*/
+export const CONTENT_ASSET_STATUSES = [
+  "draft",
+  "review_pending",
+  "approved",
+  "rejected",
+  "stale",
+  "archived",
+] as const;
+export type ContentAssetStatus = (typeof CONTENT_ASSET_STATUSES)[number];
+
+/** 评审动作（db review_records_action_chk）*/
+export const REVIEW_ACTIONS = ["approve", "request_revision"] as const;
+export type ReviewAction = (typeof REVIEW_ACTIONS)[number];

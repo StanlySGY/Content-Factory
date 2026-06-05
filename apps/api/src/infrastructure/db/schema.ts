@@ -183,6 +183,22 @@ export const contextPacks = pgTable("context_packs", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// 只追加：无 updated_at（review_records 永不修改，§9.2/§11）
+export const reviewRecords = pgTable("review_records", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  projectId: uuid("project_id").notNull(),
+  taskId: uuid("task_id").notNull(),
+  workflowRunId: uuid("workflow_run_id").notNull(),
+  stageRunId: uuid("stage_run_id").notNull(),
+  assetId: uuid("asset_id"),
+  assetVersionId: uuid("asset_version_id"),
+  reviewerId: uuid("reviewer_id").notNull(),
+  reviewAction: varchar("review_action", { length: 32 }).notNull(),
+  reviewComment: text("review_comment"),
+  targetStageRunId: uuid("target_stage_run_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export type WorkflowDefinitionRow = typeof workflowDefinitions.$inferSelect;
 export type WorkflowStageRow = typeof workflowStages.$inferSelect;
 export type WorkflowStageDependencyRow = typeof workflowStageDependencies.$inferSelect;
@@ -191,3 +207,4 @@ export type StageRunRow = typeof stageRuns.$inferSelect;
 export type ContentAssetRow = typeof contentAssets.$inferSelect;
 export type AssetVersionRow = typeof assetVersions.$inferSelect;
 export type ContextPackRow = typeof contextPacks.$inferSelect;
+export type ReviewRecordRow = typeof reviewRecords.$inferSelect;
