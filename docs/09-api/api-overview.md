@@ -86,6 +86,7 @@
 | `GET` | `/api/tasks` | 任务列表（分页/过滤）| 否 |
 | `GET` | `/api/tasks/:id` | 任务详情 | 否 |
 | `PATCH` | `/api/tasks/:id` | 更新任务基础信息 | 是 |
+| `GET` | `/api/tasks/:id/audit-events` | 任务审计链（哈希链只读；对应用户需求"查看审计记录"）| 否 |
 
 ### 4.2 Sprint 2 — 工作流与资产
 
