@@ -142,3 +142,7 @@ export type ContentAssetStatus = (typeof CONTENT_ASSET_STATUSES)[number];
 /** 评审动作（db review_records_action_chk）*/
 export const REVIEW_ACTIONS = ["approve", "request_revision"] as const;
 export type ReviewAction = (typeof REVIEW_ACTIONS)[number];
+
+/** 评审决议状态（领域状态机，与 StageRun 严格分离；db §8.4 审查结论）*/
+export const REVIEW_STATUSES = ["pending", "approved", "revision_requested"] as const;
+export type ReviewStatus = (typeof REVIEW_STATUSES)[number];
