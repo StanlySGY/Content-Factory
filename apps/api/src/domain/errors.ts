@@ -30,3 +30,9 @@ export class NotFoundError extends AppError {
   readonly httpStatus = 404;
   readonly code = "not_found";
 }
+
+/** 唯一约束冲突（活跃实例唯一 / 唯一键 / 乐观锁）→ 409 */
+export class ConflictError extends AppError {
+  readonly httpStatus = 409;
+  readonly code = "conflict";
+}
