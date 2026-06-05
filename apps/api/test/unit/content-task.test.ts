@@ -57,9 +57,12 @@ describe("createDraft", () => {
 });
 
 describe("task status machine (ADR-006)", () => {
-  it("allows draft→ready / draft→cancelled", () => {
+  it("allows draft→ready; forbids draft→cancelled (§8.1 收紧)", () => {
     expect(canTransition("draft", "ready")).toBe(true);
-    expect(canTransition("draft", "cancelled")).toBe(true);
+    expect(canTransition("draft", "cancelled")).toBe(false);
+  });
+  it("allows ready→cancelled (唯一取消入口)", () => {
+    expect(canTransition("ready", "cancelled")).toBe(true);
   });
   it("forbids workflow-driven draft→running in S1", () => {
     expect(canTransition("draft", "running")).toBe(false);

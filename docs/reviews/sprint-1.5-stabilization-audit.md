@@ -104,7 +104,7 @@ seq | action               | hash_ok | link_ok
 
 | # | 漂移 | 严重度 | 说明 |
 |---|------|--------|------|
-| D1 | **draft→cancelled** | LOW | `status.ts` 与 `TaskDetailPage` 均允许 draft 直接取消；database-design §8.1 状态机仅有 `ready→cancelled` / `running→cancelled`，**无 draft→cancelled**。实现+UI 一致更宽松（合理 UX），但偏离文档机。需决策：补文档机或收紧实现（后者属改业务逻辑，本阶段不做） |
+| D1 | **draft→cancelled** | LOW | `status.ts` 与 `TaskDetailPage` 均允许 draft 直接取消；database-design §8.1 状态机仅有 `ready→cancelled` / `running→cancelled`，**无 draft→cancelled**。实现+UI 一致更宽松（合理 UX），但偏离文档机。→ **✅ 已收口**（Decision Closure 选 Option 1：收紧实现匹配 §8.1，移除 draft→cancelled；见 [state-machine-closure](./state-machine-closure.md)） |
 
 ### Mismatch points（文档缺口）
 
@@ -134,7 +134,7 @@ seq | action               | hash_ok | link_ok
 
 | # | 建议 | 类别 | 优先级 | 备注 |
 |---|------|------|--------|------|
-| R1 | D1 决策：在 §8.1 状态机补 `draft→cancelled`（推荐，符合 UX 与现有 UI）或收紧 `status.ts` | 文档/设计 | 中 | 收紧实现属改业务逻辑，本阶段不做 |
+| R1 | D1 决策：在 §8.1 状态机补 `draft→cancelled`（推荐，符合 UX 与现有 UI）或收紧 `status.ts` | 文档/设计 | 中 | **✅ 已执行**（Decision Closure 选 Option 1：收紧 `status.ts`/UI/测试对齐 §8.1，回归 40/40 绿） |
 | R2 | `content_tasks` 启用 DB 级 RLS（纵深防御），消除直连 DB 绕过项目隔离/审计的风险 | 安全 | 中 | 改 DB 结构，留待 Sprint-2 迁移 |
 | R3 | 引入认证并在非本地部署前绑 `127.0.0.1` 或网关前置 | 安全/部署 | 高（部署前） | 认证属 Sprint-2+ 既定范围 |
 | R4 | `requirement_data` 表单补 `channel/goals/constraints`，避免编辑覆盖丢字段 | 前端 | 低 | 属新增功能，本阶段禁止 |
@@ -153,7 +153,7 @@ seq | action               | hash_ok | link_ok
 **判定**：Sprint-1 基础层（任务 / 审计哈希链 / RLS / DB / 前后端契约）稳定、一致、安全闭环，已通过全部验证，**可进入 Sprint-2**。所列条件均为**非阻断性**收敛/加固项，且多属 Sprint-2 原生工作。
 
 **放行条件（建议在 Sprint-2 规划纳入跟踪，不阻断启动）：**
-1. 对 D1（draft→cancelled）作出文档/实现对齐决策（R1）。
+1. 对 D1（draft→cancelled）作出文档/实现对齐决策（R1）。→ **✅ 已完成**（Option 1，见 [state-machine-closure](./state-machine-closure.md)）。
 2. Sprint-2 引入工作流态时，同步迁移扩展 `content_tasks` 状态 CHECK（R7）。
 3. 引入认证 + 在 `content_tasks` 启用 RLS，作为多项目/部署前的安全纵深（R2/R3）。
 

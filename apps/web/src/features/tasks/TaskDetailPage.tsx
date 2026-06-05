@@ -29,10 +29,7 @@ function toFormValues(t: ContentTaskDTO): TaskFormValues {
 
 // 状态动作（人工可达；权威校验在后端，非法转换返回 409）
 const ACTIONS: Partial<Record<TaskStatus, { label: string; to: TaskStatus }[]>> = {
-  draft: [
-    { label: "确认需求", to: "ready" },
-    { label: "取消", to: "cancelled" },
-  ],
+  draft: [{ label: "确认需求", to: "ready" }],
   ready: [{ label: "取消", to: "cancelled" }],
   cancelled: [{ label: "归档", to: "archived" }],
 };

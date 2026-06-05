@@ -4,7 +4,7 @@ import { InvalidTransitionError } from "../errors.js";
 // 内容任务状态机（集中化，ADR-006）— S1 子集：仅人工可达转换（db §8.1）
 // running / waiting_review 等由工作流驱动，后续 Sprint 扩展本表，不散落手写。
 const TRANSITIONS: Record<TaskStatus, readonly TaskStatus[]> = {
-  draft: ["ready", "cancelled"],
+  draft: ["ready"], // 收紧：取消仅 ready→cancelled（db §8.1 无 draft→cancelled）
   ready: ["cancelled"],
   running: [], // 工作流驱动（S2+）
   completed: ["archived"],
