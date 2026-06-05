@@ -133,4 +133,18 @@ export class AssetService {
       return updated;
     });
   }
+
+  async getAsset(ctx: RequestContext, id: string): Promise<ContentAssetRow> {
+    const row = await runInProject(this.db, ctx.projectId, (tx) =>
+      assetRepo.getAsset(tx, ctx.projectId, id),
+    );
+    if (!row) throw new NotFoundError(`content_asset ${id} not found`);
+    return row;
+  }
+
+  listVersions(ctx: RequestContext, assetId: string): Promise<AssetVersionRow[]> {
+    return runInProject(this.db, ctx.projectId, (tx) =>
+      assetRepo.listVersions(tx, ctx.projectId, assetId),
+    );
+  }
 }

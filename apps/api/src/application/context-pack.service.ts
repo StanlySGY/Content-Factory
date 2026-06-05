@@ -6,6 +6,8 @@ import { NotFoundError } from "../domain/errors.js";
 import { runInProject, type Db } from "../infrastructure/db/client.js";
 import type { ContextPackRow } from "../infrastructure/db/schema.js";
 import * as ctxRepo from "../infrastructure/repositories/context-pack.repository.js";
+import * as runRepo from "../infrastructure/repositories/workflow-run.repository.js";
+import * as stageRepo from "../infrastructure/repositories/stage-run.repository.js";
 import type { RequestContext } from "./task.service.js";
 
 export interface ContextPackChanges {
@@ -28,7 +30,7 @@ export class ContextPackService {
     ctx: RequestContext,
     input: ContextPackInput,
   ): Promise<ContextPackRow> {
-    const w = createContextPack(input); // 失败 → ValidationError(422)
+    const w = createContextPack(input); // 失败 → ValidationError(400)
     return runInProject(this.db, ctx.projectId, (tx) =>
       ctxRepo.create(tx, ctx.projectId, {
         content_task_id: w.content_task_id,
@@ -55,6 +57,12 @@ export class ContextPackService {
     return row;
   }
 
+  listByTask(ctx: RequestContext, taskId: string): Promise<ContextPackRow[]> {
+    return runInProject(this.db, ctx.projectId, (tx) =>
+      ctxRepo.listByTask(tx, ctx.projectId, taskId),
+    );
+  }
+
   /**
    * 解析阶段上下文：合并 task 级 + stage 级（各取最高 version），stage 覆盖 task。
    * 返回 { task, stage, merged }，merged 为 data 的浅合并。
@@ -67,15 +75,34 @@ export class ContextPackService {
     return runInProject(this.db, ctx.projectId, async (tx) => {
       const taskPacks = await ctxRepo.listByTask(tx, ctx.projectId, taskId);
       const stagePacks = await ctxRepo.listByStage(tx, ctx.projectId, stageRunId);
-      const task = latest(taskPacks.filter((p) => p.scope === "task"));
-      const stage = latest(stagePacks);
-      return {
-        task,
-        stage,
-        merged: { ...(task?.data ?? {}), ...(stage?.data ?? {}) },
-      };
+      return mergeOf(taskPacks, stagePacks);
     });
   }
+
+  /** API 入口：仅凭 stage_run id 解析（经 stage→run→task 推导 taskId 后合并）*/
+  async resolveForStageRun(
+    ctx: RequestContext,
+    stageRunId: string,
+  ): Promise<ResolvedStageContext> {
+    return runInProject(this.db, ctx.projectId, async (tx) => {
+      const stage = await stageRepo.getById(tx, ctx.projectId, stageRunId);
+      if (!stage) throw new NotFoundError(`stage_run ${stageRunId} not found`);
+      const run = await runRepo.getRun(tx, ctx.projectId, stage.workflowRunId);
+      if (!run) throw new NotFoundError(`workflow_run ${stage.workflowRunId} not found`);
+      const taskPacks = await ctxRepo.listByTask(tx, ctx.projectId, run.contentTaskId);
+      const stagePacks = await ctxRepo.listByStage(tx, ctx.projectId, stageRunId);
+      return mergeOf(taskPacks, stagePacks);
+    });
+  }
+}
+
+function mergeOf(
+  taskPacks: ContextPackRow[],
+  stagePacks: ContextPackRow[],
+): ResolvedStageContext {
+  const task = latest(taskPacks.filter((p) => p.scope === "task"));
+  const stage = latest(stagePacks);
+  return { task, stage, merged: { ...(task?.data ?? {}), ...(stage?.data ?? {}) } };
 }
 
 function latest(packs: ContextPackRow[]): ContextPackRow | null {

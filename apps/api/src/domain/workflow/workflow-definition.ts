@@ -106,7 +106,7 @@ export function validateDefinition(
   return { valid: errors.length === 0, errors };
 }
 
-/** 统一抛出入口：失败抛 ValidationError（→422，details 携结构化错误）*/
+/** 统一抛出入口：失败抛 ValidationError（→400，details 携结构化错误）*/
 export function assertDefinition(def: WorkflowDefinitionInput): void {
   const r = validateDefinition(def);
   if (!r.valid)

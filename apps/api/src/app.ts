@@ -2,11 +2,20 @@ import cors from "@fastify/cors";
 import addFormats from "ajv-formats";
 import { sql } from "drizzle-orm";
 import Fastify, { type FastifyInstance, type FastifyServerOptions } from "fastify";
+import { AssetService } from "./application/asset.service.js";
+import { ContextPackService } from "./application/context-pack.service.js";
 import { TaskService } from "./application/task.service.js";
+import { WorkflowDefinitionService } from "./application/workflow-definition.service.js";
+import { WorkflowRunService } from "./application/workflow-run.service.js";
 import type { Env } from "./config/env.js";
 import { createDb, createPool } from "./infrastructure/db/client.js";
 import { registerErrorHandler } from "./interfaces/http/errors.js";
+import { assetRoutes } from "./interfaces/http/routes/assets.js";
+import { contextPackRoutes } from "./interfaces/http/routes/context-packs.js";
+import { stageRunRoutes } from "./interfaces/http/routes/stage-runs.js";
 import { taskRoutes } from "./interfaces/http/routes/tasks.js";
+import { workflowRunRoutes } from "./interfaces/http/routes/workflow-runs.js";
+import { workflowRoutes } from "./interfaces/http/routes/workflows.js";
 
 export interface BuiltApp {
   app: FastifyInstance;
@@ -24,6 +33,10 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
   const db = createDb(appPool);
   const auditDb = createDb(auditPool);
   const service = new TaskService(db, auditDb);
+  const defService = new WorkflowDefinitionService(db);
+  const runService = new WorkflowRunService(db);
+  const contextService = new ContextPackService(db);
+  const assetService = new AssetService(db);
 
   const app = Fastify({
     logger: opts.logger ?? true,
@@ -40,6 +53,11 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
   });
 
   await app.register(taskRoutes, { env, service });
+  await app.register(workflowRoutes, { env, defService, runService });
+  await app.register(workflowRunRoutes, { env, runService });
+  await app.register(stageRunRoutes, { env, runService, contextService });
+  await app.register(contextPackRoutes, { env, contextService });
+  await app.register(assetRoutes, { env, assetService });
 
   const close = async (): Promise<void> => {
     await app.close();

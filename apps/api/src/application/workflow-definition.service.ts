@@ -51,7 +51,7 @@ export class WorkflowDefinitionService {
     ctx: RequestContext,
     input: CreateDefinitionInput,
   ): Promise<WorkflowDefinitionRow> {
-    assertDefinition(toDomainInput(input)); // 失败 → ValidationError(422)
+    assertDefinition(toDomainInput(input)); // 失败 → ValidationError(400)
     return runInProject(this.db, ctx.projectId, async (tx) => {
       const def = await defRepo.create(tx, ctx.projectId, {
         name: input.name,
@@ -114,6 +114,23 @@ export class WorkflowDefinitionService {
       });
       return activated;
     });
+  }
+
+  async getDefinition(ctx: RequestContext, id: string): Promise<WorkflowDefinitionRow> {
+    const row = await runInProject(this.db, ctx.projectId, (tx) =>
+      defRepo.getById(tx, ctx.projectId, id),
+    );
+    if (!row) throw new NotFoundError(`workflow_definition ${id} not found`);
+    return row;
+  }
+
+  listDefinitions(
+    ctx: RequestContext,
+    q: { page?: number; page_size?: number },
+  ): Promise<defRepo.ListDefinitionsResult> {
+    return runInProject(this.db, ctx.projectId, (tx) =>
+      defRepo.listPaged(tx, ctx.projectId, q),
+    );
   }
 }
 

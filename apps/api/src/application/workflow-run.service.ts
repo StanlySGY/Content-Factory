@@ -206,4 +206,18 @@ export class WorkflowRunService {
       return updated;
     });
   }
+
+  async getRun(ctx: RequestContext, runId: string): Promise<WorkflowRunRow> {
+    const row = await runInProject(this.db, ctx.projectId, (tx) =>
+      runRepo.getRun(tx, ctx.projectId, runId),
+    );
+    if (!row) throw new NotFoundError(`workflow_run ${runId} not found`);
+    return row;
+  }
+
+  listRunsByTask(ctx: RequestContext, taskId: string): Promise<WorkflowRunRow[]> {
+    return runInProject(this.db, ctx.projectId, (tx) =>
+      runRepo.listRunsByTask(tx, ctx.projectId, taskId),
+    );
+  }
 }

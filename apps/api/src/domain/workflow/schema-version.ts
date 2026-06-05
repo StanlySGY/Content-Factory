@@ -78,7 +78,7 @@ export function validateContractField(
   return validateSchemaVersion(value, field, SUPPORTED_SCHEMA_VERSIONS[field]);
 }
 
-/** 统一抛出入口：失败抛 ValidationError（→422）*/
+/** 统一抛出入口：失败抛 ValidationError（→400）*/
 export function assertSchemaVersion(
   value: unknown,
   field: WorkflowContractField,

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 import type { Db } from "../db/client.js";
 import {
   workflowDefinitions,
@@ -108,6 +108,36 @@ export async function listByProject(
     .from(workflowDefinitions)
     .where(eq(workflowDefinitions.projectId, projectId))
     .orderBy(desc(workflowDefinitions.updatedAt));
+}
+
+export interface ListDefinitionsResult {
+  items: WorkflowDefinitionRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+/** 分页列出项目定义（按 updated_at 倒序）*/
+export async function listPaged(
+  db: Db,
+  projectId: string,
+  q: { page?: number; page_size?: number },
+): Promise<ListDefinitionsResult> {
+  const page = q.page ?? 1;
+  const pageSize = q.page_size ?? 20;
+  const where = eq(workflowDefinitions.projectId, projectId);
+  const items = await db
+    .select()
+    .from(workflowDefinitions)
+    .where(where)
+    .orderBy(desc(workflowDefinitions.updatedAt))
+    .limit(pageSize)
+    .offset((page - 1) * pageSize);
+  const [cnt] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(workflowDefinitions)
+    .where(where);
+  return { items, total: cnt?.count ?? 0, page, pageSize };
 }
 
 export async function update(

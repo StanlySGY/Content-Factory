@@ -13,9 +13,9 @@ export abstract class AppError extends Error {
   }
 }
 
-/** 领域不变量校验失败 → 422 业务规则拒绝 */
+/** 领域不变量 / 输入校验失败 → 400（api §2.3；统一校验失败语义） */
 export class ValidationError extends AppError {
-  readonly httpStatus = 422;
+  readonly httpStatus = 400;
   readonly code = "validation_failed";
 }
 
