@@ -8,21 +8,21 @@ import { InvalidTransitionError } from "../../src/domain/errors.js";
 
 const LEGAL: [string, string][] = [
   ["pending", "running"],
+  ["pending", "skipped"],
   ["running", "waiting_review"],
   ["running", "failed"],
-  ["running", "skipped"],
   ["waiting_review", "approved"],
-  ["waiting_review", "failed"],
+  ["failed", "running"],
 ];
 
-// 非法抽样：含 pending→skipped（本矩阵不允许）、跳门禁、终态外迁、回流
+// 非法抽样：含 running→skipped、waiting_review→failed（本矩阵不允许）、跳门禁、终态外迁、回流
 const ILLEGAL: [string, string][] = [
-  ["pending", "skipped"],
+  ["running", "skipped"],
+  ["waiting_review", "failed"],
   ["pending", "waiting_review"],
   ["running", "approved"],
   ["waiting_review", "running"],
   ["approved", "running"],
-  ["failed", "running"],
   ["skipped", "running"],
   ["approved", "approved"],
 ];

@@ -4,12 +4,13 @@ import {
   type TransitionMatrix,
 } from "../state-machine/generic-state-machine.js";
 
-// 工作流运行状态机（集中化，ADR-006）— S2 矩阵（Step-2 指令）；其余转换一律禁止。
+// 工作流运行状态机（集中化，ADR-006）— S2 子集（db §8.2 ∩ C-1，exec-plan §3）；其余转换一律禁止。
+// failed→running 为人工恢复（db §8.2）；无 failed→archived。
 const TRANSITIONS: TransitionMatrix<WorkflowRunStatus> = {
   pending: ["running"],
   running: ["completed", "failed", "terminated"],
+  failed: ["running"],
   completed: ["archived"],
-  failed: ["archived"],
   terminated: ["archived"],
   archived: [],
 };

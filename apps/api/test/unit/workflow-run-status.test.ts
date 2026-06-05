@@ -11,18 +11,18 @@ const LEGAL: [string, string][] = [
   ["running", "completed"],
   ["running", "failed"],
   ["running", "terminated"],
+  ["failed", "running"],
   ["completed", "archived"],
-  ["failed", "archived"],
   ["terminated", "archived"],
 ];
 
-// 全集对所有非法转换的抽样（含被刻意禁止的 failed→running、跳跃、回流、终态外迁）
+// 非法抽样（含被刻意禁止的 failed→archived、跳跃、回流、终态外迁）
 const ILLEGAL: [string, string][] = [
   ["pending", "completed"],
   ["pending", "archived"],
   ["running", "pending"],
   ["running", "archived"],
-  ["failed", "running"],
+  ["failed", "archived"],
   ["terminated", "running"],
   ["completed", "running"],
   ["archived", "running"],
