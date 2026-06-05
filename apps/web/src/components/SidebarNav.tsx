@@ -1,6 +1,6 @@
 import { NavLink } from "react-router-dom";
 
-const FUTURE = ["素材中心", "知识库", "Agent 管理", "MCP 管理", "公众号工作台"];
+const FUTURE = ["知识库", "Agent 管理", "MCP 管理", "公众号工作台"];
 
 export function SidebarNav() {
   return (
@@ -8,6 +8,8 @@ export function SidebarNav() {
       <div className="brand">⚙ Content Factory</div>
       <NavLink to="/dashboard">Dashboard</NavLink>
       <NavLink to="/content/tasks">内容中心</NavLink>
+      <NavLink to="/workflows">工作流</NavLink>
+      <NavLink to="/assets">素材中心</NavLink>
       <div className="nav-group">后续 Sprint</div>
       {FUTURE.map((label) => (
         <span className="nav-disabled" key={label} title="后续 Sprint 交付">

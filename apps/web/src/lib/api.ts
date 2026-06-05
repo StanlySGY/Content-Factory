@@ -1,11 +1,31 @@
 import type {
+  AssetVersionDTO,
   AuditEventDTO,
+  ContentAssetDTO,
   ContentTaskDTO,
+  ContextPackDTO,
+  CreateAssetBody,
+  CreateAssetVersionBody,
+  CreateContextPackBody,
   CreateTaskBody,
+  CreateWorkflowBody,
   ListTasksQuery,
+  ListWorkflowsQuery,
   PaginatedTasks,
+  PublishVersionBody,
+  UpdateContextPackBody,
   UpdateTaskBody,
+  WorkflowDefinitionDTO,
+  WorkflowRunDTO,
 } from "@cf/shared";
+
+/** 工作流定义分页响应（对齐后端 PaginatedWorkflowsSchema） */
+export interface PaginatedWorkflows {
+  items: WorkflowDefinitionDTO[];
+  page: number;
+  page_size: number;
+  total: number;
+}
 
 /** 统一错误（对齐后端 api §2.3） */
 export class ApiError extends Error {
@@ -57,4 +77,36 @@ export const api = {
     request<ContentTaskDTO>("PATCH", `/tasks/${id}`, b),
   auditTrail: (id: string) =>
     request<AuditEventDTO[]>("GET", `/tasks/${id}/audit-events`),
+
+  // ── Sprint-2 ──
+  listWorkflows: (q: ListWorkflowsQuery) =>
+    request<PaginatedWorkflows>("GET", `/workflows${toQuery(q)}`),
+  getWorkflow: (id: string) =>
+    request<WorkflowDefinitionDTO>("GET", `/workflows/${id}`),
+  createWorkflow: (b: CreateWorkflowBody) =>
+    request<WorkflowDefinitionDTO>("POST", "/workflows", b),
+  activateWorkflow: (id: string) =>
+    request<WorkflowDefinitionDTO>("POST", `/workflows/${id}/activate`),
+
+  listWorkflowRuns: (taskId: string) =>
+    request<WorkflowRunDTO[]>("GET", `/tasks/${taskId}/workflow-runs`),
+  retryWorkflowRun: (id: string) =>
+    request<WorkflowRunDTO>("POST", `/workflow-runs/${id}/retry`),
+
+  listContextPacks: (taskId: string) =>
+    request<ContextPackDTO[]>("GET", `/tasks/${taskId}/context-packs`),
+  createContextPack: (b: CreateContextPackBody) =>
+    request<ContextPackDTO>("POST", "/context-packs", b),
+  updateContextPack: (id: string, b: UpdateContextPackBody) =>
+    request<ContextPackDTO>("PUT", `/context-packs/${id}`, b),
+
+  createAsset: (b: CreateAssetBody) =>
+    request<ContentAssetDTO>("POST", "/assets", b),
+  getAsset: (id: string) => request<ContentAssetDTO>("GET", `/assets/${id}`),
+  listAssetVersions: (id: string) =>
+    request<AssetVersionDTO[]>("GET", `/assets/${id}/versions`),
+  createAssetVersion: (id: string, b: CreateAssetVersionBody) =>
+    request<AssetVersionDTO>("POST", `/assets/${id}/versions`, b),
+  publishAssetVersion: (id: string, b: PublishVersionBody) =>
+    request<ContentAssetDTO>("POST", `/assets/${id}/publish`, b),
 };

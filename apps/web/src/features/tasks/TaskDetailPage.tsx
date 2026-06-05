@@ -83,9 +83,17 @@ export function TaskDetailPage() {
               </button>
             ))}
           {!editing && (
-            <button className="btn primary" onClick={() => setEditing(true)}>
-              编辑
-            </button>
+            <>
+              <Link className="btn" to={`/tasks/${id}/workflow-runs`}>
+                工作流运行
+              </Link>
+              <Link className="btn" to={`/tasks/${id}/context-packs`}>
+                上下文包
+              </Link>
+              <button className="btn primary" onClick={() => setEditing(true)}>
+                编辑
+              </button>
+            </>
           )}
         </div>
       </div>
