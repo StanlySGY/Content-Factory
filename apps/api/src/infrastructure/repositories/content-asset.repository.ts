@@ -129,6 +129,42 @@ export async function findVersionByChecksum(
   return row ?? null;
 }
 
+/** 按版本号取单版本（经 asset→task→project 隔离）；不存在返回 null */
+export async function getVersionByNumber(
+  db: Db,
+  projectId: string,
+  assetId: string,
+  version: number,
+): Promise<AssetVersionRow | null> {
+  if (!(await getAsset(db, projectId, assetId)))
+    throw new NotFoundError(`content_asset ${assetId} not found in project`);
+  const [row] = await db
+    .select()
+    .from(assetVersions)
+    .where(and(eq(assetVersions.contentAssetId, assetId), eq(assetVersions.version, version)))
+    .limit(1);
+  return row ?? null;
+}
+
+/**
+ * 版本对比查询：仅返回两版本的内容指针与元数据（项目隔离），不做 diff。
+ * diff 算法归 Service 层（Step-4）。任一版本缺失 → 404。
+ */
+export async function compareVersions(
+  db: Db,
+  projectId: string,
+  assetId: string,
+  fromVersion: number,
+  toVersion: number,
+): Promise<{ from: AssetVersionRow; to: AssetVersionRow }> {
+  const from = await getVersionByNumber(db, projectId, assetId, fromVersion);
+  if (!from)
+    throw new NotFoundError(`asset ${assetId} version ${fromVersion} not found`);
+  const to = await getVersionByNumber(db, projectId, assetId, toVersion);
+  if (!to) throw new NotFoundError(`asset ${assetId} version ${toVersion} not found`);
+  return { from, to };
+}
+
 /** 回填当前版本指针（DEFERRABLE，§9.2）；current_version 整数同步为展示冗余 */
 export async function setCurrentVersion(
   db: Db,

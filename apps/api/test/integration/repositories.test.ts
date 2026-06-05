@@ -13,10 +13,13 @@ import {
   assetVersions,
   contentTasks,
   projects,
+  reviewRecords,
   workflowStages,
 } from "../../src/infrastructure/db/schema.js";
 import * as assetRepo from "../../src/infrastructure/repositories/content-asset.repository.js";
 import * as ctxRepo from "../../src/infrastructure/repositories/context-pack.repository.js";
+import * as dashRepo from "../../src/infrastructure/repositories/dashboard.repository.js";
+import * as reviewRepo from "../../src/infrastructure/repositories/review.repository.js";
 import * as stageRepo from "../../src/infrastructure/repositories/stage-run.repository.js";
 import * as defRepo from "../../src/infrastructure/repositories/workflow-definition.repository.js";
 import * as runRepo from "../../src/infrastructure/repositories/workflow-run.repository.js";
@@ -175,3 +178,102 @@ async function freshTask(): Promise<string> {
     .returning();
   return t!.id;
 }
+
+// ── Sprint-3 Repository 层：ReviewRepository / DashboardRepository / Asset Compare ──
+describe("Sprint-3 repositories (projC 隔离夹具)", () => {
+  let projC: string;
+  let taskC: string;
+  let srC: string;
+  let assetC: string;
+  let vC1: string;
+  let rev1: string;
+
+  beforeAll(async () => {
+    projC = randomUUID();
+    await db.insert(projects).values({ id: projC, ownerId: DEFAULT_USER_ID, name: "ProjC" });
+    const [t] = await db
+      .insert(contentTasks)
+      .values({ projectId: projC, title: "C", contentType: "article", priority: "normal", requirementData: v1 })
+      .returning();
+    taskC = t!.id;
+    const defC = await defRepo.create(db, projC, { name: `wf-${randomUUID()}`, version: 1, status: "active", definition_schema: v1 });
+    const [stageC] = await db
+      .insert(workflowStages)
+      .values({ workflowDefinitionId: defC.id, key: "planning", name: "planning", position: 1, executorType: "human", inputSchema: v1, outputSchema: v1, gateSchema: v1 })
+      .returning();
+    const runC = await runRepo.createRun(db, projC, { content_task_id: taskC, workflow_definition_id: defC.id, workflow_version: 1 });
+    const sr = await stageRepo.create(db, projC, { workflow_run_id: runC.id, workflow_stage_id: stageC!.id });
+    srC = sr.id;
+    await stageRepo.updateStatus(db, projC, srC, "waiting_review"); // pendingReviews=1
+    assetC = (await assetRepo.createAsset(db, projC, { content_task_id: taskC, asset_type: "draft", title: "C" })).id;
+    vC1 = (await assetRepo.createVersion(db, projC, { content_asset_id: assetC, version: 1, storage_uri: "s3://c1", checksum: "c1", metadata: v1 })).id;
+    await assetRepo.createVersion(db, projC, { content_asset_id: assetC, version: 2, storage_uri: "s3://c2", checksum: "c2", metadata: v1 });
+    await ctxRepo.create(db, projC, { content_task_id: taskC, version: 1, scope: "task", data: v1, source_refs: v1, sensitivity_level: "internal" });
+    const r1 = await reviewRepo.createReview(db, projC, { task_id: taskC, workflow_run_id: runC.id, stage_run_id: srC, asset_id: assetC, asset_version_id: vC1, reviewer_id: DEFAULT_USER_ID, review_action: "approve" });
+    rev1 = r1.id;
+    await reviewRepo.createReview(db, projC, { task_id: taskC, workflow_run_id: runC.id, stage_run_id: srC, reviewer_id: DEFAULT_USER_ID, review_action: "request_revision", target_stage_run_id: srC, review_comment: "redo" });
+  });
+
+  describe("ReviewRepository (append-only)", () => {
+    it("appends review history without overwriting (two rows on same stage)", async () => {
+      const list = await reviewRepo.listReviewsByStageRun(db, projC, srC);
+      expect(list.map((r) => r.reviewAction)).toEqual(["approve", "request_revision"]);
+      expect(await reviewRepo.getReview(db, projC, rev1)).not.toBeNull();
+    });
+    it("lists reviews by asset version", async () => {
+      expect(await reviewRepo.listReviewsByAssetVersion(db, projC, vC1)).toHaveLength(1);
+    });
+    it("enforces project isolation (no cross-project read)", async () => {
+      expect(await reviewRepo.getReview(db, projB, rev1)).toBeNull();
+      expect(await reviewRepo.listReviewsByStageRun(db, projB, srC)).toEqual([]);
+      expect(await reviewRepo.listReviewsByAssetVersion(db, projB, vC1)).toEqual([]);
+    });
+    it("returns null / 404 on not found", async () => {
+      expect(await reviewRepo.getReview(db, projC, randomUUID())).toBeNull();
+      await expect(
+        reviewRepo.createReview(db, projC, { task_id: taskC, workflow_run_id: randomUUID(), stage_run_id: randomUUID(), reviewer_id: DEFAULT_USER_ID, review_action: "approve" }),
+      ).rejects.toBeInstanceOf(NotFoundError);
+      await expect(
+        reviewRepo.createReview(db, projB, { task_id: taskC, workflow_run_id: randomUUID(), stage_run_id: srC, reviewer_id: DEFAULT_USER_ID, review_action: "approve" }),
+      ).rejects.toBeInstanceOf(NotFoundError);
+    });
+    it("enforces DB-level append-only (UPDATE on review_records denied)", async () => {
+      await expect(
+        db.update(reviewRecords).set({ reviewComment: "tampered" }).where(eq(reviewRecords.id, rev1)),
+      ).rejects.toThrow(/permission denied/i);
+    });
+  });
+
+  describe("DashboardRepository", () => {
+    it("summarizes project entity counts", async () => {
+      expect(await dashRepo.summaryByProject(db, projC)).toEqual({
+        workflowDefinitions: 1,
+        workflowRuns: 1,
+        pendingReviews: 1,
+        assets: 1,
+        contextPacks: 1,
+      });
+    });
+    it("isolates counts per project (empty project → zeros)", async () => {
+      expect(await dashRepo.summaryByProject(db, projB)).toMatchObject({
+        workflowRuns: 0,
+        pendingReviews: 0,
+        assets: 0,
+        contextPacks: 0,
+      });
+    });
+  });
+
+  describe("Asset compare query", () => {
+    it("returns both versions' content and metadata (no diff)", async () => {
+      const { from, to } = await assetRepo.compareVersions(db, projC, assetC, 1, 2);
+      expect([from.version, to.version]).toEqual([1, 2]);
+      expect([from.storageUri, to.storageUri]).toEqual(["s3://c1", "s3://c2"]);
+      expect(from.metadata).toMatchObject({ schema_version: 1 });
+    });
+    it("404 on missing version or cross-project asset", async () => {
+      await expect(assetRepo.compareVersions(db, projC, assetC, 1, 99)).rejects.toBeInstanceOf(NotFoundError);
+      await expect(assetRepo.compareVersions(db, projB, assetC, 1, 2)).rejects.toBeInstanceOf(NotFoundError);
+    });
+  });
+});
