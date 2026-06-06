@@ -42,9 +42,11 @@ export const AUDIT_ACTIONS = {
   assetVersionCreated: "asset_version.created",
   assetVersionPublished: "asset_version.published",
   // ── S3 评审 ──
-  assetStatusChanged: "content_asset.status_changed",
+  reviewCreated: "review_record.created",
   reviewApproved: "review_record.approved",
   reviewRevisionRequested: "review_record.revision_requested",
+  assetStatusChanged: "content_asset.status_changed",
+  stageRunRecreated: "stage_run.recreated",
 } as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];
 

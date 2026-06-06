@@ -181,3 +181,19 @@ export async function setCurrentVersion(
     .returning();
   return row ?? null;
 }
+
+/** 更新资产状态（纯 SQL 持久化）；状态机校验由 Service/Domain 负责，本层不判断转换合法性 */
+export async function updateStatus(
+  db: Db,
+  projectId: string,
+  assetId: string,
+  status: string,
+): Promise<ContentAssetRow | null> {
+  if (!(await getAsset(db, projectId, assetId))) return null;
+  const [row] = await db
+    .update(contentAssets)
+    .set({ status, updatedAt: new Date() })
+    .where(eq(contentAssets.id, assetId))
+    .returning();
+  return row ?? null;
+}
