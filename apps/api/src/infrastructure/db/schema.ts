@@ -1,6 +1,7 @@
 // Drizzle schema（类型化查询镜像；DB 真相以 db/migrations 为权威）
 import {
   bigint,
+  boolean,
   index,
   integer,
   jsonb,
@@ -223,6 +224,42 @@ export const agentSessions = pgTable("agent_sessions", {
   createdBy: uuid("created_by").notNull(),
 });
 
+// Sprint-4.2 MCP 壳层（tool_invocations 只追加：无 updated_at；状态于插入时定稿）
+export const mcpServers = pgTable("mcp_servers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  projectId: uuid("project_id").notNull(),
+  name: varchar("name", { length: 160 }).notNull(),
+  description: text("description"),
+  endpoint: text("endpoint").notNull(),
+  status: varchar("status", { length: 32 }).notNull().default("active"),
+  riskLevel: varchar("risk_level", { length: 16 }).notNull().default("low"),
+  createdBy: uuid("created_by").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const mcpTools = pgTable("mcp_tools", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  mcpServerId: uuid("mcp_server_id").notNull(),
+  name: varchar("name", { length: 160 }).notNull(),
+  description: text("description"),
+  manifest: jsonb("manifest").$type<JsonRecord>().notNull(),
+  enabled: boolean("enabled").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const toolInvocations = pgTable("tool_invocations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  projectId: uuid("project_id").notNull(),
+  mcpServerId: uuid("mcp_server_id").notNull(),
+  mcpToolId: uuid("mcp_tool_id").notNull(),
+  agentProfileId: uuid("agent_profile_id"),
+  status: varchar("status", { length: 32 }).notNull(),
+  requestSnapshot: jsonb("request_snapshot").$type<JsonRecord>().notNull(),
+  responseSnapshot: jsonb("response_snapshot").$type<JsonRecord>().notNull(),
+  createdBy: uuid("created_by").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export type WorkflowDefinitionRow = typeof workflowDefinitions.$inferSelect;
 export type WorkflowStageRow = typeof workflowStages.$inferSelect;
 export type WorkflowStageDependencyRow = typeof workflowStageDependencies.$inferSelect;
@@ -234,3 +271,6 @@ export type ContextPackRow = typeof contextPacks.$inferSelect;
 export type ReviewRecordRow = typeof reviewRecords.$inferSelect;
 export type AgentProfileRow = typeof agentProfiles.$inferSelect;
 export type AgentSessionRow = typeof agentSessions.$inferSelect;
+export type McpServerRow = typeof mcpServers.$inferSelect;
+export type McpToolRow = typeof mcpTools.$inferSelect;
+export type ToolInvocationRow = typeof toolInvocations.$inferSelect;

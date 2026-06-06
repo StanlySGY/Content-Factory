@@ -165,3 +165,17 @@ export type AgentProfileStatus = (typeof AGENT_PROFILE_STATUSES)[number];
 /** Agent Session 状态（db agent_sessions_status_chk；只追加，于插入时定稿）*/
 export const AGENT_SESSION_STATUSES = ["pending", "running", "completed", "failed"] as const;
 export type AgentSessionStatus = (typeof AGENT_SESSION_STATUSES)[number];
+
+// ── Sprint-4.2 MCP 壳层值集（镜像 DB CHECK）──
+
+/** MCP Server 状态（db mcp_servers_status_chk）*/
+export const MCP_SERVER_STATUSES = ["active", "disabled", "archived"] as const;
+export type McpServerStatus = (typeof MCP_SERVER_STATUSES)[number];
+
+/** MCP 风险等级（db mcp_servers_risk_chk）*/
+export const MCP_RISK_LEVELS = ["low", "medium", "high"] as const;
+export type McpRiskLevel = (typeof MCP_RISK_LEVELS)[number];
+
+/** 工具调用状态（db tool_invocations_status_chk；只追加，于插入时定稿）*/
+export const TOOL_INVOCATION_STATUSES = ["success", "failed", "blocked"] as const;
+export type ToolInvocationStatus = (typeof TOOL_INVOCATION_STATUSES)[number];
