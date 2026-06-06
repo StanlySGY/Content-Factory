@@ -3,6 +3,7 @@ import type {
   ContentAssetDTO,
   ContentTaskDTO,
   ContextPackDTO,
+  ReviewRecordDTO,
   StageRunDTO,
   WorkflowDefinitionDTO,
   WorkflowRunDTO,
@@ -12,6 +13,7 @@ import type {
   ContentAssetRow,
   ContentTaskRow,
   ContextPackRow,
+  ReviewRecordRow,
   StageRunRow,
   WorkflowDefinitionRow,
   WorkflowRunRow,
@@ -136,6 +138,25 @@ export function toAssetVersionDTO(r: AssetVersionRow): AssetVersionDTO {
     metadata: r.metadata,
     source_stage_run_id: r.sourceStageRunId,
     created_by: r.createdBy,
+    created_at: r.createdAt.toISOString(),
+  };
+}
+
+// ── Sprint-3 行 → DTO ──
+
+export function toReviewRecordDTO(r: ReviewRecordRow): ReviewRecordDTO {
+  return {
+    id: r.id,
+    project_id: r.projectId,
+    task_id: r.taskId,
+    workflow_run_id: r.workflowRunId,
+    stage_run_id: r.stageRunId,
+    asset_id: r.assetId,
+    asset_version_id: r.assetVersionId,
+    reviewer_id: r.reviewerId,
+    review_action: r.reviewAction as ReviewRecordDTO["review_action"],
+    review_comment: r.reviewComment,
+    target_stage_run_id: r.targetStageRunId,
     created_at: r.createdAt.toISOString(),
   };
 }

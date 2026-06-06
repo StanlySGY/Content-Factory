@@ -215,6 +215,15 @@ export class WorkflowRunService {
     return row;
   }
 
+  /** 只读取单阶段（暴露 GET /stage-runs/:id；无业务逻辑，project 隔离经仓储两级 join）*/
+  async getStageRun(ctx: RequestContext, stageRunId: string): Promise<StageRunRow> {
+    const row = await runInProject(this.db, ctx.projectId, (tx) =>
+      stageRepo.getById(tx, ctx.projectId, stageRunId),
+    );
+    if (!row) throw new NotFoundError(`stage_run ${stageRunId} not found`);
+    return row;
+  }
+
   listRunsByTask(ctx: RequestContext, taskId: string): Promise<WorkflowRunRow[]> {
     return runInProject(this.db, ctx.projectId, (tx) =>
       runRepo.listRunsByTask(tx, ctx.projectId, taskId),

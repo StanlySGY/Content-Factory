@@ -32,6 +32,13 @@ export const stageRunRoutes: FastifyPluginAsyncTypebox<StageRunRoutesOptions> = 
       toStageRunDTO(await runService.retryStage(buildContext(env, request), request.params.id)),
   );
 
+  app.get(
+    "/api/stage-runs/:id",
+    { schema: { params: IdParamSchema, response: { 200: StageRunSchema } } },
+    async (request) =>
+      toStageRunDTO(await runService.getStageRun(buildContext(env, request), request.params.id)),
+  );
+
   app.post(
     "/api/stage-runs/:id/status",
     { schema: { params: IdParamSchema, body: StageStatusBodySchema, response: { 200: StageRunSchema } } },

@@ -1,11 +1,13 @@
 import type { FastifyPluginAsyncTypebox } from "@fastify/type-provider-typebox";
 import {
+  AssetCompareQuerySchema,
   AssetVersionSchema,
   ContentAssetSchema,
   CreateAssetBodySchema,
   CreateAssetVersionBodySchema,
   IdParamSchema,
   PublishVersionBodySchema,
+  VersionCompareResultSchema,
 } from "@cf/shared";
 import { Type } from "@sinclair/typebox";
 import {
@@ -67,6 +69,18 @@ export const assetRoutes: FastifyPluginAsyncTypebox<AssetRoutesOptions> = async 
     { schema: { params: IdParamSchema, response: { 200: ContentAssetSchema } } },
     async (request) =>
       toContentAssetDTO(await assetService.getAsset(buildContext(env, request), request.params.id)),
+  );
+
+  app.get(
+    "/api/assets/:id/compare",
+    { schema: { params: IdParamSchema, querystring: AssetCompareQuerySchema, response: { 200: VersionCompareResultSchema } } },
+    async (request) =>
+      assetService.compareAssetVersions(
+        buildContext(env, request),
+        request.params.id,
+        request.query.from,
+        request.query.to,
+      ),
   );
 
   app.get(

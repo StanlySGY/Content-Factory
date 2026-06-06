@@ -4,6 +4,8 @@ import { sql } from "drizzle-orm";
 import Fastify, { type FastifyInstance, type FastifyServerOptions } from "fastify";
 import { AssetService } from "./application/asset.service.js";
 import { ContextPackService } from "./application/context-pack.service.js";
+import { DashboardService } from "./application/dashboard.service.js";
+import { ReviewService } from "./application/review.service.js";
 import { TaskService } from "./application/task.service.js";
 import { WorkflowDefinitionService } from "./application/workflow-definition.service.js";
 import { WorkflowRunService } from "./application/workflow-run.service.js";
@@ -12,6 +14,8 @@ import { createDb, createPool } from "./infrastructure/db/client.js";
 import { registerErrorHandler } from "./interfaces/http/errors.js";
 import { assetRoutes } from "./interfaces/http/routes/assets.js";
 import { contextPackRoutes } from "./interfaces/http/routes/context-packs.js";
+import { dashboardRoutes } from "./interfaces/http/routes/dashboard.js";
+import { reviewRoutes } from "./interfaces/http/routes/reviews.js";
 import { stageRunRoutes } from "./interfaces/http/routes/stage-runs.js";
 import { taskRoutes } from "./interfaces/http/routes/tasks.js";
 import { workflowRunRoutes } from "./interfaces/http/routes/workflow-runs.js";
@@ -37,6 +41,8 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
   const runService = new WorkflowRunService(db);
   const contextService = new ContextPackService(db);
   const assetService = new AssetService(db);
+  const reviewService = new ReviewService(db);
+  const dashboardService = new DashboardService(db);
 
   const app = Fastify({
     logger: opts.logger ?? true,
@@ -58,6 +64,8 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
   await app.register(stageRunRoutes, { env, runService, contextService });
   await app.register(contextPackRoutes, { env, contextService });
   await app.register(assetRoutes, { env, assetService });
+  await app.register(reviewRoutes, { env, reviewService });
+  await app.register(dashboardRoutes, { env, dashboardService });
 
   const close = async (): Promise<void> => {
     await app.close();

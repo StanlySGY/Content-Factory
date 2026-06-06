@@ -4,6 +4,8 @@ import {
   DEPENDENCY_TYPES,
   EXECUTOR_TYPES,
   REQUIREMENT_SCHEMA_VERSION,
+  REVIEW_ACTIONS,
+  REVIEW_STATUSES,
   SENSITIVITY_LEVELS,
   STAGE_RUN_STATUSES,
   TASK_PRIORITIES,
@@ -388,3 +390,105 @@ export const PublishVersionBodySchema = Type.Object(
   { additionalProperties: false },
 );
 export type PublishVersionBody = Static<typeof PublishVersionBodySchema>;
+
+// ---- Review (S3) ----
+export const ReviewActionSchema = StringEnum(REVIEW_ACTIONS);
+export const ReviewStatusSchema = StringEnum(REVIEW_STATUSES);
+
+export const ReviewRecordSchema = Type.Object(
+  {
+    id: Uuid(),
+    project_id: Uuid(),
+    task_id: Uuid(),
+    workflow_run_id: Uuid(),
+    stage_run_id: Uuid(),
+    asset_id: Nullable(Uuid()),
+    asset_version_id: Nullable(Uuid()),
+    reviewer_id: Uuid(),
+    review_action: ReviewActionSchema,
+    review_comment: Nullable(Type.String()),
+    target_stage_run_id: Nullable(Uuid()),
+    created_at: Type.String({ format: "date-time" }),
+  },
+  { additionalProperties: false },
+);
+export type ReviewRecordDTO = Static<typeof ReviewRecordSchema>;
+
+export const StageRunIdParamSchema = Type.Object(
+  { stageRunId: Uuid() },
+  { additionalProperties: false },
+);
+
+export const ApproveReviewBodySchema = Type.Object(
+  {
+    asset_id: Type.Optional(Nullable(Uuid())),
+    asset_version_id: Type.Optional(Nullable(Uuid())),
+    comment: Type.Optional(Nullable(Type.String())),
+  },
+  { additionalProperties: false },
+);
+export type ApproveReviewBody = Static<typeof ApproveReviewBodySchema>;
+
+export const RequestRevisionBodySchema = Type.Object(
+  {
+    target_stage_run_id: Uuid(),
+    asset_id: Type.Optional(Nullable(Uuid())),
+    asset_version_id: Type.Optional(Nullable(Uuid())),
+    comment: Type.Optional(Nullable(Type.String())),
+  },
+  { additionalProperties: false },
+);
+export type RequestRevisionBody = Static<typeof RequestRevisionBodySchema>;
+
+export const ReviewResultSchema = Type.Object(
+  {
+    review: ReviewRecordSchema,
+    review_status: ReviewStatusSchema,
+    asset: Nullable(ContentAssetSchema),
+    run: WorkflowRunSchema,
+    created_stage_runs: Type.Array(StageRunSchema),
+  },
+  { additionalProperties: false },
+);
+
+// ---- Dashboard (S3) ----
+export const DashboardSummaryQuerySchema = Type.Object(
+  { projectId: Uuid() },
+  { additionalProperties: false },
+);
+export const DashboardSummarySchema = Type.Object(
+  {
+    workflowDefinitions: Type.Integer(),
+    workflowRuns: Type.Integer(),
+    pendingReviews: Type.Integer(),
+    assets: Type.Integer(),
+    contextPacks: Type.Integer(),
+  },
+  { additionalProperties: false },
+);
+
+// ---- Asset version compare (S3) ----
+export const AssetCompareQuerySchema = Type.Object(
+  {
+    from: Type.Integer({ minimum: 1 }),
+    to: Type.Integer({ minimum: 1 }),
+  },
+  { additionalProperties: false },
+);
+export const FieldDiffSchema = Type.Object(
+  {
+    field: Type.String(),
+    oldValue: Type.Unknown(),
+    newValue: Type.Unknown(),
+  },
+  { additionalProperties: false },
+);
+export const VersionCompareResultSchema = Type.Object(
+  {
+    asset_id: Uuid(),
+    from_version: Type.Integer(),
+    to_version: Type.Integer(),
+    diff: Type.Array(FieldDiffSchema),
+  },
+  { additionalProperties: false },
+);
