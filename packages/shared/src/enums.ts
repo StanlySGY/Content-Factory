@@ -30,6 +30,9 @@ export const AUDIT_SUBJECT_CONTENT_ASSET = "content_asset" as const;
 export const AUDIT_SUBJECT_REVIEW = "review_record" as const;
 export const AUDIT_SUBJECT_AGENT_PROFILE = "agent_profile" as const;
 export const AUDIT_SUBJECT_AGENT_SESSION = "agent_session" as const;
+export const AUDIT_SUBJECT_MCP_SERVER = "mcp_server" as const;
+export const AUDIT_SUBJECT_MCP_TOOL = "mcp_tool" as const;
+export const AUDIT_SUBJECT_TOOL_INVOCATION = "tool_invocation" as const;
 
 /** 审计动作（S1 + S2 工作流引擎 + S3 评审；仅追加，不改既有值） */
 export const AUDIT_ACTIONS = {
@@ -54,6 +57,13 @@ export const AUDIT_ACTIONS = {
   agentProfileUpdated: "agent_profile.updated",
   agentProfileHealthChecked: "agent_profile.health_checked",
   agentSessionCreated: "agent_session.created",
+  // ── S4.2 MCP 壳层 ──
+  mcpServerCreated: "mcp_server.created",
+  mcpServerUpdated: "mcp_server.updated",
+  mcpServerHealthChecked: "mcp_server.health_checked",
+  mcpToolCreated: "mcp_tool.created",
+  mcpToolUpdated: "mcp_tool.updated",
+  toolInvocationCreated: "tool_invocation.created",
 } as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];
 
