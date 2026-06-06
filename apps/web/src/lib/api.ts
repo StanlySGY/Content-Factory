@@ -10,9 +10,11 @@ import type {
   CreateContextPackBody,
   CreateTaskBody,
   CreateWorkflowBody,
+  EditorStateDTO,
   ListTasksQuery,
   ListWorkflowsQuery,
   PaginatedTasks,
+  PendingReviewDTO,
   PublishVersionBody,
   RequestRevisionBody,
   ReviewRecordDTO,
@@ -20,6 +22,7 @@ import type {
   StageRunDTO,
   UpdateContextPackBody,
   UpdateTaskBody,
+  WorkQueueItemDTO,
   WorkflowDefinitionDTO,
   WorkflowRunDTO,
 } from "@cf/shared";
@@ -158,4 +161,12 @@ export const api = {
     request<StageRunDTO>("POST", `/stage-runs/${id}/retry`),
   compareAssetVersions: (id: string, from: number, to: number) =>
     request<VersionCompareResult>("GET", `/assets/${id}/compare${toQuery({ from, to })}`),
+
+  // ── Sprint-3.5（只读聚合）──
+  getEditorState: (taskId: string) =>
+    request<EditorStateDTO>("GET", `/tasks/${taskId}/editor-state`),
+  getPendingReviews: (projectId: string) =>
+    request<PendingReviewDTO[]>("GET", `/dashboard/pending-reviews${toQuery({ projectId })}`),
+  getWorkQueue: (projectId: string) =>
+    request<WorkQueueItemDTO[]>("GET", `/dashboard/work-queue${toQuery({ projectId })}`),
 };

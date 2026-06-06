@@ -2,9 +2,11 @@ import { Link } from "react-router-dom";
 import type { TaskStatus } from "@cf/shared";
 import { EmptyState, ErrorBar, Skeleton } from "../../components/states.js";
 import { DEFAULT_PROJECT_ID } from "../../lib/config.js";
+import { PendingReviewList } from "../reviews/PendingReviewList.js";
 import { useTasks } from "../tasks/hooks.js";
 import { TaskTable } from "../tasks/TaskTable.js";
-import { useDashboardSummary } from "./hooks.js";
+import { WorkQueueList } from "../work-queue/WorkQueueList.js";
+import { usePendingReviews, useWorkQueue, useDashboardSummary } from "./hooks.js";
 import { SummaryCards } from "./SummaryCards.js";
 
 const KPIS: { label: string; status: TaskStatus }[] = [
@@ -17,6 +19,8 @@ const KPIS: { label: string; status: TaskStatus }[] = [
 export function DashboardPage() {
   const { data, isLoading, isError, error } = useTasks({ page: 1, page_size: 100 });
   const summary = useDashboardSummary(DEFAULT_PROJECT_ID);
+  const pending = usePendingReviews(DEFAULT_PROJECT_ID);
+  const work = useWorkQueue(DEFAULT_PROJECT_ID);
   const items = data?.items ?? [];
   const count = (s: TaskStatus) => items.filter((t) => t.status === s).length;
 
@@ -53,6 +57,20 @@ export function DashboardPage() {
           </div>
         ))}
       </div>
+
+      <h2 className="section-title">
+        待审核 · <Link to="/reviews/pending">全部</Link>
+      </h2>
+      {pending.isLoading ? (
+        <Skeleton rows={2} />
+      ) : (
+        <PendingReviewList items={(pending.data ?? []).slice(0, 5)} />
+      )}
+
+      <h2 className="section-title">
+        工作队列 · <Link to="/work-queue">全部</Link>
+      </h2>
+      {work.isLoading ? <Skeleton rows={2} /> : <WorkQueueList items={(work.data ?? []).slice(0, 5)} />}
 
       <h2 className="section-title">最近任务</h2>
       {isLoading ? (

@@ -90,6 +90,9 @@ export function TaskDetailPage() {
               <Link className="btn" to={`/tasks/${id}/context-packs`}>
                 上下文包
               </Link>
+              <Link className="btn" to={`/tasks/${id}/editor`}>
+                编辑页
+              </Link>
               <button className="btn primary" onClick={() => setEditing(true)}>
                 编辑
               </button>
