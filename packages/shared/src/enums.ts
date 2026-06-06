@@ -28,6 +28,8 @@ export const AUDIT_SUBJECT_WORKFLOW_RUN = "workflow_run" as const;
 export const AUDIT_SUBJECT_STAGE_RUN = "stage_run" as const;
 export const AUDIT_SUBJECT_CONTENT_ASSET = "content_asset" as const;
 export const AUDIT_SUBJECT_REVIEW = "review_record" as const;
+export const AUDIT_SUBJECT_AGENT_PROFILE = "agent_profile" as const;
+export const AUDIT_SUBJECT_AGENT_SESSION = "agent_session" as const;
 
 /** 审计动作（S1 + S2 工作流引擎 + S3 评审；仅追加，不改既有值） */
 export const AUDIT_ACTIONS = {
@@ -47,6 +49,11 @@ export const AUDIT_ACTIONS = {
   reviewRevisionRequested: "review_record.revision_requested",
   assetStatusChanged: "content_asset.status_changed",
   stageRunRecreated: "stage_run.recreated",
+  // ── S4.1 Agent 壳层 ──
+  agentProfileCreated: "agent_profile.created",
+  agentProfileUpdated: "agent_profile.updated",
+  agentProfileHealthChecked: "agent_profile.health_checked",
+  agentSessionCreated: "agent_session.created",
 } as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];
 
