@@ -10,6 +10,7 @@ import {
   type Db,
 } from "../../src/infrastructure/db/client.js";
 import {
+  agentSessions,
   assetVersions,
   contentTasks,
   projects,
@@ -17,6 +18,8 @@ import {
   workflowStages,
 } from "../../src/infrastructure/db/schema.js";
 import * as assetRepo from "../../src/infrastructure/repositories/content-asset.repository.js";
+import * as agentProfileRepo from "../../src/infrastructure/repositories/agent-profile.repository.js";
+import * as agentSessionRepo from "../../src/infrastructure/repositories/agent-session.repository.js";
 import * as ctxRepo from "../../src/infrastructure/repositories/context-pack.repository.js";
 import * as dashRepo from "../../src/infrastructure/repositories/dashboard.repository.js";
 import * as editorRepo from "../../src/infrastructure/repositories/editor.repository.js";
@@ -368,6 +371,88 @@ describe("Sprint-3.5 read-only queries (projF)", () => {
     });
     it("404 cross-project (projB cannot read projF task)", async () => {
       await expect(editorRepo.getEditorState(db, projB, taskF)).rejects.toBeInstanceOf(NotFoundError);
+    });
+  });
+});
+
+// ── Sprint-4.1 Agent 壳层仓储（projAg 隔离夹具）──
+describe("Agent repositories (projAg)", () => {
+  let projAg: string;
+  let profileId: string;
+  let sessionId: string;
+
+  beforeAll(async () => {
+    projAg = randomUUID();
+    await db.insert(projects).values({ id: projAg, ownerId: DEFAULT_USER_ID, name: "ProjAg" });
+    const p = await agentProfileRepo.createProfile(db, projAg, {
+      name: "Writer", description: "w", capabilities: { tools: ["search"] }, constraints: { maxTools: 3 }, created_by: DEFAULT_USER_ID,
+    });
+    profileId = p.id;
+    const s = await agentSessionRepo.createSession(db, projAg, {
+      agent_profile_id: profileId, status: "completed", profile_snapshot: { name: "Writer" }, completed_at: null, created_by: DEFAULT_USER_ID,
+    });
+    sessionId = s.id;
+  });
+
+  describe("AgentProfileRepository", () => {
+    it("creates with defaults and reads back", async () => {
+      const p = await agentProfileRepo.getProfile(db, projAg, profileId);
+      expect(p?.status).toBe("active");
+      expect(p?.capabilities).toMatchObject({ tools: ["search"] });
+      expect(p?.createdBy).toBe(DEFAULT_USER_ID);
+    });
+    it("lists project profiles", async () => {
+      expect((await agentProfileRepo.listProfiles(db, projAg)).some((x) => x.id === profileId)).toBe(true);
+    });
+    it("updates mutable fields, keeps id/project_id/created_by immutable", async () => {
+      const u = await agentProfileRepo.updateProfile(db, projAg, profileId, { status: "disabled", name: "Writer2" });
+      expect(u?.status).toBe("disabled");
+      expect(u?.name).toBe("Writer2");
+      expect(u?.projectId).toBe(projAg);
+      expect(u?.createdBy).toBe(DEFAULT_USER_ID);
+    });
+    it("enforces project isolation on get/update (projB → null)", async () => {
+      expect(await agentProfileRepo.getProfile(db, projB, profileId)).toBeNull();
+      expect(await agentProfileRepo.updateProfile(db, projB, profileId, { status: "archived" })).toBeNull();
+    });
+    it("updates description/capabilities/constraints; empty changes returns current", async () => {
+      const u = await agentProfileRepo.updateProfile(db, projAg, profileId, {
+        description: "d2", capabilities: { tools: [] }, constraints: { maxTools: 1 },
+      });
+      expect(u?.description).toBe("d2");
+      expect(u?.capabilities).toMatchObject({ tools: [] });
+      expect((await agentProfileRepo.updateProfile(db, projAg, profileId, {}))?.id).toBe(profileId);
+    });
+    it("returns null on unknown profile", async () => {
+      expect(await agentProfileRepo.getProfile(db, projAg, randomUUID())).toBeNull();
+    });
+  });
+
+  describe("AgentSessionRepository (append-only)", () => {
+    it("creates and reads back via profile-join isolation", async () => {
+      const s = await agentSessionRepo.getSession(db, projAg, sessionId);
+      expect(s?.status).toBe("completed");
+      expect(s?.agentProfileId).toBe(profileId);
+    });
+    it("lists sessions by profile", async () => {
+      expect(await agentSessionRepo.listSessionsByProfile(db, projAg, profileId)).toHaveLength(1);
+    });
+    it("enforces isolation (projB → null / 404)", async () => {
+      expect(await agentSessionRepo.getSession(db, projB, sessionId)).toBeNull();
+      await expect(
+        agentSessionRepo.createSession(db, projB, { agent_profile_id: profileId, profile_snapshot: {}, created_by: DEFAULT_USER_ID }),
+      ).rejects.toBeInstanceOf(NotFoundError);
+    });
+    it("404 on creating a session for an unknown profile", async () => {
+      await expect(
+        agentSessionRepo.createSession(db, projAg, { agent_profile_id: randomUUID(), profile_snapshot: {}, created_by: DEFAULT_USER_ID }),
+      ).rejects.toBeInstanceOf(NotFoundError);
+      expect(await agentSessionRepo.getSession(db, projAg, randomUUID())).toBeNull();
+    });
+    it("enforces DB-level append-only (UPDATE on agent_sessions denied)", async () => {
+      await expect(
+        db.update(agentSessions).set({ status: "running" }).where(eq(agentSessions.id, sessionId)),
+      ).rejects.toThrow(/permission denied/i);
     });
   });
 });
