@@ -199,6 +199,30 @@ export const reviewRecords = pgTable("review_records", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// Sprint-4.1 Agent 壳层（agent_sessions 只追加：无 updated_at；状态于插入时定稿）
+export const agentProfiles = pgTable("agent_profiles", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  projectId: uuid("project_id").notNull(),
+  name: varchar("name", { length: 160 }).notNull(),
+  description: text("description"),
+  status: varchar("status", { length: 32 }).notNull().default("active"),
+  capabilities: jsonb("capabilities").$type<JsonRecord>().notNull(),
+  constraints: jsonb("constraints").$type<JsonRecord>().notNull(),
+  createdBy: uuid("created_by").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const agentSessions = pgTable("agent_sessions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  projectId: uuid("project_id").notNull(),
+  agentProfileId: uuid("agent_profile_id").notNull(),
+  status: varchar("status", { length: 32 }).notNull().default("pending"),
+  profileSnapshot: jsonb("profile_snapshot").$type<JsonRecord>().notNull(),
+  startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  createdBy: uuid("created_by").notNull(),
+});
+
 export type WorkflowDefinitionRow = typeof workflowDefinitions.$inferSelect;
 export type WorkflowStageRow = typeof workflowStages.$inferSelect;
 export type WorkflowStageDependencyRow = typeof workflowStageDependencies.$inferSelect;
@@ -208,3 +232,5 @@ export type ContentAssetRow = typeof contentAssets.$inferSelect;
 export type AssetVersionRow = typeof assetVersions.$inferSelect;
 export type ContextPackRow = typeof contextPacks.$inferSelect;
 export type ReviewRecordRow = typeof reviewRecords.$inferSelect;
+export type AgentProfileRow = typeof agentProfiles.$inferSelect;
+export type AgentSessionRow = typeof agentSessions.$inferSelect;

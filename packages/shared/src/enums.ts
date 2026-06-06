@@ -148,3 +148,13 @@ export type ReviewAction = (typeof REVIEW_ACTIONS)[number];
 /** 评审决议状态（领域状态机，与 StageRun 严格分离；db §8.4 审查结论）*/
 export const REVIEW_STATUSES = ["pending", "approved", "revision_requested"] as const;
 export type ReviewStatus = (typeof REVIEW_STATUSES)[number];
+
+// ── Sprint-4.1 Agent 壳层值集（镜像 DB CHECK；转换规则归后端领域层，ADR-006）──
+
+/** Agent Profile 状态（db agent_profiles_status_chk）*/
+export const AGENT_PROFILE_STATUSES = ["active", "disabled", "archived"] as const;
+export type AgentProfileStatus = (typeof AGENT_PROFILE_STATUSES)[number];
+
+/** Agent Session 状态（db agent_sessions_status_chk；只追加，于插入时定稿）*/
+export const AGENT_SESSION_STATUSES = ["pending", "running", "completed", "failed"] as const;
+export type AgentSessionStatus = (typeof AGENT_SESSION_STATUSES)[number];
