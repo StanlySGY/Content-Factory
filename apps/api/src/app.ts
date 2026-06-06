@@ -8,6 +8,9 @@ import { AssetService } from "./application/asset.service.js";
 import { ContextPackService } from "./application/context-pack.service.js";
 import { DashboardService } from "./application/dashboard.service.js";
 import { EditorQueryService } from "./application/editor-query.service.js";
+import { McpRuntimeMockService } from "./application/mcp-runtime-mock.service.js";
+import { McpServerService } from "./application/mcp-server.service.js";
+import { McpToolService } from "./application/mcp-tool.service.js";
 import { ReviewService } from "./application/review.service.js";
 import { TaskService } from "./application/task.service.js";
 import { WorkflowDefinitionService } from "./application/workflow-definition.service.js";
@@ -23,6 +26,7 @@ import { reviewRoutes } from "./interfaces/http/routes/reviews.js";
 import { stageRunRoutes } from "./interfaces/http/routes/stage-runs.js";
 import { taskRoutes } from "./interfaces/http/routes/tasks.js";
 import { agentRoutes } from "./interfaces/http/routes/agents.js";
+import { mcpRoutes } from "./interfaces/http/routes/mcp.js";
 import { workflowRunRoutes } from "./interfaces/http/routes/workflow-runs.js";
 import { workflowRoutes } from "./interfaces/http/routes/workflows.js";
 
@@ -51,6 +55,9 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
   const editorQueryService = new EditorQueryService(db);
   const agentProfileService = new AgentProfileService(db);
   const agentRuntimeService = new AgentRuntimeMockService(db);
+  const mcpServerService = new McpServerService(db);
+  const mcpToolService = new McpToolService(db);
+  const mcpRuntimeService = new McpRuntimeMockService(db);
 
   const app = Fastify({
     logger: opts.logger ?? true,
@@ -76,6 +83,7 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
   await app.register(dashboardRoutes, { env, dashboardService });
   await app.register(editorRoutes, { env, editorQueryService });
   await app.register(agentRoutes, { env, agentProfileService, agentRuntimeService });
+  await app.register(mcpRoutes, { env, mcpServerService, mcpToolService, mcpRuntimeService });
 
   const close = async (): Promise<void> => {
     await app.close();

@@ -5,6 +5,8 @@ import {
   CONTEXT_SCOPES,
   DEPENDENCY_TYPES,
   EXECUTOR_TYPES,
+  MCP_RISK_LEVELS,
+  MCP_SERVER_STATUSES,
   REQUIREMENT_SCHEMA_VERSION,
   REVIEW_ACTIONS,
   REVIEW_STATUSES,
@@ -12,6 +14,7 @@ import {
   STAGE_RUN_STATUSES,
   TASK_PRIORITIES,
   TASK_STATUSES,
+  TOOL_INVOCATION_STATUSES,
   WORKFLOW_RUN_STATUSES,
 } from "./enums.js";
 
@@ -615,3 +618,117 @@ export type CreateMockSessionBody = Static<typeof CreateMockSessionSchema>;
 
 export const AgentProfilesResponseSchema = Type.Array(AgentProfileSchema);
 export const AgentSessionsResponseSchema = Type.Array(AgentSessionSchema);
+
+// ---- MCP Shell (S4.2) ----
+export const McpServerStatusSchema = StringEnum(MCP_SERVER_STATUSES);
+export const McpRiskLevelSchema = StringEnum(MCP_RISK_LEVELS);
+export const ToolInvocationStatusSchema = StringEnum(TOOL_INVOCATION_STATUSES);
+
+export const McpServerSchema = Type.Object(
+  {
+    id: Uuid(),
+    project_id: Uuid(),
+    name: Type.String(),
+    description: Nullable(Type.String()),
+    endpoint: Type.String(),
+    status: McpServerStatusSchema,
+    risk_level: McpRiskLevelSchema,
+    created_by: Uuid(),
+    created_at: Type.String({ format: "date-time" }),
+  },
+  { additionalProperties: false },
+);
+export type McpServerDTO = Static<typeof McpServerSchema>;
+
+export const McpToolSchema = Type.Object(
+  {
+    id: Uuid(),
+    mcp_server_id: Uuid(),
+    name: Type.String(),
+    description: Nullable(Type.String()),
+    manifest: JsonRecord(),
+    enabled: Type.Boolean(),
+    created_at: Type.String({ format: "date-time" }),
+  },
+  { additionalProperties: false },
+);
+export type McpToolDTO = Static<typeof McpToolSchema>;
+
+export const ToolInvocationSchema = Type.Object(
+  {
+    id: Uuid(),
+    project_id: Uuid(),
+    mcp_server_id: Uuid(),
+    mcp_tool_id: Uuid(),
+    agent_profile_id: Nullable(Uuid()),
+    status: ToolInvocationStatusSchema,
+    request_snapshot: JsonRecord(),
+    response_snapshot: JsonRecord(),
+    created_by: Uuid(),
+    created_at: Type.String({ format: "date-time" }),
+  },
+  { additionalProperties: false },
+);
+export type ToolInvocationDTO = Static<typeof ToolInvocationSchema>;
+
+export const CreateMcpServerSchema = Type.Object(
+  {
+    name: Type.String({ minLength: 1, maxLength: 160 }),
+    description: Type.Optional(Nullable(Type.String())),
+    endpoint: Type.String({ minLength: 1 }),
+    risk_level: McpRiskLevelSchema,
+  },
+  { additionalProperties: false },
+);
+export type CreateMcpServerBody = Static<typeof CreateMcpServerSchema>;
+
+export const UpdateMcpServerSchema = Type.Object(
+  {
+    name: Type.Optional(Type.String({ minLength: 1, maxLength: 160 })),
+    description: Type.Optional(Nullable(Type.String())),
+    status: Type.Optional(McpServerStatusSchema),
+    risk_level: Type.Optional(McpRiskLevelSchema),
+  },
+  { additionalProperties: false, minProperties: 1 },
+);
+export type UpdateMcpServerBody = Static<typeof UpdateMcpServerSchema>;
+
+export const CreateMcpToolSchema = Type.Object(
+  {
+    name: Type.String({ minLength: 1, maxLength: 160 }),
+    description: Type.Optional(Nullable(Type.String())),
+    manifest: JsonRecord(),
+    enabled: Type.Optional(Type.Boolean()),
+  },
+  { additionalProperties: false },
+);
+export type CreateMcpToolBody = Static<typeof CreateMcpToolSchema>;
+
+export const UpdateMcpToolSchema = Type.Object(
+  {
+    name: Type.Optional(Type.String({ minLength: 1, maxLength: 160 })),
+    description: Type.Optional(Nullable(Type.String())),
+    manifest: Type.Optional(JsonRecord()),
+    enabled: Type.Optional(Type.Boolean()),
+  },
+  { additionalProperties: false, minProperties: 1 },
+);
+export type UpdateMcpToolBody = Static<typeof UpdateMcpToolSchema>;
+
+export const MockInvokeToolSchema = Type.Object(
+  { status: ToolInvocationStatusSchema },
+  { additionalProperties: false },
+);
+export type MockInvokeToolBody = Static<typeof MockInvokeToolSchema>;
+
+export const McpHealthCheckResponseSchema = Type.Object(
+  { healthy: Type.Boolean(), serverStatus: Type.String() },
+  { additionalProperties: false },
+);
+
+export const McpServerResponseSchema = McpServerSchema;
+export const McpServersResponseSchema = Type.Array(McpServerSchema);
+export const McpToolResponseSchema = McpToolSchema;
+export const McpToolsResponseSchema = Type.Array(McpToolSchema);
+export const ToolInvocationResponseSchema = ToolInvocationSchema;
+export const ToolInvocationsResponseSchema = Type.Array(ToolInvocationSchema);

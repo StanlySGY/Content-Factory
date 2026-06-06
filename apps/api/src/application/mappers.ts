@@ -6,9 +6,12 @@ import type {
   ContentTaskDTO,
   ContextPackDTO,
   EditorStateDTO,
+  McpServerDTO,
+  McpToolDTO,
   PendingReviewDTO,
   ReviewRecordDTO,
   StageRunDTO,
+  ToolInvocationDTO,
   WorkQueueItemDTO,
   WorkflowDefinitionDTO,
   WorkflowRunDTO,
@@ -22,8 +25,11 @@ import type {
   ContentAssetRow,
   ContentTaskRow,
   ContextPackRow,
+  McpServerRow,
+  McpToolRow,
   ReviewRecordRow,
   StageRunRow,
+  ToolInvocationRow,
   WorkflowDefinitionRow,
   WorkflowRunRow,
 } from "../infrastructure/db/schema.js";
@@ -235,4 +241,54 @@ export function toHealthCheckDTO(r: { healthy: boolean; profileStatus: string })
   profileStatus: string;
 } {
   return { healthy: r.healthy, profileStatus: r.profileStatus };
+}
+
+// ── Sprint-4.2 MCP 壳层 行 → DTO ──
+
+export function toMcpServerDTO(r: McpServerRow): McpServerDTO {
+  return {
+    id: r.id,
+    project_id: r.projectId,
+    name: r.name,
+    description: r.description,
+    endpoint: r.endpoint,
+    status: r.status as McpServerDTO["status"],
+    risk_level: r.riskLevel as McpServerDTO["risk_level"],
+    created_by: r.createdBy,
+    created_at: r.createdAt.toISOString(),
+  };
+}
+
+export function toMcpToolDTO(r: McpToolRow): McpToolDTO {
+  return {
+    id: r.id,
+    mcp_server_id: r.mcpServerId,
+    name: r.name,
+    description: r.description,
+    manifest: r.manifest,
+    enabled: r.enabled,
+    created_at: r.createdAt.toISOString(),
+  };
+}
+
+export function toToolInvocationDTO(r: ToolInvocationRow): ToolInvocationDTO {
+  return {
+    id: r.id,
+    project_id: r.projectId,
+    mcp_server_id: r.mcpServerId,
+    mcp_tool_id: r.mcpToolId,
+    agent_profile_id: r.agentProfileId,
+    status: r.status as ToolInvocationDTO["status"],
+    request_snapshot: r.requestSnapshot,
+    response_snapshot: r.responseSnapshot,
+    created_by: r.createdBy,
+    created_at: r.createdAt.toISOString(),
+  };
+}
+
+export function toMcpHealthCheckDTO(r: { healthy: boolean; status: string }): {
+  healthy: boolean;
+  serverStatus: string;
+} {
+  return { healthy: r.healthy, serverStatus: r.status };
 }
