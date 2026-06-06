@@ -3,11 +3,16 @@ import type {
   ContentAssetDTO,
   ContentTaskDTO,
   ContextPackDTO,
+  EditorStateDTO,
+  PendingReviewDTO,
   ReviewRecordDTO,
   StageRunDTO,
+  WorkQueueItemDTO,
   WorkflowDefinitionDTO,
   WorkflowRunDTO,
 } from "@cf/shared";
+import type { QueueItem } from "../infrastructure/repositories/dashboard.repository.js";
+import type { EditorStateData } from "../infrastructure/repositories/editor.repository.js";
 import type {
   AssetVersionRow,
   ContentAssetRow,
@@ -160,3 +165,34 @@ export function toReviewRecordDTO(r: ReviewRecordRow): ReviewRecordDTO {
     created_at: r.createdAt.toISOString(),
   };
 }
+
+// ── Sprint-3.5 只读聚合 行 → DTO ──
+
+export function toEditorStateDTO(
+  task: ContentTaskRow | null,
+  data: EditorStateData,
+): EditorStateDTO {
+  return {
+    task: task ? toTaskDTO(task) : null,
+    workflowRun: data.run ? toWorkflowRunDTO(data.run) : null,
+    stageRun: data.currentStageRun ? toStageRunDTO(data.currentStageRun) : null,
+    asset: data.asset ? toContentAssetDTO(data.asset) : null,
+    versions: data.versions.map(toAssetVersionDTO),
+    contexts: data.contextPacks.map(toContextPackDTO),
+    review: data.latestReview ? toReviewRecordDTO(data.latestReview) : null,
+  };
+}
+
+function queueDTO(q: QueueItem): PendingReviewDTO {
+  return {
+    taskId: q.task_id,
+    workflowRunId: q.workflow_run_id,
+    stageRunId: q.stage_run_id,
+    stageName: q.stage_name,
+    status: q.status as PendingReviewDTO["status"],
+    createdAt: q.created_at.toISOString(),
+  };
+}
+
+export const toPendingReviewDTO = (q: QueueItem): PendingReviewDTO => queueDTO(q);
+export const toWorkQueueItemDTO = (q: QueueItem): WorkQueueItemDTO => queueDTO(q);

@@ -2,10 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   AUDIT_ACTIONS,
   CreateWorkflowBodySchema,
+  EditorStateSchema,
   EXECUTOR_TYPES,
+  PendingReviewSchema,
   STAGE_RUN_STATUSES,
   WORKFLOW_RUN_STATUSES,
   WorkflowRunSchema,
+  WorkQueueItemSchema,
 } from "../src/index.js";
 
 // 轻量冒烟：校验 S2 枚举与 TypeBox Schema 结构（运行时 enum/格式由 API 边界 ajv 强制）。
@@ -43,5 +46,27 @@ describe("S2 TypeBox Schema 结构", () => {
   });
   it("WorkflowRun DTO 禁止额外字段", () => {
     expect(run.additionalProperties).toBe(false);
+  });
+});
+
+describe("S3.5 只读聚合 DTO Schema 结构", () => {
+  const editor = EditorStateSchema as unknown as JsonSchemaLike;
+  const pending = PendingReviewSchema as unknown as JsonSchemaLike;
+  const work = WorkQueueItemSchema as unknown as JsonSchemaLike;
+
+  it("EditorState 含 task/workflowRun/stageRun/asset/versions/contexts/review 且禁额外字段", () => {
+    expect(editor.additionalProperties).toBe(false);
+    expect(Object.keys(editor.properties!)).toEqual(
+      expect.arrayContaining(["task", "workflowRun", "stageRun", "asset", "versions", "contexts", "review"]),
+    );
+  });
+
+  it("PendingReview / WorkQueueItem 必填队列字段且禁额外字段", () => {
+    for (const s of [pending, work]) {
+      expect(s.additionalProperties).toBe(false);
+      expect(s.required).toEqual(
+        expect.arrayContaining(["taskId", "workflowRunId", "stageRunId", "stageName", "status", "createdAt"]),
+      );
+    }
   });
 });

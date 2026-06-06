@@ -492,3 +492,45 @@ export const VersionCompareResultSchema = Type.Object(
   },
   { additionalProperties: false },
 );
+
+// ---- Editor State (S3.5；只读聚合，字段允许 nullable) ----
+export const EditorStateSchema = Type.Object(
+  {
+    task: Nullable(ContentTaskSchema),
+    workflowRun: Nullable(WorkflowRunSchema),
+    stageRun: Nullable(StageRunSchema),
+    asset: Nullable(ContentAssetSchema),
+    versions: Type.Array(AssetVersionSchema),
+    contexts: Type.Array(ContextPackSchema),
+    review: Nullable(ReviewRecordSchema),
+  },
+  { additionalProperties: false },
+);
+export type EditorStateDTO = Static<typeof EditorStateSchema>;
+
+// ---- Pending Reviews / Work Queue (S3.5；队列项，结构一致) ----
+export const PendingReviewSchema = Type.Object(
+  {
+    taskId: Uuid(),
+    workflowRunId: Uuid(),
+    stageRunId: Uuid(),
+    stageName: Type.String(),
+    status: StageRunStatusSchema,
+    createdAt: Type.String({ format: "date-time" }),
+  },
+  { additionalProperties: false },
+);
+export type PendingReviewDTO = Static<typeof PendingReviewSchema>;
+
+export const WorkQueueItemSchema = Type.Object(
+  {
+    taskId: Uuid(),
+    workflowRunId: Uuid(),
+    stageRunId: Uuid(),
+    stageName: Type.String(),
+    status: StageRunStatusSchema,
+    createdAt: Type.String({ format: "date-time" }),
+  },
+  { additionalProperties: false },
+);
+export type WorkQueueItemDTO = Static<typeof WorkQueueItemSchema>;
