@@ -1,8 +1,11 @@
 import { Link } from "react-router-dom";
 import type { TaskStatus } from "@cf/shared";
 import { EmptyState, ErrorBar, Skeleton } from "../../components/states.js";
+import { DEFAULT_PROJECT_ID } from "../../lib/config.js";
 import { useTasks } from "../tasks/hooks.js";
 import { TaskTable } from "../tasks/TaskTable.js";
+import { useDashboardSummary } from "./hooks.js";
+import { SummaryCards } from "./SummaryCards.js";
 
 const KPIS: { label: string; status: TaskStatus }[] = [
   { label: "草稿", status: "draft" },
@@ -13,6 +16,7 @@ const KPIS: { label: string; status: TaskStatus }[] = [
 
 export function DashboardPage() {
   const { data, isLoading, isError, error } = useTasks({ page: 1, page_size: 100 });
+  const summary = useDashboardSummary(DEFAULT_PROJECT_ID);
   const items = data?.items ?? [];
   const count = (s: TaskStatus) => items.filter((t) => t.status === s).length;
 
@@ -27,6 +31,16 @@ export function DashboardPage() {
 
       {isError && <ErrorBar message={`加载失败：${(error as Error).message}`} />}
 
+      <h2 className="section-title">运行概览</h2>
+      {summary.isLoading ? (
+        <Skeleton rows={2} />
+      ) : summary.data ? (
+        <SummaryCards summary={summary.data} />
+      ) : (
+        <ErrorBar message={`概览加载失败：${(summary.error as Error)?.message ?? "未知"}`} />
+      )}
+
+      <h2 className="section-title">任务概览</h2>
       <div className="kpi-grid">
         <div className="card kpi">
           <div className="kpi-value">{data?.total ?? 0}</div>

@@ -47,3 +47,11 @@ export function usePublishAssetVersion(id: string) {
     onSuccess: () => invalidateAsset(qc, id),
   });
 }
+
+export function useCompareAssetVersions(id: string, from: number, to: number, enabled: boolean) {
+  return useQuery({
+    queryKey: ["assets", "compare", id, from, to],
+    queryFn: () => api.compareAssetVersions(id, from, to),
+    enabled: enabled && Boolean(id),
+  });
+}

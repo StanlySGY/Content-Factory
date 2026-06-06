@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { Pill } from "../../components/Pill.js";
 import { EmptyState, ErrorBar, Skeleton } from "../../components/states.js";
 import { AssetVersionTable } from "./AssetVersionTable.js";
@@ -92,13 +93,18 @@ export function AssetsPage() {
       {known.length > 0 && (
         <table className="table" style={{ marginBottom: 16 }}>
           <thead>
-            <tr><th>资产 ID</th><th>标题</th></tr>
+            <tr><th>资产 ID</th><th>标题</th><th>详情</th></tr>
           </thead>
           <tbody>
             {known.map((a) => (
               <tr key={a.id} onClick={() => setSelected(a.id)}>
                 <td>{a.id.slice(0, 8)}</td>
                 <td>{a.title}</td>
+                <td>
+                  <Link className="btn" to={`/assets/${a.id}`} onClick={(e) => e.stopPropagation()}>
+                    打开
+                  </Link>
+                </td>
               </tr>
             ))}
           </tbody>

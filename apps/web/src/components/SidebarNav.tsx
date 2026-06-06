@@ -9,6 +9,7 @@ export function SidebarNav() {
       <NavLink to="/dashboard">Dashboard</NavLink>
       <NavLink to="/content/tasks">内容中心</NavLink>
       <NavLink to="/workflows">工作流</NavLink>
+      <NavLink to="/reviews">审核台</NavLink>
       <NavLink to="/assets">素材中心</NavLink>
       <div className="nav-group">后续 Sprint</div>
       {FUTURE.map((label) => (
