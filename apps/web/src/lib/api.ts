@@ -1,10 +1,14 @@
 import type {
+  AgentProfileDTO,
+  AgentSessionDTO,
+  AgentSessionStatus,
   ApproveReviewBody,
   AssetVersionDTO,
   AuditEventDTO,
   ContentAssetDTO,
   ContentTaskDTO,
   ContextPackDTO,
+  CreateAgentProfileBody,
   CreateAssetBody,
   CreateAssetVersionBody,
   CreateContextPackBody,
@@ -20,12 +24,19 @@ import type {
   ReviewRecordDTO,
   ReviewStatus,
   StageRunDTO,
+  UpdateAgentProfileBody,
   UpdateContextPackBody,
   UpdateTaskBody,
   WorkQueueItemDTO,
   WorkflowDefinitionDTO,
   WorkflowRunDTO,
 } from "@cf/shared";
+
+/** Agent 健康检查结果（对齐后端 HealthCheckResponseSchema） */
+export interface HealthCheckResult {
+  healthy: boolean;
+  profileStatus: string;
+}
 
 /** 工作流定义分页响应（对齐后端 PaginatedWorkflowsSchema） */
 export interface PaginatedWorkflows {
@@ -169,4 +180,19 @@ export const api = {
     request<PendingReviewDTO[]>("GET", `/dashboard/pending-reviews${toQuery({ projectId })}`),
   getWorkQueue: (projectId: string) =>
     request<WorkQueueItemDTO[]>("GET", `/dashboard/work-queue${toQuery({ projectId })}`),
+
+  // ── Sprint-4.1 Agent 壳层 ──
+  listAgents: () => request<AgentProfileDTO[]>("GET", "/agents"),
+  getAgent: (id: string) => request<AgentProfileDTO>("GET", `/agents/${id}`),
+  createAgent: (b: CreateAgentProfileBody) => request<AgentProfileDTO>("POST", "/agents", b),
+  updateAgent: (id: string, b: UpdateAgentProfileBody) =>
+    request<AgentProfileDTO>("PATCH", `/agents/${id}`, b),
+  healthCheckAgent: (id: string) =>
+    request<HealthCheckResult>("POST", `/agents/${id}/health-check`),
+  createMockSession: (id: string, status: AgentSessionStatus) =>
+    request<AgentSessionDTO>("POST", `/agents/${id}/mock-sessions`, { status }),
+  listAgentSessions: (id: string) =>
+    request<AgentSessionDTO[]>("GET", `/agents/${id}/sessions`),
+  getAgentSession: (id: string) =>
+    request<AgentSessionDTO>("GET", `/agent-sessions/${id}`),
 };

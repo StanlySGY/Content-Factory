@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import type { TaskStatus } from "@cf/shared";
 import { EmptyState, ErrorBar, Skeleton } from "../../components/states.js";
 import { DEFAULT_PROJECT_ID } from "../../lib/config.js";
+import { useAgents } from "../agents/hooks.js";
 import { PendingReviewList } from "../reviews/PendingReviewList.js";
 import { useTasks } from "../tasks/hooks.js";
 import { TaskTable } from "../tasks/TaskTable.js";
@@ -21,6 +22,8 @@ export function DashboardPage() {
   const summary = useDashboardSummary(DEFAULT_PROJECT_ID);
   const pending = usePendingReviews(DEFAULT_PROJECT_ID);
   const work = useWorkQueue(DEFAULT_PROJECT_ID);
+  const agents = useAgents();
+  const agentList = agents.data ?? [];
   const items = data?.items ?? [];
   const count = (s: TaskStatus) => items.filter((t) => t.status === s).length;
 
@@ -56,6 +59,24 @@ export function DashboardPage() {
             <div className="kpi-label">{k.label}</div>
           </div>
         ))}
+      </div>
+
+      <h2 className="section-title">
+        Agent 概览 · <Link to="/agents">全部</Link>
+      </h2>
+      <div className="kpi-grid">
+        <div className="card kpi">
+          <div className="kpi-value">{agentList.length}</div>
+          <div className="kpi-label">Agent 总数</div>
+        </div>
+        <div className="card kpi">
+          <div className="kpi-value">{agentList.filter((a) => a.status === "active").length}</div>
+          <div className="kpi-label">Active</div>
+        </div>
+        <div className="card kpi">
+          <div className="kpi-value">{agentList.filter((a) => a.status === "disabled").length}</div>
+          <div className="kpi-label">Disabled</div>
+        </div>
       </div>
 
       <h2 className="section-title">

@@ -1,6 +1,10 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "../components/AppShell.js";
 import { EmptyState } from "../components/states.js";
+import { AgentDetailPage } from "../features/agents/AgentDetailPage.js";
+import { AgentListPage } from "../features/agents/AgentListPage.js";
+import { AgentSessionDetailPage } from "../features/agents/AgentSessionDetailPage.js";
+import { NewAgentPage } from "../features/agents/NewAgentPage.js";
 import { AssetComparePage } from "../features/assets/AssetComparePage.js";
 import { AssetDetailPage } from "../features/assets/AssetDetailPage.js";
 import { AssetsPage } from "../features/assets/AssetsPage.js";
@@ -41,6 +45,10 @@ export function App() {
         <Route path="/reviews/pending" element={<PendingReviewsPage />} />
         <Route path="/work-queue" element={<WorkQueuePage />} />
         <Route path="/stage-runs/:id" element={<StageRunDetailPage />} />
+        <Route path="/agents" element={<AgentListPage />} />
+        <Route path="/agents/new" element={<NewAgentPage />} />
+        <Route path="/agents/:id" element={<AgentDetailPage />} />
+        <Route path="/agent-sessions/:id" element={<AgentSessionDetailPage />} />
         <Route
           path="*"
           element={<EmptyState title="页面不存在" hint="请从左侧导航进入。" />}
