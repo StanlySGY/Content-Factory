@@ -15,11 +15,15 @@ import {
   contentTasks,
   projects,
   reviewRecords,
+  toolInvocations,
   workflowStages,
 } from "../../src/infrastructure/db/schema.js";
 import * as assetRepo from "../../src/infrastructure/repositories/content-asset.repository.js";
 import * as agentProfileRepo from "../../src/infrastructure/repositories/agent-profile.repository.js";
 import * as agentSessionRepo from "../../src/infrastructure/repositories/agent-session.repository.js";
+import * as mcpServerRepo from "../../src/infrastructure/repositories/mcp-server.repository.js";
+import * as mcpToolRepo from "../../src/infrastructure/repositories/mcp-tool.repository.js";
+import * as toolInvocationRepo from "../../src/infrastructure/repositories/tool-invocation.repository.js";
 import * as ctxRepo from "../../src/infrastructure/repositories/context-pack.repository.js";
 import * as dashRepo from "../../src/infrastructure/repositories/dashboard.repository.js";
 import * as editorRepo from "../../src/infrastructure/repositories/editor.repository.js";
@@ -452,6 +456,101 @@ describe("Agent repositories (projAg)", () => {
     it("enforces DB-level append-only (UPDATE on agent_sessions denied)", async () => {
       await expect(
         db.update(agentSessions).set({ status: "running" }).where(eq(agentSessions.id, sessionId)),
+      ).rejects.toThrow(/permission denied/i);
+    });
+  });
+});
+
+// ── Sprint-4.2 MCP 壳层仓储（projMcp 隔离夹具）──
+describe("MCP repositories (projMcp)", () => {
+  let projMcp: string;
+  let serverId: string;
+  let toolId: string;
+  let invId: string;
+
+  beforeAll(async () => {
+    projMcp = randomUUID();
+    await db.insert(projects).values({ id: projMcp, ownerId: DEFAULT_USER_ID, name: "ProjMcp" });
+    const server = await mcpServerRepo.createServer(db, projMcp, {
+      name: "fs", description: "files", endpoint: "stdio://fs", risk_level: "medium", created_by: DEFAULT_USER_ID,
+    });
+    serverId = server.id;
+    const tool = await mcpToolRepo.createTool(db, projMcp, {
+      mcp_server_id: serverId, name: "read", manifest: { name: "read" }, enabled: true,
+    });
+    toolId = tool.id;
+    const inv = await toolInvocationRepo.createInvocation(db, projMcp, {
+      mcp_server_id: serverId, mcp_tool_id: toolId, status: "success", request_snapshot: { a: 1 }, response_snapshot: { ok: true }, created_by: DEFAULT_USER_ID,
+    });
+    invId = inv.id;
+  });
+
+  describe("McpServerRepository", () => {
+    it("create defaults + read + list", async () => {
+      const s = await mcpServerRepo.getServer(db, projMcp, serverId);
+      expect(s?.status).toBe("active");
+      expect(s?.riskLevel).toBe("medium");
+      expect((await mcpServerRepo.listServers(db, projMcp)).some((x) => x.id === serverId)).toBe(true);
+    });
+    it("updates mutable fields, keeps project_id/created_by", async () => {
+      const u = await mcpServerRepo.updateServer(db, projMcp, serverId, { status: "disabled", risk_level: "high", name: "fs2" });
+      expect([u?.status, u?.riskLevel, u?.name]).toEqual(["disabled", "high", "fs2"]);
+      expect(u?.projectId).toBe(projMcp);
+      expect(u?.createdBy).toBe(DEFAULT_USER_ID);
+      expect((await mcpServerRepo.updateServer(db, projMcp, serverId, {}))?.id).toBe(serverId);
+    });
+    it("isolates by project + not found", async () => {
+      expect(await mcpServerRepo.getServer(db, projB, serverId)).toBeNull();
+      expect(await mcpServerRepo.updateServer(db, projB, serverId, { status: "archived" })).toBeNull();
+      expect(await mcpServerRepo.getServer(db, projMcp, randomUUID())).toBeNull();
+    });
+    it("applies defaults when optional fields omitted; updates description", async () => {
+      const min = await mcpServerRepo.createServer(db, projMcp, { name: "min", endpoint: "stdio://min", created_by: DEFAULT_USER_ID });
+      expect([min.status, min.riskLevel, min.description]).toEqual(["active", "low", null]);
+      expect((await mcpServerRepo.updateServer(db, projMcp, min.id, { description: "d", name: "min2" }))?.description).toBe("d");
+    });
+  });
+
+  describe("McpToolRepository", () => {
+    it("create + get + listByServer via server-join isolation", async () => {
+      expect((await mcpToolRepo.getTool(db, projMcp, toolId))?.name).toBe("read");
+      expect(await mcpToolRepo.listToolsByServer(db, projMcp, serverId)).toHaveLength(1);
+    });
+    it("updates mutable fields (not serverId)", async () => {
+      const u = await mcpToolRepo.updateTool(db, projMcp, toolId, { enabled: false, manifest: { name: "read", description: "d" } });
+      expect(u?.enabled).toBe(false);
+      expect(u?.mcpServerId).toBe(serverId);
+      expect((await mcpToolRepo.updateTool(db, projMcp, toolId, {}))?.id).toBe(toolId);
+    });
+    it("isolates by project (projB → null / 404)", async () => {
+      expect(await mcpToolRepo.getTool(db, projB, toolId)).toBeNull();
+      expect(await mcpToolRepo.updateTool(db, projB, toolId, { enabled: true })).toBeNull();
+      await expect(
+        mcpToolRepo.createTool(db, projB, { mcp_server_id: serverId, name: "x", manifest: {} }),
+      ).rejects.toBeInstanceOf(NotFoundError);
+    });
+    it("applies defaults + updates description/name", async () => {
+      const t = await mcpToolRepo.createTool(db, projMcp, { mcp_server_id: serverId, name: "min", manifest: {} });
+      expect([t.enabled, t.description]).toEqual([true, null]);
+      const u = await mcpToolRepo.updateTool(db, projMcp, t.id, { name: "min2", description: "d" });
+      expect([u?.name, u?.description]).toEqual(["min2", "d"]);
+    });
+  });
+
+  describe("ToolInvocationRepository (append-only)", () => {
+    it("create + get + list via server-join isolation", async () => {
+      expect((await toolInvocationRepo.getInvocation(db, projMcp, invId))?.status).toBe("success");
+      expect((await toolInvocationRepo.listInvocations(db, projMcp)).some((x) => x.id === invId)).toBe(true);
+    });
+    it("isolates by project (projB → null / 404)", async () => {
+      expect(await toolInvocationRepo.getInvocation(db, projB, invId)).toBeNull();
+      await expect(
+        toolInvocationRepo.createInvocation(db, projB, { mcp_server_id: serverId, mcp_tool_id: toolId, status: "success", request_snapshot: {}, response_snapshot: {}, created_by: DEFAULT_USER_ID }),
+      ).rejects.toBeInstanceOf(NotFoundError);
+    });
+    it("enforces DB-level append-only (UPDATE on tool_invocations denied)", async () => {
+      await expect(
+        db.update(toolInvocations).set({ status: "failed" }).where(eq(toolInvocations.id, invId)),
       ).rejects.toThrow(/permission denied/i);
     });
   });
