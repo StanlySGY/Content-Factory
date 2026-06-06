@@ -19,6 +19,7 @@ import {
 import * as assetRepo from "../../src/infrastructure/repositories/content-asset.repository.js";
 import * as ctxRepo from "../../src/infrastructure/repositories/context-pack.repository.js";
 import * as dashRepo from "../../src/infrastructure/repositories/dashboard.repository.js";
+import * as editorRepo from "../../src/infrastructure/repositories/editor.repository.js";
 import * as reviewRepo from "../../src/infrastructure/repositories/review.repository.js";
 import * as stageRepo from "../../src/infrastructure/repositories/stage-run.repository.js";
 import * as defRepo from "../../src/infrastructure/repositories/workflow-definition.repository.js";
@@ -274,6 +275,99 @@ describe("Sprint-3 repositories (projC 隔离夹具)", () => {
     it("404 on missing version or cross-project asset", async () => {
       await expect(assetRepo.compareVersions(db, projC, assetC, 1, 99)).rejects.toBeInstanceOf(NotFoundError);
       await expect(assetRepo.compareVersions(db, projB, assetC, 1, 2)).rejects.toBeInstanceOf(NotFoundError);
+    });
+  });
+});
+
+// ── Sprint-3.5 只读聚合：Pending Reviews / Work Queue / Editor State（projF 确定性夹具）──
+describe("Sprint-3.5 read-only queries (projF)", () => {
+  let projF: string;
+  let taskF: string;
+  let taskEmpty: string;
+  let runF: string;
+  let waitingStageId: string;
+
+  beforeAll(async () => {
+    projF = randomUUID();
+    await db.insert(projects).values({ id: projF, ownerId: DEFAULT_USER_ID, name: "ProjF" });
+    const mkTaskF = async () =>
+      (await db.insert(contentTasks).values({ projectId: projF, title: "F", contentType: "article", priority: "normal", requirementData: v1 }).returning())[0]!.id;
+    taskF = await mkTaskF();
+    taskEmpty = await mkTaskF();
+    const defF = await defRepo.create(db, projF, { name: `wf-${randomUUID()}`, version: 1, status: "active", definition_schema: v1 });
+    const [stageF] = await db
+      .insert(workflowStages)
+      .values({ workflowDefinitionId: defF.id, key: "planning", name: "Planning", position: 1, executorType: "human", inputSchema: v1, outputSchema: v1, gateSchema: v1 })
+      .returning();
+    runF = (await runRepo.createRun(db, projF, { content_task_id: taskF, workflow_definition_id: defF.id, workflow_version: 1 })).id;
+    const mkStage = async (status: string) => {
+      const s = await stageRepo.create(db, projF, { workflow_run_id: runF, workflow_stage_id: stageF!.id });
+      await stageRepo.updateStatus(db, projF, s.id, status);
+      return s.id;
+    };
+    waitingStageId = await mkStage("waiting_review");
+    await mkStage("running");
+    await mkStage("failed");
+    await mkStage("approved"); // 终态：不入 work queue
+    await runRepo.updateCurrentStage(db, projF, runF, waitingStageId);
+    // editor 聚合素材（仅 taskF）
+    const assetF = await assetRepo.createAsset(db, projF, { content_task_id: taskF, asset_type: "draft", title: "AF" });
+    await assetRepo.createVersion(db, projF, { content_asset_id: assetF.id, version: 1, storage_uri: "s3://f1", checksum: "f1", metadata: v1 });
+    await ctxRepo.create(db, projF, { content_task_id: taskF, version: 1, scope: "task", data: v1, source_refs: v1, sensitivity_level: "internal" });
+    await reviewRepo.createReview(db, projF, { task_id: taskF, workflow_run_id: runF, stage_run_id: waitingStageId, reviewer_id: DEFAULT_USER_ID, review_action: "approve" });
+  });
+
+  describe("listPendingReviews", () => {
+    it("returns only waiting_review stages with task/run/stage context", async () => {
+      const pending = await dashRepo.listPendingReviews(db, projF);
+      expect(pending).toHaveLength(1);
+      expect(pending[0]!.stage_run_id).toBe(waitingStageId);
+      expect(pending[0]!.task_id).toBe(taskF);
+      expect(pending[0]!.workflow_run_id).toBe(runF);
+      expect(pending[0]!.stage_key).toBe("planning");
+      expect(pending[0]!.status).toBe("waiting_review");
+    });
+    it("isolates by project (projB cannot see projF)", async () => {
+      expect((await dashRepo.listPendingReviews(db, projB)).find((p) => p.task_id === taskF)).toBeUndefined();
+    });
+  });
+
+  describe("listWorkQueue", () => {
+    it("includes running/waiting_review/failed, excludes terminal (approved)", async () => {
+      const q = await dashRepo.listWorkQueue(db, projF);
+      expect(q.map((i) => i.status).sort()).toEqual(["failed", "running", "waiting_review"]);
+      expect(q.every((i) => i.task_id === taskF)).toBe(true);
+    });
+    it("isolates by project", async () => {
+      expect((await dashRepo.listWorkQueue(db, projB)).find((i) => i.task_id === taskF)).toBeUndefined();
+    });
+  });
+
+  describe("getEditorState", () => {
+    it("aggregates run/current stage/asset/versions/context/review", async () => {
+      const s = await editorRepo.getEditorState(db, projF, taskF);
+      expect(s.run?.id).toBe(runF);
+      expect(s.currentStageRun?.id).toBe(waitingStageId);
+      expect(s.currentStageRun?.status).toBe("waiting_review");
+      expect(s.asset?.title).toBe("AF");
+      expect(s.versions).toHaveLength(1);
+      expect(s.contextPacks).toHaveLength(1);
+      expect(s.latestReview?.reviewAction).toBe("approve");
+    });
+    it("returns nulls/empties for a task with no run/asset/context", async () => {
+      const s = await editorRepo.getEditorState(db, projF, taskEmpty);
+      expect(s.run).toBeNull();
+      expect(s.currentStageRun).toBeNull();
+      expect(s.asset).toBeNull();
+      expect(s.versions).toEqual([]);
+      expect(s.contextPacks).toEqual([]);
+      expect(s.latestReview).toBeNull();
+    });
+    it("404 on unknown task", async () => {
+      await expect(editorRepo.getEditorState(db, projF, randomUUID())).rejects.toBeInstanceOf(NotFoundError);
+    });
+    it("404 cross-project (projB cannot read projF task)", async () => {
+      await expect(editorRepo.getEditorState(db, projB, taskF)).rejects.toBeInstanceOf(NotFoundError);
     });
   });
 });
