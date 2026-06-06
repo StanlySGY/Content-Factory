@@ -534,3 +534,10 @@ export const WorkQueueItemSchema = Type.Object(
   { additionalProperties: false },
 );
 export type WorkQueueItemDTO = Static<typeof WorkQueueItemSchema>;
+
+// ---- S3.5 端点响应包装 ----
+export const EditorStateResponseSchema = EditorStateSchema;
+export const PendingReviewsResponseSchema = Type.Array(PendingReviewSchema);
+export type PendingReviewsResponse = Static<typeof PendingReviewsResponseSchema>;
+export const WorkQueueResponseSchema = Type.Array(WorkQueueItemSchema);
+export type WorkQueueResponse = Static<typeof WorkQueueResponseSchema>;

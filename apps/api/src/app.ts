@@ -5,6 +5,7 @@ import Fastify, { type FastifyInstance, type FastifyServerOptions } from "fastif
 import { AssetService } from "./application/asset.service.js";
 import { ContextPackService } from "./application/context-pack.service.js";
 import { DashboardService } from "./application/dashboard.service.js";
+import { EditorQueryService } from "./application/editor-query.service.js";
 import { ReviewService } from "./application/review.service.js";
 import { TaskService } from "./application/task.service.js";
 import { WorkflowDefinitionService } from "./application/workflow-definition.service.js";
@@ -15,6 +16,7 @@ import { registerErrorHandler } from "./interfaces/http/errors.js";
 import { assetRoutes } from "./interfaces/http/routes/assets.js";
 import { contextPackRoutes } from "./interfaces/http/routes/context-packs.js";
 import { dashboardRoutes } from "./interfaces/http/routes/dashboard.js";
+import { editorRoutes } from "./interfaces/http/routes/editor.js";
 import { reviewRoutes } from "./interfaces/http/routes/reviews.js";
 import { stageRunRoutes } from "./interfaces/http/routes/stage-runs.js";
 import { taskRoutes } from "./interfaces/http/routes/tasks.js";
@@ -43,6 +45,7 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
   const assetService = new AssetService(db);
   const reviewService = new ReviewService(db);
   const dashboardService = new DashboardService(db);
+  const editorQueryService = new EditorQueryService(db);
 
   const app = Fastify({
     logger: opts.logger ?? true,
@@ -66,6 +69,7 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
   await app.register(assetRoutes, { env, assetService });
   await app.register(reviewRoutes, { env, reviewService });
   await app.register(dashboardRoutes, { env, dashboardService });
+  await app.register(editorRoutes, { env, editorQueryService });
 
   const close = async (): Promise<void> => {
     await app.close();
