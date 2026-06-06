@@ -19,6 +19,7 @@ import {
   workflowStages,
 } from "../../src/infrastructure/db/schema.js";
 import * as assetRepo from "../../src/infrastructure/repositories/content-asset.repository.js";
+import * as taskRepo from "../../src/infrastructure/repositories/content-task.repository.js";
 import * as agentProfileRepo from "../../src/infrastructure/repositories/agent-profile.repository.js";
 import * as agentSessionRepo from "../../src/infrastructure/repositories/agent-session.repository.js";
 import * as mcpServerRepo from "../../src/infrastructure/repositories/mcp-server.repository.js";
@@ -553,5 +554,61 @@ describe("MCP repositories (projMcp)", () => {
         db.update(toolInvocations).set({ status: "failed" }).where(eq(toolInvocations.id, invId)),
       ).rejects.toThrow(/permission denied/i);
     });
+  });
+});
+
+// ── 仓储分支覆盖硬化（只读 not-found / 默认 / 过滤 / 全字段路径；非逻辑变更，覆盖历史防御分支）──
+describe("repository branch hardening", () => {
+  it("content-task: dates insert, list filters/defaults, full update, not-found", async () => {
+    const t = await taskRepo.insertTask(db, projA, {
+      title: "BC", content_type: "article", priority: "high", status: "draft",
+      owner_id: DEFAULT_USER_ID, requirement_data: v1,
+      due_at: "2026-07-01T00:00:00.000Z", archived_at: "2026-07-02T00:00:00.000Z",
+    });
+    expect(t.dueAt).not.toBeNull();
+    expect(t.archivedAt).not.toBeNull();
+    expect((await taskRepo.listTasks(db, projA, { page: undefined, page_size: undefined } as never)).page).toBe(1);
+    expect((await taskRepo.listTasks(db, projA, { status: "draft", content_type: "article", owner_id: DEFAULT_USER_ID, page: 1, page_size: 5 } as never)).pageSize).toBe(5);
+    const u = await taskRepo.updateTask(db, projA, t.id, {
+      title: "BC2", content_type: "post", priority: "low", status: "ready",
+      owner_id: null, requirement_data: v1, due_at: null, archived_at: null,
+    });
+    expect(u?.title).toBe("BC2");
+    expect(u?.dueAt).toBeNull();
+    expect(await taskRepo.findTaskById(db, projA, randomUUID())).toBeNull();
+    expect(await taskRepo.updateTask(db, projA, randomUUID(), { title: "x" })).toBeNull();
+  });
+
+  it("workflow-definition: not-found reads, paged defaults, full update, cross-project guards", async () => {
+    expect(await defRepo.getById(db, projA, randomUUID())).toBeNull();
+    expect(await defRepo.getByNameVersion(db, projA, "nope", 1)).toBeNull();
+    expect(await defRepo.getActiveDefinition(db, projA, "nope")).toBeNull();
+    expect((await defRepo.listPaged(db, projA, {})).page).toBe(1);
+    expect(await defRepo.update(db, projA, randomUUID(), { name: "x", status: "draft", definition_schema: v1 })).toBeNull();
+    expect(await defRepo.activateVersion(db, projA, randomUUID())).toBeNull();
+    expect(await defRepo.listStages(db, projB, defId)).toEqual([]);
+    expect(await defRepo.listDependencies(db, projB, defId)).toEqual([]);
+  });
+
+  it("content-asset: not-found reads/guards", async () => {
+    const taskId = await freshTask();
+    const asset = await assetRepo.createAsset(db, projA, { content_task_id: taskId, asset_type: "draft", title: "BC" });
+    await assetRepo.createVersion(db, projA, { content_asset_id: asset.id, version: 1, storage_uri: "s3://b", checksum: "bc1", metadata: v1 });
+    expect(await assetRepo.getAsset(db, projA, randomUUID())).toBeNull();
+    expect(await assetRepo.findVersionByChecksum(db, projA, asset.id, "nope")).toBeNull();
+    expect(await assetRepo.getVersionByNumber(db, projA, asset.id, 99)).toBeNull();
+    expect(await assetRepo.setCurrentVersion(db, projA, randomUUID(), randomUUID(), 1)).toBeNull();
+    expect(await assetRepo.updateStatus(db, projA, randomUUID(), "approved")).toBeNull();
+  });
+
+  it("stage-run / workflow-run / context-pack: not-found guards", async () => {
+    expect(await stageRepo.getById(db, projA, randomUUID())).toBeNull();
+    expect(await stageRepo.updateStatus(db, projA, randomUUID(), "running")).toBeNull();
+    const run = await runRepo.createRun(db, projA, { content_task_id: await freshTask(), workflow_definition_id: defId, workflow_version: 1 });
+    expect(await stageRepo.getCurrentStage(db, projA, run.id)).toBeNull();
+    expect(await runRepo.getRun(db, projA, randomUUID())).toBeNull();
+    expect(await runRepo.updateStatus(db, projA, randomUUID(), "running")).toBeNull();
+    expect(await runRepo.updateCurrentStage(db, projA, randomUUID(), randomUUID())).toBeNull();
+    expect(await ctxRepo.get(db, projA, randomUUID())).toBeNull();
   });
 });
