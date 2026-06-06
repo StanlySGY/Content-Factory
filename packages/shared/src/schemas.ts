@@ -1,5 +1,7 @@
 import { Type, type Static, type TSchema } from "@sinclair/typebox";
 import {
+  AGENT_PROFILE_STATUSES,
+  AGENT_SESSION_STATUSES,
   CONTEXT_SCOPES,
   DEPENDENCY_TYPES,
   EXECUTOR_TYPES,
@@ -541,3 +543,75 @@ export const PendingReviewsResponseSchema = Type.Array(PendingReviewSchema);
 export type PendingReviewsResponse = Static<typeof PendingReviewsResponseSchema>;
 export const WorkQueueResponseSchema = Type.Array(WorkQueueItemSchema);
 export type WorkQueueResponse = Static<typeof WorkQueueResponseSchema>;
+
+// ---- Agent Shell (S4.1) ----
+export const AgentProfileStatusSchema = StringEnum(AGENT_PROFILE_STATUSES);
+export const AgentSessionStatusSchema = StringEnum(AGENT_SESSION_STATUSES);
+
+export const AgentProfileSchema = Type.Object(
+  {
+    id: Uuid(),
+    project_id: Uuid(),
+    name: Type.String(),
+    description: Nullable(Type.String()),
+    status: AgentProfileStatusSchema,
+    capabilities: JsonRecord(),
+    constraints: JsonRecord(),
+    created_by: Uuid(),
+    created_at: Type.String({ format: "date-time" }),
+  },
+  { additionalProperties: false },
+);
+export type AgentProfileDTO = Static<typeof AgentProfileSchema>;
+
+export const CreateAgentProfileSchema = Type.Object(
+  {
+    name: Type.String({ minLength: 1, maxLength: 160 }),
+    description: Type.Optional(Nullable(Type.String())),
+    capabilities: JsonRecord(),
+    constraints: JsonRecord(),
+  },
+  { additionalProperties: false },
+);
+export type CreateAgentProfileBody = Static<typeof CreateAgentProfileSchema>;
+
+export const UpdateAgentProfileSchema = Type.Object(
+  {
+    name: Type.Optional(Type.String({ minLength: 1, maxLength: 160 })),
+    description: Type.Optional(Nullable(Type.String())),
+    status: Type.Optional(AgentProfileStatusSchema),
+    capabilities: Type.Optional(JsonRecord()),
+    constraints: Type.Optional(JsonRecord()),
+  },
+  { additionalProperties: false, minProperties: 1 },
+);
+export type UpdateAgentProfileBody = Static<typeof UpdateAgentProfileSchema>;
+
+export const HealthCheckResponseSchema = Type.Object(
+  { healthy: Type.Boolean(), profileStatus: Type.String() },
+  { additionalProperties: false },
+);
+
+export const AgentSessionSchema = Type.Object(
+  {
+    id: Uuid(),
+    project_id: Uuid(),
+    agent_profile_id: Uuid(),
+    status: AgentSessionStatusSchema,
+    profile_snapshot: JsonRecord(),
+    started_at: Type.String({ format: "date-time" }),
+    completed_at: Nullable(Type.String({ format: "date-time" })),
+    created_by: Uuid(),
+  },
+  { additionalProperties: false },
+);
+export type AgentSessionDTO = Static<typeof AgentSessionSchema>;
+
+export const CreateMockSessionSchema = Type.Object(
+  { status: AgentSessionStatusSchema },
+  { additionalProperties: false },
+);
+export type CreateMockSessionBody = Static<typeof CreateMockSessionSchema>;
+
+export const AgentProfilesResponseSchema = Type.Array(AgentProfileSchema);
+export const AgentSessionsResponseSchema = Type.Array(AgentSessionSchema);

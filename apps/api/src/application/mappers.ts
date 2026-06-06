@@ -1,4 +1,6 @@
 import type {
+  AgentProfileDTO,
+  AgentSessionDTO,
   AssetVersionDTO,
   ContentAssetDTO,
   ContentTaskDTO,
@@ -14,6 +16,8 @@ import type {
 import type { QueueItem } from "../infrastructure/repositories/dashboard.repository.js";
 import type { EditorStateData } from "../infrastructure/repositories/editor.repository.js";
 import type {
+  AgentProfileRow,
+  AgentSessionRow,
   AssetVersionRow,
   ContentAssetRow,
   ContentTaskRow,
@@ -196,3 +200,39 @@ function queueDTO(q: QueueItem): PendingReviewDTO {
 
 export const toPendingReviewDTO = (q: QueueItem): PendingReviewDTO => queueDTO(q);
 export const toWorkQueueItemDTO = (q: QueueItem): WorkQueueItemDTO => queueDTO(q);
+
+// ── Sprint-4.1 Agent 壳层 行 → DTO ──
+
+export function toAgentProfileDTO(r: AgentProfileRow): AgentProfileDTO {
+  return {
+    id: r.id,
+    project_id: r.projectId,
+    name: r.name,
+    description: r.description,
+    status: r.status as AgentProfileDTO["status"],
+    capabilities: r.capabilities,
+    constraints: r.constraints,
+    created_by: r.createdBy,
+    created_at: r.createdAt.toISOString(),
+  };
+}
+
+export function toAgentSessionDTO(r: AgentSessionRow): AgentSessionDTO {
+  return {
+    id: r.id,
+    project_id: r.projectId,
+    agent_profile_id: r.agentProfileId,
+    status: r.status as AgentSessionDTO["status"],
+    profile_snapshot: r.profileSnapshot,
+    started_at: r.startedAt.toISOString(),
+    completed_at: iso(r.completedAt),
+    created_by: r.createdBy,
+  };
+}
+
+export function toHealthCheckDTO(r: { healthy: boolean; profileStatus: string }): {
+  healthy: boolean;
+  profileStatus: string;
+} {
+  return { healthy: r.healthy, profileStatus: r.profileStatus };
+}
