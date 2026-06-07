@@ -208,6 +208,9 @@ export const EXECUTION_OUTBOX_EVENTS = {
   success: "execution_job.success",
   failed: "execution_job.failed",
   lockTimeout: "execution_job.lock_timeout",
+  manualRetry: "execution_job.manual_retry",
+  opsRecoverStaleJobs: "execution_ops.recover_stale_jobs",
+  opsProcessOutboxBatch: "execution_ops.process_outbox_batch",
 } as const;
 export type ExecutionOutboxEvent = (typeof EXECUTION_OUTBOX_EVENTS)[keyof typeof EXECUTION_OUTBOX_EVENTS];
 

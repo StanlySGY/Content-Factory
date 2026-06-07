@@ -1,4 +1,4 @@
-import { and, asc, eq, isNotNull, isNull, type SQL } from "drizzle-orm";
+import { and, asc, count, eq, isNotNull, isNull, type SQL } from "drizzle-orm";
 import { markOutboxFailed, markOutboxProcessed } from "../../domain/execution/outbox.js";
 import type { Db } from "../db/client.js";
 import { outboxEvents, type OutboxEventRow } from "../db/schema.js";
@@ -104,4 +104,19 @@ export async function markFailed(db: Db, id: string, error: string): Promise<Out
       .returning();
     return row ?? null;
   });
+}
+
+/** 未处理事件计数（用于 health / backlog 观测）*/
+export async function countUnprocessedEvents(db: Db): Promise<number> {
+  const [row] = await db.select({ c: count() }).from(outboxEvents).where(isNull(outboxEvents.processedAt));
+  return Number(row?.c ?? 0);
+}
+
+/** 处理失败且未解决的事件计数（error 非空且仍未处理）*/
+export async function countFailedEvents(db: Db): Promise<number> {
+  const [row] = await db
+    .select({ c: count() })
+    .from(outboxEvents)
+    .where(and(isNotNull(outboxEvents.error), isNull(outboxEvents.processedAt)));
+  return Number(row?.c ?? 0);
 }

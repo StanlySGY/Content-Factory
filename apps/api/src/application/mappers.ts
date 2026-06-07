@@ -9,6 +9,7 @@ import type {
   ExecutionJobDTO,
   ExecutionResultDTO,
   ExecutionResultSummaryDTO,
+  ExecutionSystemHealthDTO,
   McpServerDTO,
   McpToolDTO,
   OutboxEventDTO,
@@ -41,6 +42,7 @@ import type {
   WorkflowRunRow,
 } from "../infrastructure/db/schema.js";
 import type { ExecutionResultSummary } from "../domain/execution/result.js";
+import type { ExecutionSystemHealth } from "./execution-ops.service.js";
 
 const iso = (d: Date | null): string | null => (d ? d.toISOString() : null);
 
@@ -362,5 +364,22 @@ export function toExecutionResultSummaryDTO(
     latest_error_type: s.latestErrorType as ExecutionResultSummaryDTO["latest_error_type"],
     latest_retryable: s.latestRetryable,
     total_duration_ms: s.totalDurationMs,
+  };
+}
+
+export function toExecutionSystemHealthDTO(h: ExecutionSystemHealth): ExecutionSystemHealthDTO {
+  return {
+    worker_enabled: h.workerEnabled,
+    relay_enabled: h.relayEnabled,
+    worker_interval_ms: h.workerIntervalMs,
+    relay_interval_ms: h.relayIntervalMs,
+    runtime_timeout_ms: h.runtimeTimeoutMs,
+    pending_jobs: h.pendingJobs,
+    running_jobs: h.runningJobs,
+    failed_jobs: h.failedJobs,
+    stale_running_jobs: h.staleRunningJobs,
+    unprocessed_outbox_events: h.unprocessedOutboxEvents,
+    failed_outbox_events: h.failedOutboxEvents,
+    latest_result_at: h.latestResultAt ? h.latestResultAt.toISOString() : null,
   };
 }

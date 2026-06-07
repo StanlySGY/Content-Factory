@@ -43,6 +43,17 @@ export class OutboxRelay {
     return event ? this.dispatch(event) : null;
   }
 
+  /** 批量处理至多 limit 条未处理事件（运维手动触发）；返回已投递的事件行（含 markProcessed/markFailed 结果）。*/
+  async processBatch(limit: number): Promise<OutboxEventRow[]> {
+    const out: OutboxEventRow[] = [];
+    for (let i = 0; i < limit; i++) {
+      const event = await this.tick();
+      if (!event) break;
+      out.push(event);
+    }
+    return out;
+  }
+
   /** 手动处理指定事件：不存在 → 404；已处理 → 409；否则投递并返回结果行。*/
   async processEvent(id: string): Promise<OutboxEventRow> {
     const existing = await outboxRepo.getOutboxEvent(this.db, id);

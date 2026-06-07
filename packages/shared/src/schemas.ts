@@ -885,3 +885,53 @@ export const ExecutionResultSummarySchema = Type.Object(
   { additionalProperties: false },
 );
 export type ExecutionResultSummaryDTO = Static<typeof ExecutionResultSummarySchema>;
+
+// ---- Execution Ops (S5 Phase 1.10；运维健康观测 + 恢复控制，仅 execution plane) ----
+export const ExecutionSystemHealthSchema = Type.Object(
+  {
+    worker_enabled: Type.Boolean(),
+    relay_enabled: Type.Boolean(),
+    worker_interval_ms: Type.Integer(),
+    relay_interval_ms: Type.Integer(),
+    runtime_timeout_ms: Type.Integer(),
+    pending_jobs: Type.Integer(),
+    running_jobs: Type.Integer(),
+    failed_jobs: Type.Integer(),
+    stale_running_jobs: Type.Integer(),
+    unprocessed_outbox_events: Type.Integer(),
+    failed_outbox_events: Type.Integer(),
+    latest_result_at: Nullable(Type.String({ format: "date-time" })),
+  },
+  { additionalProperties: false },
+);
+export type ExecutionSystemHealthDTO = Static<typeof ExecutionSystemHealthSchema>;
+
+export const RecoverStaleJobsBodySchema = Type.Object(
+  { lock_timeout_ms: Type.Optional(Type.Integer({ minimum: 0 })) },
+  { additionalProperties: false },
+);
+export type RecoverStaleJobsBody = Static<typeof RecoverStaleJobsBodySchema>;
+
+export const RecoverStaleJobsResponseSchema = Type.Object(
+  { recovered: Type.Integer(), failed: Type.Integer(), job_ids: Type.Array(Uuid()) },
+  { additionalProperties: false },
+);
+export type RecoverStaleJobsResponse = Static<typeof RecoverStaleJobsResponseSchema>;
+
+export const ProcessOutboxBatchBodySchema = Type.Object(
+  { limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })) },
+  { additionalProperties: false },
+);
+export type ProcessOutboxBatchBody = Static<typeof ProcessOutboxBatchBodySchema>;
+
+export const ProcessOutboxBatchResponseSchema = Type.Object(
+  { processed: Type.Integer(), failed: Type.Integer(), event_ids: Type.Array(Uuid()) },
+  { additionalProperties: false },
+);
+export type ProcessOutboxBatchResponse = Static<typeof ProcessOutboxBatchResponseSchema>;
+
+export const ManualRetryJobResponseSchema = Type.Object(
+  { job: ExecutionJobSchema },
+  { additionalProperties: false },
+);
+export type ManualRetryJobResponse = Static<typeof ManualRetryJobResponseSchema>;

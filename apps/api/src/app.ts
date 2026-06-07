@@ -10,6 +10,7 @@ import { DashboardService } from "./application/dashboard.service.js";
 import { EditorQueryService } from "./application/editor-query.service.js";
 import { ExecutionJobService } from "./application/execution-job.service.js";
 import { ExecutionBridgeService } from "./application/execution-bridge.service.js";
+import { ExecutionOpsService } from "./application/execution-ops.service.js";
 import { ExecutionResultService } from "./application/execution-result.service.js";
 import { ExecutionWorker } from "./application/execution-worker.js";
 import { McpRuntimeMockService } from "./application/mcp-runtime-mock.service.js";
@@ -29,6 +30,7 @@ import { contextPackRoutes } from "./interfaces/http/routes/context-packs.js";
 import { dashboardRoutes } from "./interfaces/http/routes/dashboard.js";
 import { editorRoutes } from "./interfaces/http/routes/editor.js";
 import { executionRoutes } from "./interfaces/http/routes/execution.js";
+import { executionOpsRoutes } from "./interfaces/http/routes/execution-ops.js";
 import { reviewRoutes } from "./interfaces/http/routes/reviews.js";
 import { stageRunRoutes } from "./interfaces/http/routes/stage-runs.js";
 import { taskRoutes } from "./interfaces/http/routes/tasks.js";
@@ -72,6 +74,14 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
   const outboxRelay = new OutboxRelay(db, undefined, env.outboxRelayIntervalMs);
   const executionBridgeService = new ExecutionBridgeService(executionJobService);
   const executionResultService = new ExecutionResultService(db);
+  const executionOpsService = new ExecutionOpsService(db, outboxRelay, {
+    workerEnabled: env.executionWorkerEnabled,
+    relayEnabled: env.outboxRelayEnabled,
+    workerIntervalMs: env.executionWorkerIntervalMs,
+    relayIntervalMs: env.outboxRelayIntervalMs,
+    runtimeTimeoutMs: env.executionRuntimeTimeoutMs,
+    lockTimeoutMs: env.executionWorkerLockTimeoutMs,
+  });
   const agentProfileService = new AgentProfileService(db);
   const agentRuntimeService = new AgentRuntimeMockService(db);
   const mcpServerService = new McpServerService(db);
@@ -102,6 +112,7 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
   await app.register(dashboardRoutes, { env, dashboardService });
   await app.register(editorRoutes, { env, editorQueryService });
   await app.register(executionRoutes, { executionJobService, executionWorker, outboxService, outboxRelay, executionBridgeService, executionResultService });
+  await app.register(executionOpsRoutes, { executionOpsService });
   await app.register(agentRoutes, { env, agentProfileService, agentRuntimeService });
   await app.register(mcpRoutes, { env, mcpServerService, mcpToolService, mcpRuntimeService });
 

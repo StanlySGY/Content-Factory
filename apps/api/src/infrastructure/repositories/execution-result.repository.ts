@@ -1,4 +1,4 @@
-import { asc, desc, eq } from "drizzle-orm";
+import { asc, desc, eq, max } from "drizzle-orm";
 import {
   summarizeExecutionResult,
   type ExecutionResultRecord,
@@ -64,4 +64,10 @@ export async function summarizeResultsByJob(
   jobId: string,
 ): Promise<ExecutionResultSummary> {
   return summarizeExecutionResult(await listResultsByJob(db, jobId));
+}
+
+/** 全账本最新结果时刻（用于 health；无结果返回 null）*/
+export async function getLatestResultAt(db: Db): Promise<Date | null> {
+  const [row] = await db.select({ m: max(executionResults.createdAt) }).from(executionResults);
+  return row?.m ?? null;
 }

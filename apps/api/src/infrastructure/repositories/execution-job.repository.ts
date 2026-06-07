@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull, lt, lte, or, type SQL } from "drizzle-orm";
+import { and, asc, count, eq, isNull, lt, lte, or, type SQL } from "drizzle-orm";
 import { EXECUTION_OUTBOX_EVENTS } from "@cf/shared";
 import { markExecutionFailure } from "../../domain/execution/retry-policy.js";
 import type { Db } from "../db/client.js";
@@ -144,4 +144,37 @@ export async function recoverStaleRunningJobs(
     }
     return recovered;
   });
+}
+
+// ── Phase 1.10 运维只读聚合 + 手动恢复 ──
+
+/** 各状态作业计数（用于 health；不 join 业务表）*/
+export async function countJobsByStatus(db: Db): Promise<Record<string, number>> {
+  const rows = await db
+    .select({ status: executionJobs.status, c: count() })
+    .from(executionJobs)
+    .groupBy(executionJobs.status);
+  const out: Record<string, number> = { pending: 0, running: 0, success: 0, failed: 0 };
+  for (const r of rows) out[r.status] = Number(r.c);
+  return out;
+}
+
+/** stale running 作业（locked_at 早于 now-lockTimeout）只读列表（用于 health 计数）*/
+export async function listStaleRunningJobs(db: Db, lockTimeoutMs: number): Promise<ExecutionJobRow[]> {
+  const cutoff = new Date(Date.now() - lockTimeoutMs);
+  return db
+    .select()
+    .from(executionJobs)
+    .where(and(eq(executionJobs.status, "running"), lt(executionJobs.lockedAt, cutoff)));
+}
+
+/** 手动重试：仅 failed → pending（状态条件保护，并发安全）。attempt_count 不回退；清 last_error/next_run_at/finished_at。
+ *  非 failed（success/running/pending/缺失）返回 null。*/
+export async function manualRetryJob(db: Db, id: string): Promise<ExecutionJobRow | null> {
+  const [row] = await db
+    .update(executionJobs)
+    .set({ status: "pending", nextRunAt: null, lastError: null, finishedAt: null, lockedAt: null, updatedAt: new Date() })
+    .where(and(eq(executionJobs.id, id), eq(executionJobs.status, "failed")))
+    .returning();
+  return row ?? null;
 }
