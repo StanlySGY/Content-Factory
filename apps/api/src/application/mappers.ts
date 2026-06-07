@@ -9,6 +9,7 @@ import type {
   ExecutionJobDTO,
   McpServerDTO,
   McpToolDTO,
+  OutboxEventDTO,
   PendingReviewDTO,
   ReviewRecordDTO,
   StageRunDTO,
@@ -29,6 +30,7 @@ import type {
   ExecutionJobRow,
   McpServerRow,
   McpToolRow,
+  OutboxEventRow,
   ReviewRecordRow,
   StageRunRow,
   ToolInvocationRow,
@@ -310,5 +312,19 @@ export function toExecutionJobDTO(r: ExecutionJobRow): ExecutionJobDTO {
     finished_at: r.finishedAt ? r.finishedAt.toISOString() : null,
     created_at: r.createdAt.toISOString(),
     updated_at: r.updatedAt.toISOString(),
+  };
+}
+
+export function toOutboxEventDTO(r: OutboxEventRow): OutboxEventDTO {
+  return {
+    id: r.id,
+    aggregate_type: r.aggregateType,
+    aggregate_id: r.aggregateId,
+    event_type: r.eventType,
+    payload: r.payload,
+    processed_at: r.processedAt ? r.processedAt.toISOString() : null,
+    error: r.error,
+    retry_count: r.retryCount,
+    created_at: r.createdAt.toISOString(),
   };
 }

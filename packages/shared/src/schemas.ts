@@ -779,3 +779,38 @@ export const ListExecutionJobsQuerySchema = Type.Object(
 export type ListExecutionJobsQuery = Static<typeof ListExecutionJobsQuerySchema>;
 
 export const ExecutionJobsResponseSchema = Type.Array(ExecutionJobSchema);
+
+// ---- Execution Observability：Outbox 事件（S5 Phase 1.6；relay 只读观测 + 手动处理）----
+export const OutboxEventSchema = Type.Object(
+  {
+    id: Uuid(),
+    aggregate_type: Type.String(),
+    aggregate_id: Uuid(),
+    event_type: Type.String(),
+    payload: JsonRecord(),
+    processed_at: Nullable(Type.String({ format: "date-time" })),
+    error: Nullable(Type.String()),
+    retry_count: Type.Integer(),
+    created_at: Type.String({ format: "date-time" }),
+  },
+  { additionalProperties: false },
+);
+export type OutboxEventDTO = Static<typeof OutboxEventSchema>;
+
+export const OutboxEventsResponseSchema = Type.Array(OutboxEventSchema);
+
+export const ListOutboxEventsQuerySchema = Type.Object(
+  {
+    event_type: Type.Optional(Type.String()),
+    aggregate_type: Type.Optional(Type.String()),
+    processed: Type.Optional(Type.Boolean()),
+  },
+  { additionalProperties: false },
+);
+export type ListOutboxEventsQuery = Static<typeof ListOutboxEventsQuerySchema>;
+
+export const ProcessOutboxEventResponseSchema = Type.Object(
+  { processed: Type.Boolean(), event: OutboxEventSchema },
+  { additionalProperties: false },
+);
+export type ProcessOutboxEventResponse = Static<typeof ProcessOutboxEventResponseSchema>;

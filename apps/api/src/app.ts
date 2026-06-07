@@ -13,6 +13,8 @@ import { ExecutionWorker } from "./application/execution-worker.js";
 import { McpRuntimeMockService } from "./application/mcp-runtime-mock.service.js";
 import { McpServerService } from "./application/mcp-server.service.js";
 import { McpToolService } from "./application/mcp-tool.service.js";
+import { OutboxRelay } from "./application/outbox-relay.js";
+import { OutboxService } from "./application/outbox.service.js";
 import { ReviewService } from "./application/review.service.js";
 import { TaskService } from "./application/task.service.js";
 import { WorkflowDefinitionService } from "./application/workflow-definition.service.js";
@@ -63,6 +65,8 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
     env.executionWorkerIntervalMs,
     env.executionWorkerLockTimeoutMs,
   );
+  const outboxService = new OutboxService(db);
+  const outboxRelay = new OutboxRelay(db, undefined, env.outboxRelayIntervalMs);
   const agentProfileService = new AgentProfileService(db);
   const agentRuntimeService = new AgentRuntimeMockService(db);
   const mcpServerService = new McpServerService(db);
@@ -92,14 +96,16 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
   await app.register(reviewRoutes, { env, reviewService });
   await app.register(dashboardRoutes, { env, dashboardService });
   await app.register(editorRoutes, { env, editorQueryService });
-  await app.register(executionRoutes, { executionJobService, executionWorker });
+  await app.register(executionRoutes, { executionJobService, executionWorker, outboxService, outboxRelay });
   await app.register(agentRoutes, { env, agentProfileService, agentRuntimeService });
   await app.register(mcpRoutes, { env, mcpServerService, mcpToolService, mcpRuntimeService });
 
   if (env.executionWorkerEnabled) executionWorker.start();
+  if (env.outboxRelayEnabled) outboxRelay.start();
 
   const close = async (): Promise<void> => {
     executionWorker.stop();
+    outboxRelay.stop();
     await app.close();
     await Promise.all([appPool.end(), auditPool.end()]);
   };

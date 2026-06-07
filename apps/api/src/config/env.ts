@@ -14,6 +14,8 @@ export interface Env {
   executionWorkerEnabled: boolean;
   executionWorkerIntervalMs: number;
   executionWorkerLockTimeoutMs: number;
+  outboxRelayEnabled: boolean;
+  outboxRelayIntervalMs: number;
 }
 
 function required(name: string, value: string | undefined): string {
@@ -36,5 +38,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     executionWorkerEnabled: source.EXECUTION_WORKER_ENABLED === "true",
     executionWorkerIntervalMs: Number(source.EXECUTION_WORKER_INTERVAL_MS ?? 5000),
     executionWorkerLockTimeoutMs: Number(source.EXECUTION_WORKER_LOCK_TIMEOUT_MS ?? 30000),
+    outboxRelayEnabled: source.OUTBOX_RELAY_ENABLED === "true",
+    outboxRelayIntervalMs: Number(source.OUTBOX_RELAY_INTERVAL_MS ?? 5000),
   };
 }
