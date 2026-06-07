@@ -260,6 +260,35 @@ export const toolInvocations = pgTable("tool_invocations", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// Sprint-5 执行层（独立异步骨架；execution_jobs 可变生命周期，无 project_id/无 FK）
+export const executionJobs = pgTable("execution_jobs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  type: varchar("type", { length: 32 }).notNull(),
+  status: varchar("status", { length: 32 }).notNull().default("pending"),
+  payload: jsonb("payload").$type<JsonRecord>().notNull(),
+  idempotencyKey: varchar("idempotency_key", { length: 200 }).notNull(),
+  attemptCount: integer("attempt_count").notNull().default(0),
+  maxAttempts: integer("max_attempts").notNull().default(3),
+  lastError: text("last_error"),
+  nextRunAt: timestamp("next_run_at", { withTimezone: true }),
+  finishedAt: timestamp("finished_at", { withTimezone: true }),
+  lockedAt: timestamp("locked_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const outboxEvents = pgTable("outbox_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  aggregateType: varchar("aggregate_type", { length: 64 }).notNull(),
+  aggregateId: uuid("aggregate_id").notNull(),
+  eventType: varchar("event_type", { length: 120 }).notNull(),
+  payload: jsonb("payload").$type<JsonRecord>().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  processedAt: timestamp("processed_at", { withTimezone: true }),
+  error: text("error"),
+  retryCount: integer("retry_count").notNull().default(0),
+});
+
 export type WorkflowDefinitionRow = typeof workflowDefinitions.$inferSelect;
 export type WorkflowStageRow = typeof workflowStages.$inferSelect;
 export type WorkflowStageDependencyRow = typeof workflowStageDependencies.$inferSelect;
@@ -274,3 +303,5 @@ export type AgentSessionRow = typeof agentSessions.$inferSelect;
 export type McpServerRow = typeof mcpServers.$inferSelect;
 export type McpToolRow = typeof mcpTools.$inferSelect;
 export type ToolInvocationRow = typeof toolInvocations.$inferSelect;
+export type ExecutionJobRow = typeof executionJobs.$inferSelect;
+export type OutboxEventRow = typeof outboxEvents.$inferSelect;

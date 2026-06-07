@@ -189,3 +189,24 @@ export type McpRiskLevel = (typeof MCP_RISK_LEVELS)[number];
 /** 工具调用状态（db tool_invocations_status_chk；只追加，于插入时定稿）*/
 export const TOOL_INVOCATION_STATUSES = ["success", "failed", "blocked"] as const;
 export type ToolInvocationStatus = (typeof TOOL_INVOCATION_STATUSES)[number];
+
+// ── Sprint-5 执行层值集（独立异步执行骨架；与控制平面状态机无关）──
+
+/** 执行作业类型（db execution_jobs_type_chk）*/
+export const EXECUTION_JOB_TYPES = ["agent", "mcp", "publisher"] as const;
+export type ExecutionJobType = (typeof EXECUTION_JOB_TYPES)[number];
+
+/** 执行作业状态（db execution_jobs_status_chk；可变生命周期 pending→running→success/failed，running→pending 为重试回退）*/
+export const EXECUTION_JOB_STATUSES = ["pending", "running", "success", "failed"] as const;
+export type ExecutionJobStatus = (typeof EXECUTION_JOB_STATUSES)[number];
+
+/** 执行层 outbox 事件类型（Phase 1.5；唯一真相源，service/worker/repo 共用，待 Phase 2 relay 消费）*/
+export const EXECUTION_OUTBOX_EVENTS = {
+  created: "execution_job.created",
+  running: "execution_job.running",
+  retryScheduled: "execution_job.retry_scheduled",
+  success: "execution_job.success",
+  failed: "execution_job.failed",
+  lockTimeout: "execution_job.lock_timeout",
+} as const;
+export type ExecutionOutboxEvent = (typeof EXECUTION_OUTBOX_EVENTS)[keyof typeof EXECUTION_OUTBOX_EVENTS];

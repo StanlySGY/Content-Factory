@@ -11,6 +11,9 @@ export interface Env {
   webOrigin: string;
   defaultProjectId: string;
   defaultUserId: string;
+  executionWorkerEnabled: boolean;
+  executionWorkerIntervalMs: number;
+  executionWorkerLockTimeoutMs: number;
 }
 
 function required(name: string, value: string | undefined): string {
@@ -30,5 +33,8 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     webOrigin: source.WEB_ORIGIN ?? "http://localhost:5173",
     defaultProjectId: source.DEFAULT_PROJECT_ID ?? DEFAULT_PROJECT_ID,
     defaultUserId: source.DEFAULT_USER_ID ?? DEFAULT_USER_ID,
+    executionWorkerEnabled: source.EXECUTION_WORKER_ENABLED === "true",
+    executionWorkerIntervalMs: Number(source.EXECUTION_WORKER_INTERVAL_MS ?? 5000),
+    executionWorkerLockTimeoutMs: Number(source.EXECUTION_WORKER_LOCK_TIMEOUT_MS ?? 30000),
   };
 }

@@ -15,6 +15,8 @@ import {
   TASK_PRIORITIES,
   TASK_STATUSES,
   TOOL_INVOCATION_STATUSES,
+  EXECUTION_JOB_STATUSES,
+  EXECUTION_JOB_TYPES,
   WORKFLOW_RUN_STATUSES,
 } from "./enums.js";
 
@@ -732,3 +734,48 @@ export const McpToolResponseSchema = McpToolSchema;
 export const McpToolsResponseSchema = Type.Array(McpToolSchema);
 export const ToolInvocationResponseSchema = ToolInvocationSchema;
 export const ToolInvocationsResponseSchema = Type.Array(ToolInvocationSchema);
+
+// ---- Execution Layer (S5 Phase 1；独立异步执行骨架) ----
+export const ExecutionJobTypeSchema = StringEnum(EXECUTION_JOB_TYPES);
+export const ExecutionJobStatusSchema = StringEnum(EXECUTION_JOB_STATUSES);
+
+export const ExecutionJobSchema = Type.Object(
+  {
+    id: Uuid(),
+    type: ExecutionJobTypeSchema,
+    status: ExecutionJobStatusSchema,
+    payload: JsonRecord(),
+    idempotency_key: Type.String(),
+    attempt_count: Type.Integer(),
+    max_attempts: Type.Integer(),
+    last_error: Nullable(Type.String()),
+    next_run_at: Nullable(Type.String({ format: "date-time" })),
+    finished_at: Nullable(Type.String({ format: "date-time" })),
+    created_at: Type.String({ format: "date-time" }),
+    updated_at: Type.String({ format: "date-time" }),
+  },
+  { additionalProperties: false },
+);
+export type ExecutionJobDTO = Static<typeof ExecutionJobSchema>;
+
+export const CreateExecutionJobSchema = Type.Object(
+  {
+    type: ExecutionJobTypeSchema,
+    payload: JsonRecord(),
+    idempotency_key: Type.String({ minLength: 1, maxLength: 200 }),
+    max_attempts: Type.Optional(Type.Integer({ minimum: 1 })),
+  },
+  { additionalProperties: false },
+);
+export type CreateExecutionJobBody = Static<typeof CreateExecutionJobSchema>;
+
+export const ListExecutionJobsQuerySchema = Type.Object(
+  {
+    status: Type.Optional(ExecutionJobStatusSchema),
+    type: Type.Optional(ExecutionJobTypeSchema),
+  },
+  { additionalProperties: false },
+);
+export type ListExecutionJobsQuery = Static<typeof ListExecutionJobsQuerySchema>;
+
+export const ExecutionJobsResponseSchema = Type.Array(ExecutionJobSchema);

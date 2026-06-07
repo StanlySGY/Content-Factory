@@ -6,6 +6,7 @@ import type {
   ContentTaskDTO,
   ContextPackDTO,
   EditorStateDTO,
+  ExecutionJobDTO,
   McpServerDTO,
   McpToolDTO,
   PendingReviewDTO,
@@ -25,6 +26,7 @@ import type {
   ContentAssetRow,
   ContentTaskRow,
   ContextPackRow,
+  ExecutionJobRow,
   McpServerRow,
   McpToolRow,
   ReviewRecordRow,
@@ -291,4 +293,22 @@ export function toMcpHealthCheckDTO(r: { healthy: boolean; status: string }): {
   serverStatus: string;
 } {
   return { healthy: r.healthy, serverStatus: r.status };
+}
+
+// ── Sprint-5 执行层 行 → DTO ──
+export function toExecutionJobDTO(r: ExecutionJobRow): ExecutionJobDTO {
+  return {
+    id: r.id,
+    type: r.type as ExecutionJobDTO["type"],
+    status: r.status as ExecutionJobDTO["status"],
+    payload: r.payload,
+    idempotency_key: r.idempotencyKey,
+    attempt_count: r.attemptCount,
+    max_attempts: r.maxAttempts,
+    last_error: r.lastError,
+    next_run_at: r.nextRunAt ? r.nextRunAt.toISOString() : null,
+    finished_at: r.finishedAt ? r.finishedAt.toISOString() : null,
+    created_at: r.createdAt.toISOString(),
+    updated_at: r.updatedAt.toISOString(),
+  };
 }

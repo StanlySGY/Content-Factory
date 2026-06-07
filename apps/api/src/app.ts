@@ -8,6 +8,8 @@ import { AssetService } from "./application/asset.service.js";
 import { ContextPackService } from "./application/context-pack.service.js";
 import { DashboardService } from "./application/dashboard.service.js";
 import { EditorQueryService } from "./application/editor-query.service.js";
+import { ExecutionJobService } from "./application/execution-job.service.js";
+import { ExecutionWorker } from "./application/execution-worker.js";
 import { McpRuntimeMockService } from "./application/mcp-runtime-mock.service.js";
 import { McpServerService } from "./application/mcp-server.service.js";
 import { McpToolService } from "./application/mcp-tool.service.js";
@@ -22,6 +24,7 @@ import { assetRoutes } from "./interfaces/http/routes/assets.js";
 import { contextPackRoutes } from "./interfaces/http/routes/context-packs.js";
 import { dashboardRoutes } from "./interfaces/http/routes/dashboard.js";
 import { editorRoutes } from "./interfaces/http/routes/editor.js";
+import { executionRoutes } from "./interfaces/http/routes/execution.js";
 import { reviewRoutes } from "./interfaces/http/routes/reviews.js";
 import { stageRunRoutes } from "./interfaces/http/routes/stage-runs.js";
 import { taskRoutes } from "./interfaces/http/routes/tasks.js";
@@ -53,6 +56,13 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
   const reviewService = new ReviewService(db);
   const dashboardService = new DashboardService(db);
   const editorQueryService = new EditorQueryService(db);
+  const executionJobService = new ExecutionJobService(db);
+  const executionWorker = new ExecutionWorker(
+    db,
+    undefined,
+    env.executionWorkerIntervalMs,
+    env.executionWorkerLockTimeoutMs,
+  );
   const agentProfileService = new AgentProfileService(db);
   const agentRuntimeService = new AgentRuntimeMockService(db);
   const mcpServerService = new McpServerService(db);
@@ -82,10 +92,14 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
   await app.register(reviewRoutes, { env, reviewService });
   await app.register(dashboardRoutes, { env, dashboardService });
   await app.register(editorRoutes, { env, editorQueryService });
+  await app.register(executionRoutes, { executionJobService, executionWorker });
   await app.register(agentRoutes, { env, agentProfileService, agentRuntimeService });
   await app.register(mcpRoutes, { env, mcpServerService, mcpToolService, mcpRuntimeService });
 
+  if (env.executionWorkerEnabled) executionWorker.start();
+
   const close = async (): Promise<void> => {
+    executionWorker.stop();
     await app.close();
     await Promise.all([appPool.end(), auditPool.end()]);
   };
