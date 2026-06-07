@@ -64,6 +64,7 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
     undefined,
     env.executionWorkerIntervalMs,
     env.executionWorkerLockTimeoutMs,
+    env.executionRuntimeTimeoutMs,
   );
   const outboxService = new OutboxService(db);
   const outboxRelay = new OutboxRelay(db, undefined, env.outboxRelayIntervalMs);

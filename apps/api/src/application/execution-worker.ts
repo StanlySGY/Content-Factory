@@ -1,45 +1,50 @@
-import { EXECUTION_OUTBOX_EVENTS } from "@cf/shared";
+import { EXECUTION_OUTBOX_EVENTS, type ExecutionJobType } from "@cf/shared";
 import { ConflictError, NotFoundError } from "../domain/errors.js";
 import { transitionExecutionJobStatus } from "../domain/execution/job-status.js";
-import type { ExecutionResult } from "../domain/execution/job.js";
 import { markExecutionFailure } from "../domain/execution/retry-policy.js";
+import {
+  failedRuntimeResponse,
+  normalizeRuntimeError,
+  resolveTimeoutMs,
+  toExecutionResult,
+  validateRuntimeRequest,
+  validateRuntimeResponse,
+  type RuntimeRequest,
+  type RuntimeResponse,
+} from "../domain/execution/runtime-contract.js";
 import type { Db } from "../infrastructure/db/client.js";
 import type { ExecutionJobRow } from "../infrastructure/db/schema.js";
 import * as jobRepo from "../infrastructure/repositories/execution-job.repository.js";
 import * as outboxRepo from "../infrastructure/repositories/outbox.repository.js";
 import {
-  AgentMockRuntime,
-  MCPMockRuntime,
-  PublisherMockRuntime,
-} from "./runtime/mock-runtimes.js";
-import type { IAgentRuntime, IMCPRuntime, IPublisherRuntime } from "./runtime/ports.js";
+  MockRuntimeAdapterFactory,
+  type RuntimeAdapterFactory,
+} from "./runtime/adapter-factory.js";
 
-export interface ExecutionRuntimes {
-  agent: IAgentRuntime;
-  mcp: IMCPRuntime;
-  publisher: IPublisherRuntime;
+// outbox payload 内的 runtime 快照（Phase 1.7：不扩 DB 字段，runtime 元数据落 terminal/retry 事件 payload）
+function runtimeSnapshot(res: RuntimeResponse): Record<string, unknown> {
+  return {
+    status: res.status,
+    error: res.error,
+    error_type: res.errorType,
+    retryable: res.retryable,
+    duration_ms: res.durationMs,
+  };
 }
 
-export const mockRuntimes = (): ExecutionRuntimes => ({
-  agent: new AgentMockRuntime(),
-  mcp: new MCPMockRuntime(),
-  publisher: new PublisherMockRuntime(),
-});
-
-// ExecutionWorker：纯 DB 轮询 worker（无 Redis/MQ）。默认关闭（feature flag），可手动 tick（测试/运维）或定时 start。
-// 可靠性骨架（Phase 1.5）：
-//   - claim 仅领取到期 pending（退避窗口内不领），同事务写 running 事件。
-//   - 成功 → success + finished_at；失败/blocked/抛错 → 重试策略（pending+next_run_at 或 failed+finished_at）。
-//   - 每次状态变化写 outbox；adapter 抛错被捕获进 last_error，绝不丢失。
-//   - 周期 cycle 先恢复 stale-lock 再 tick，避免崩溃导致作业永久 stuck。
+// ExecutionWorker：纯 DB 轮询 worker（无 Redis/MQ）。默认关闭（feature flag），可手动 tick 或定时 start。
+// Phase 1.7：经 Runtime Contract 调用适配器——
+//   job → RuntimeRequest（含 timeout 解析）→ adapter.execute → RuntimeResponse → 据 status/retryable 落库。
+//   非重试失败（blocked/validation/permission 等）直接 failed；可重试失败仍按 max_attempts/next_run_at 策略。
 export class ExecutionWorker {
   private timer: NodeJS.Timeout | null = null;
 
   constructor(
     private readonly db: Db,
-    private readonly runtimes: ExecutionRuntimes = mockRuntimes(),
+    private readonly factory: RuntimeAdapterFactory = new MockRuntimeAdapterFactory(),
     private readonly intervalMs = 5000,
     private readonly lockTimeoutMs = 30000,
+    private readonly runtimeTimeoutMs = 30000,
   ) {}
 
   /** 领取并处理下一个到期作业（轮询入口）。无可领取返回 null。*/
@@ -48,7 +53,7 @@ export class ExecutionWorker {
     return job ? this.process(job) : null;
   }
 
-  /** 处理指定作业（手动 tick）：不存在 → 404；非可领取态（终态/运行中/未到期）→ 409。*/
+  /** 处理指定作业（手动 tick）：不存在 → 404；非可领取态 → 409。*/
   async tickJob(id: string): Promise<ExecutionJobRow> {
     const existing = await jobRepo.getJob(this.db, id);
     if (!existing) throw new NotFoundError(`execution_job ${id} not found`);
@@ -62,18 +67,46 @@ export class ExecutionWorker {
     return jobRepo.recoverStaleRunningJobs(this.db, this.lockTimeoutMs);
   }
 
-  // 单作业执行：mock 运行 → 据结果落终态/重试。adapter 抛错转为 failed 结果（不吞错，进 last_error）。
-  private async process(job: ExecutionJobRow): Promise<ExecutionJobRow> {
-    const adapter = this.runtimes[job.type as keyof ExecutionRuntimes];
-    let result: ExecutionResult;
+  // job → RuntimeRequest（timeout 解析 + 校验）
+  private buildRequest(job: ExecutionJobRow): RuntimeRequest {
+    const request: RuntimeRequest = {
+      jobId: job.id,
+      jobType: job.type as ExecutionJobType,
+      payload: job.payload,
+      attemptCount: job.attemptCount,
+      idempotencyKey: job.idempotencyKey,
+      timeoutMs: resolveTimeoutMs(job.payload, this.runtimeTimeoutMs),
+      metadata: { maxAttempts: job.maxAttempts },
+    };
+    validateRuntimeRequest(request);
+    return request;
+  }
+
+  // 调用适配器：请求构造/校验失败 → validation_error；adapter 抛错 → normalize（不吞错）。
+  private async invoke(job: ExecutionJobRow): Promise<RuntimeResponse> {
+    let request: RuntimeRequest;
     try {
-      result = await adapter.execute(job);
+      request = this.buildRequest(job);
     } catch (e) {
-      result = { jobId: job.id, status: "failed", output: {}, error: (e as Error).message };
+      return failedRuntimeResponse(job.id, "validation_error", (e as Error).message);
     }
+    try {
+      const response = await this.factory.getRuntime(request.jobType).execute(request);
+      validateRuntimeResponse(response); // 契约防御
+      return response;
+    } catch (e) {
+      const n = normalizeRuntimeError(e);
+      return failedRuntimeResponse(job.id, n.errorType, n.message);
+    }
+  }
+
+  private async process(job: ExecutionJobRow): Promise<ExecutionJobRow> {
+    const response = await this.invoke(job);
+    const result = toExecutionResult(response);
+    const snapshot = runtimeSnapshot(response);
 
     if (result.status === "success") {
-      transitionExecutionJobStatus("running", "success"); // 状态机校验（running→success）
+      transitionExecutionJobStatus("running", "success");
       return this.db.transaction(async (tx) => {
         const updated = (await jobRepo.updateJob(tx, job.id, {
           status: "success",
@@ -84,14 +117,36 @@ export class ExecutionWorker {
           aggregate_type: "execution_job",
           aggregate_id: job.id,
           event_type: EXECUTION_OUTBOX_EVENTS.success,
-          payload: { output: result.output },
+          payload: { output: result.output, runtime: snapshot },
         });
         return updated;
       });
     }
 
-    const outcome = markExecutionFailure(job, result.error ?? "execution failed");
-    transitionExecutionJobStatus("running", outcome.status); // 校验 running→pending(重试) | running→failed(终态)
+    const error = result.error ?? "execution failed";
+    // 非重试失败：直接终态 failed（不回退 pending），无视剩余尝试
+    if (result.retryable === false) {
+      transitionExecutionJobStatus("running", "failed");
+      return this.db.transaction(async (tx) => {
+        const updated = (await jobRepo.updateJob(tx, job.id, {
+          status: "failed",
+          finishedAt: new Date(),
+          lastError: error,
+          lockedAt: null,
+        }))!;
+        await outboxRepo.createOutboxEvent(tx, {
+          aggregate_type: "execution_job",
+          aggregate_id: job.id,
+          event_type: EXECUTION_OUTBOX_EVENTS.failed,
+          payload: { error, error_type: result.errorType ?? null, attempt: job.attemptCount, runtime: snapshot },
+        });
+        return updated;
+      });
+    }
+
+    // 可重试失败：沿用重试策略（attempt<max → pending+next_run_at；耗尽 → failed）
+    const outcome = markExecutionFailure(job, error);
+    transitionExecutionJobStatus("running", outcome.status);
     return this.db.transaction(async (tx) => {
       const updated = (await jobRepo.updateJob(tx, job.id, {
         status: outcome.status,
@@ -104,7 +159,7 @@ export class ExecutionWorker {
         aggregate_type: "execution_job",
         aggregate_id: job.id,
         event_type: outcome.event,
-        payload: { error: outcome.lastError, attempt: job.attemptCount },
+        payload: { error: outcome.lastError, error_type: result.errorType ?? null, attempt: job.attemptCount, runtime: snapshot },
       });
       return updated;
     });
@@ -125,8 +180,7 @@ export class ExecutionWorker {
     }
   }
 
-  // 周期：先恢复 stale-lock，再领取一个作业。错误隔离在 cycle 边界（作业级错误已落 last_error），
-  // 防止单次 DB 抖动导致定时器 unhandled rejection 而中断 worker。
+  // 周期：先恢复 stale-lock，再领取一个作业。错误隔离在 cycle 边界（作业级错误已落 last_error/outbox）。
   private async runCycle(): Promise<void> {
     try {
       await this.recoverStale();

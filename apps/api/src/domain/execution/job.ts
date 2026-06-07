@@ -1,4 +1,4 @@
-import { EXECUTION_JOB_TYPES, type ExecutionJobStatus } from "@cf/shared";
+import { EXECUTION_JOB_TYPES, type ExecutionJobStatus, type RuntimeErrorType } from "@cf/shared";
 import { ValidationError } from "../errors.js";
 
 // 执行作业校验 + 结果类型（独立域，不落库；结果类型供 Runtime 端口与 worker 使用）。
@@ -9,12 +9,15 @@ export interface ExecutionJobInput {
   idempotencyKey: string;
 }
 
-/** 执行结果（仅类型，不落库）*/
+/** 执行结果（worker 内部决策视图；由 RuntimeResponse 经 toExecutionResult 归一化而来，不落库）*/
 export interface ExecutionResult {
   jobId: string;
   status: ExecutionJobStatus;
   output: Record<string, unknown>;
   error?: string;
+  errorType?: RuntimeErrorType;
+  retryable?: boolean;
+  durationMs?: number;
 }
 
 /** 校验执行作业输入：type 闭集、payload 非空对象、idempotencyKey 非空 */

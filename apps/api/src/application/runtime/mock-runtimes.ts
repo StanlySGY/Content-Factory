@@ -1,37 +1,96 @@
-import type { ExecutionResult } from "../../domain/execution/job.js";
-import type { ExecutionJobRow } from "../../infrastructure/db/schema.js";
+import type { RuntimeErrorType } from "@cf/shared";
+import {
+  isRetryableRuntimeError,
+  type RuntimeRequest,
+  type RuntimeResponse,
+} from "../../domain/execution/runtime-contract.js";
 import type { IAgentRuntime, IMCPRuntime, IPublisherRuntime } from "./ports.js";
 
-// Mock Runtime 适配器：100% 模拟，无网络 / LLM / MCP / 外部调用。
-// 仅按 payload.mockStatus 产出固定结果（success / failed / blocked）+ 小延迟模拟异步。
-// 注：execution_job 状态仅 success/failed；blocked 映射为 failed + output.blocked 标记。
+// Mock Runtime 适配器：100% 本地模拟，无网络 / LLM / MCP / 外部调用。
+// 按 payload 控制：mockStatus / mockErrorType / mockRetryable / mockDelayMs（模拟耗时，不真正 sleep/中断）。
 
-const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+interface MockPayload {
+  mockStatus?: "success" | "failed" | "blocked";
+  mockErrorType?: RuntimeErrorType;
+  mockRetryable?: boolean;
+  mockDelayMs?: number;
+}
 
-function mockResult(job: ExecutionJobRow, kind: string): ExecutionResult {
-  const desired = (job.payload as { mockStatus?: string }).mockStatus;
-  if (desired === "failed")
-    return { jobId: job.id, status: "failed", output: { kind }, error: "mock failure" };
-  if (desired === "blocked")
-    return { jobId: job.id, status: "failed", output: { kind, blocked: true }, error: "mock blocked" };
-  return { jobId: job.id, status: "success", output: { kind, result: "mock" } };
+function mockResponse(request: RuntimeRequest, kind: string): RuntimeResponse {
+  const p = request.payload as MockPayload;
+  const delayMs = typeof p.mockDelayMs === "number" ? p.mockDelayMs : 0;
+  const meta = { kind, attempt: request.attemptCount };
+
+  // 模拟超时：耗时超过 timeoutMs（不引入 AbortController / 真实中断），返回可重试 timeout
+  if (delayMs > request.timeoutMs)
+    return {
+      jobId: request.jobId,
+      status: "failed",
+      output: { kind },
+      error: `runtime timed out after ${request.timeoutMs}ms`,
+      errorType: "timeout",
+      retryable: true,
+      durationMs: request.timeoutMs,
+      metadata: meta,
+    };
+
+  const status = p.mockStatus ?? "success";
+  if (status === "success")
+    return {
+      jobId: request.jobId,
+      status: "success",
+      output: { kind, result: "mock" },
+      error: null,
+      errorType: null,
+      retryable: false,
+      durationMs: delayMs,
+      metadata: meta,
+    };
+
+  if (status === "blocked")
+    return {
+      jobId: request.jobId,
+      status: "failed",
+      output: { kind, blocked: true },
+      error: "mock blocked",
+      errorType: "blocked",
+      retryable: false,
+      durationMs: delayMs,
+      metadata: meta,
+    };
+
+  // failed：errorType 默认 unknown；blocked 不可被覆盖为可重试，其余 mockRetryable 可覆盖默认
+  const errorType: RuntimeErrorType = p.mockErrorType ?? "unknown";
+  const retryable =
+    errorType === "blocked"
+      ? false
+      : typeof p.mockRetryable === "boolean"
+        ? p.mockRetryable
+        : isRetryableRuntimeError(errorType);
+  return {
+    jobId: request.jobId,
+    status: "failed",
+    output: { kind },
+    error: "mock failure",
+    errorType,
+    retryable,
+    durationMs: delayMs,
+    metadata: meta,
+  };
 }
 
 export class AgentMockRuntime implements IAgentRuntime {
-  async execute(job: ExecutionJobRow): Promise<ExecutionResult> {
-    await delay(5);
-    return mockResult(job, "agent");
+  async execute(request: RuntimeRequest): Promise<RuntimeResponse> {
+    return mockResponse(request, "agent");
   }
 }
 export class MCPMockRuntime implements IMCPRuntime {
-  async execute(job: ExecutionJobRow): Promise<ExecutionResult> {
-    await delay(5);
-    return mockResult(job, "mcp");
+  async execute(request: RuntimeRequest): Promise<RuntimeResponse> {
+    return mockResponse(request, "mcp");
   }
 }
 export class PublisherMockRuntime implements IPublisherRuntime {
-  async execute(job: ExecutionJobRow): Promise<ExecutionResult> {
-    await delay(5);
-    return mockResult(job, "publisher");
+  async execute(request: RuntimeRequest): Promise<RuntimeResponse> {
+    return mockResponse(request, "publisher");
   }
 }

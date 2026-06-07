@@ -3,12 +3,25 @@ import { eq, inArray } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type pg from "pg";
 import { ExecutionJobService } from "../../src/application/execution-job.service.js";
-import { ExecutionWorker, mockRuntimes } from "../../src/application/execution-worker.js";
+import { ExecutionWorker } from "../../src/application/execution-worker.js";
+import { MockRuntimeAdapterFactory } from "../../src/application/runtime/adapter-factory.js";
 import { loadEnv } from "../../src/config/env.js";
 import { ConflictError } from "../../src/domain/errors.js";
 import { createDb, createPool, type Db } from "../../src/infrastructure/db/client.js";
 import { executionJobs, outboxEvents } from "../../src/infrastructure/db/schema.js";
 import * as jobRepo from "../../src/infrastructure/repositories/execution-job.repository.js";
+
+// 仅 agent 适配器抛错的工厂（其余沿用 Mock），用于验证 worker 捕获 adapter 异常
+const throwingAgentFactory = () => {
+  const base = new MockRuntimeAdapterFactory();
+  return {
+    getRuntime: (type: "agent" | "mcp" | "publisher") =>
+      type === "agent"
+        ? { execute: async () => { throw new Error("adapter exploded"); } }
+        : base.getRuntime(type),
+  };
+};
+
 
 let pool: pg.Pool;
 let db: Db;
@@ -128,28 +141,107 @@ describe("Execution layer repository and worker", () => {
     expect(await eventsFor(job!.id)).toContain("execution_job.failed");
   });
 
-  it("treats a blocked mock result as a failure subject to the retry policy", async () => {
+  it("fails a non-retryable blocked result immediately even with attempts remaining", async () => {
     await resetActive();
     const [job] = await db
       .insert(executionJobs)
-      .values({ type: "publisher", status: "pending", payload: { mockStatus: "blocked" }, idempotencyKey: idem(), maxAttempts: 1 })
+      .values({ type: "publisher", status: "pending", payload: { mockStatus: "blocked" }, idempotencyKey: idem(), maxAttempts: 3 })
       .returning();
 
     const updated = await new ExecutionWorker(db).tick();
 
     expect(updated?.id).toBe(job!.id);
-    expect(updated?.status).toBe("failed");
+    expect(updated?.status).toBe("failed"); // 非重试：直接 failed，不回退 pending
+    expect(updated?.attemptCount).toBe(1);
+    expect(updated?.finishedAt).toBeInstanceOf(Date);
     expect(updated?.lastError).toBe("mock blocked");
+    expect(await eventsFor(job!.id)).toContain("execution_job.failed");
+  });
+
+  it("fails a non-retryable runtime failure immediately even with attempts remaining", async () => {
+    await resetActive();
+    await db
+      .insert(executionJobs)
+      .values({
+        type: "agent",
+        status: "pending",
+        payload: { mockStatus: "failed", mockErrorType: "validation_error" },
+        idempotencyKey: idem(),
+        maxAttempts: 3,
+      });
+
+    const updated = await new ExecutionWorker(db).tick();
+
+    expect(updated?.status).toBe("failed");
+    expect(updated?.attemptCount).toBe(1);
+    expect(updated?.finishedAt).toBeInstanceOf(Date);
+    expect(updated?.nextRunAt).toBeNull();
+  });
+
+  it("schedules a retry for a retryable runtime failure with attempts remaining", async () => {
+    await resetActive();
+    await db
+      .insert(executionJobs)
+      .values({
+        type: "agent",
+        status: "pending",
+        payload: { mockStatus: "failed", mockErrorType: "rate_limited" },
+        idempotencyKey: idem(),
+        maxAttempts: 3,
+      });
+
+    const updated = await new ExecutionWorker(db).tick();
+
+    expect(updated?.status).toBe("pending");
+    expect(updated?.nextRunAt).toBeInstanceOf(Date);
+    expect(updated?.finishedAt).toBeNull();
+  });
+
+  it("returns a retryable timeout when mockDelayMs exceeds the runtime timeout", async () => {
+    await resetActive();
+    const [job] = await db
+      .insert(executionJobs)
+      .values({
+        type: "agent",
+        status: "pending",
+        payload: { mockDelayMs: 50000, timeoutMs: 1000 },
+        idempotencyKey: idem(),
+        maxAttempts: 3,
+      })
+      .returning();
+
+    const updated = await new ExecutionWorker(db).tick();
+
+    expect(updated?.status).toBe("pending"); // timeout 可重试
+    expect(updated?.lastError).toContain("timed out");
+    const events = await db.select().from(outboxEvents).where(eq(outboxEvents.aggregateId, job!.id));
+    const retry = events.find((e) => e.eventType === "execution_job.retry_scheduled");
+    expect((retry?.payload as { runtime?: { error_type?: string } }).runtime?.error_type).toBe("timeout");
+  });
+
+  it("writes a runtime response snapshot into the terminal outbox event", async () => {
+    await resetActive();
+    const [job] = await db
+      .insert(executionJobs)
+      .values({ type: "agent", status: "pending", payload: {}, idempotencyKey: idem(), maxAttempts: 1 })
+      .returning();
+
+    await new ExecutionWorker(db).tick();
+
+    const events = await db.select().from(outboxEvents).where(eq(outboxEvents.aggregateId, job!.id));
+    const success = events.find((e) => e.eventType === "execution_job.success");
+    const snapshot = (success?.payload as { runtime?: Record<string, unknown> }).runtime;
+    expect(snapshot).toMatchObject({ status: "success", retryable: false });
+    expect(typeof snapshot?.duration_ms).toBe("number");
   });
 
   it("captures a thrown adapter error in last_error without swallowing it", async () => {
     await resetActive();
-    const throwing = { ...mockRuntimes(), agent: { execute: async () => { throw new Error("adapter exploded"); } } };
     await db
       .insert(executionJobs)
       .values({ type: "agent", status: "pending", payload: {}, idempotencyKey: idem(), maxAttempts: 1 });
 
-    const updated = await new ExecutionWorker(db, throwing).tick();
+    const updated = await new ExecutionWorker(db, throwingAgentFactory()).tick();
 
     expect(updated?.status).toBe("failed");
     expect(updated?.lastError).toBe("adapter exploded");

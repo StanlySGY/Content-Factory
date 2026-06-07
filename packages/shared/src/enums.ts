@@ -210,3 +210,15 @@ export const EXECUTION_OUTBOX_EVENTS = {
   lockTimeout: "execution_job.lock_timeout",
 } as const;
 export type ExecutionOutboxEvent = (typeof EXECUTION_OUTBOX_EVENTS)[keyof typeof EXECUTION_OUTBOX_EVENTS];
+
+/** Runtime 错误分类（Phase 1.7 Runtime Contract；驱动 retryable 与失败处理，为 Phase 2 真实 Runtime 预留稳定边界）*/
+export const RUNTIME_ERROR_TYPES = [
+  "validation_error",
+  "timeout",
+  "rate_limited",
+  "external_unavailable",
+  "permission_denied",
+  "blocked",
+  "unknown",
+] as const;
+export type RuntimeErrorType = (typeof RUNTIME_ERROR_TYPES)[number];
