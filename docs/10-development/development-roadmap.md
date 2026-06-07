@@ -489,3 +489,13 @@ MVP 后再进入：
 - 知识库检索与 RAG。
 - 多团队权限和审计。
 - Agent 效果评估和成本分析。
+
+## 11. Sprint-5 Execution Layer 现状（Phase 1.x 冻结）
+
+**已完成（Mock-only data plane，`fc001fb`→`32fd423`）**：execution skeleton + 可靠性（确定性退避重试 / 超时契约 / stale-lock 恢复）、outbox relay 骨架、Runtime Contract + Adapter Factory、Control Plane Bridge、只追加 result ledger、ops 运维控制面（health / recover-stale / process-batch / manual-retry）。与 Sprint-4 Control Plane 严格隔离（无 project_id / 无业务表 FK / 不 join / 不回写 / 不替代 audit 哈希链）。证据见 `docs/reviews/sprint-5-execution-phase1-release-gate.md`（裁决 GO）。
+
+**Phase 2 下一主线：Real Adapter spike**——替换 `RuntimeAdapterFactory`（Mock→Real：Agent LLM / MCP transport），结果经 relay 真实 handler 按 result_id/subject 幂等回写控制平面。准入清单见 `docs/reviews/sprint-5-phase2-real-adapter-entry-checklist.md`。
+
+**Phase 2 之前必须完成的 gate**：Runtime 隔离（真实超时中断 / 资源限额 / 沙箱）、secret/credential 作用域化、真实错误映射、high-risk 工具确认闸门、kill switch、relay 真实回写 + 并发领取保护。
+
+> **Publisher 仍未交付**（publish_records 缺失），属独立产品线，**不得与 Real Adapter 混淆**；execution 的 `publisher` job 类型当前仅 Mock 占位。
