@@ -10,6 +10,7 @@ import { DashboardService } from "./application/dashboard.service.js";
 import { EditorQueryService } from "./application/editor-query.service.js";
 import { ExecutionJobService } from "./application/execution-job.service.js";
 import { ExecutionBridgeService } from "./application/execution-bridge.service.js";
+import { ExecutionResultService } from "./application/execution-result.service.js";
 import { ExecutionWorker } from "./application/execution-worker.js";
 import { McpRuntimeMockService } from "./application/mcp-runtime-mock.service.js";
 import { McpServerService } from "./application/mcp-server.service.js";
@@ -70,6 +71,7 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
   const outboxService = new OutboxService(db);
   const outboxRelay = new OutboxRelay(db, undefined, env.outboxRelayIntervalMs);
   const executionBridgeService = new ExecutionBridgeService(executionJobService);
+  const executionResultService = new ExecutionResultService(db);
   const agentProfileService = new AgentProfileService(db);
   const agentRuntimeService = new AgentRuntimeMockService(db);
   const mcpServerService = new McpServerService(db);
@@ -99,7 +101,7 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
   await app.register(reviewRoutes, { env, reviewService });
   await app.register(dashboardRoutes, { env, dashboardService });
   await app.register(editorRoutes, { env, editorQueryService });
-  await app.register(executionRoutes, { executionJobService, executionWorker, outboxService, outboxRelay, executionBridgeService });
+  await app.register(executionRoutes, { executionJobService, executionWorker, outboxService, outboxRelay, executionBridgeService, executionResultService });
   await app.register(agentRoutes, { env, agentProfileService, agentRuntimeService });
   await app.register(mcpRoutes, { env, mcpServerService, mcpToolService, mcpRuntimeService });
 

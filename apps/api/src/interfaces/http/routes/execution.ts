@@ -4,6 +4,9 @@ import {
   CreateExecutionJobSchema,
   ExecutionJobSchema,
   ExecutionJobsResponseSchema,
+  ExecutionResultSchema,
+  ExecutionResultsResponseSchema,
+  ExecutionResultSummarySchema,
   IdParamSchema,
   ListExecutionJobsQuerySchema,
   ListOutboxEventsQuerySchema,
@@ -13,11 +16,17 @@ import {
 } from "@cf/shared";
 import type { ExecutionBridgeService } from "../../../application/execution-bridge.service.js";
 import type { ExecutionJobService } from "../../../application/execution-job.service.js";
+import type { ExecutionResultService } from "../../../application/execution-result.service.js";
 import type { ExecutionWorker } from "../../../application/execution-worker.js";
 import type { OutboxRelay } from "../../../application/outbox-relay.js";
 import type { OutboxService } from "../../../application/outbox.service.js";
 import { isOutboxProcessed } from "../../../domain/execution/outbox.js";
-import { toExecutionJobDTO, toOutboxEventDTO } from "../../../application/mappers.js";
+import {
+  toExecutionJobDTO,
+  toExecutionResultDTO,
+  toExecutionResultSummaryDTO,
+  toOutboxEventDTO,
+} from "../../../application/mappers.js";
 
 export interface ExecutionRoutesOptions {
   executionJobService: ExecutionJobService;
@@ -25,13 +34,14 @@ export interface ExecutionRoutesOptions {
   outboxService: OutboxService;
   outboxRelay: OutboxRelay;
   executionBridgeService: ExecutionBridgeService;
+  executionResultService: ExecutionResultService;
 }
 
-// Sprint-5 Phase 1.6/1.8：execution 控制面 + 出箱可观测面 + control plane bridge（Mock-only）。
-// 不接入 Agent/MCP/Workflow 状态机与 UI；bridge 仅创建 execution job，不改任何业务表。
+// Sprint-5 Phase 1.6/1.8/1.9：execution 控制面 + 出箱可观测面 + control plane bridge + 结果账本观测（Mock-only）。
+// 不接入 Agent/MCP/Workflow 状态机与 UI；bridge 仅创建 job、result ledger 只追加，不改任何业务表。
 export const executionRoutes: FastifyPluginAsyncTypebox<ExecutionRoutesOptions> = async (
   app,
-  { executionJobService, executionWorker, outboxService, outboxRelay, executionBridgeService },
+  { executionJobService, executionWorker, outboxService, outboxRelay, executionBridgeService, executionResultService },
 ) => {
   app.post(
     "/api/execution/jobs",
@@ -68,6 +78,28 @@ export const executionRoutes: FastifyPluginAsyncTypebox<ExecutionRoutesOptions> 
     "/api/execution/jobs/:id/events",
     { schema: { params: IdParamSchema, response: { 200: OutboxEventsResponseSchema } } },
     async (request) => (await outboxService.jobEvents(request.params.id)).map(toOutboxEventDTO),
+  );
+
+  // 某作业的执行结果账本（按 attempt_no 升序；只读，不 join 业务表）
+  app.get(
+    "/api/execution/jobs/:id/results",
+    { schema: { params: IdParamSchema, response: { 200: ExecutionResultsResponseSchema } } },
+    async (request) => (await executionResultService.listByJob(request.params.id)).map(toExecutionResultDTO),
+  );
+
+  // 某作业的结果汇总（attempts/最新结果/累计耗时；仅基于 execution_results）
+  app.get(
+    "/api/execution/jobs/:id/result-summary",
+    { schema: { params: IdParamSchema, response: { 200: ExecutionResultSummarySchema } } },
+    async (request) =>
+      toExecutionResultSummaryDTO(request.params.id, await executionResultService.summaryByJob(request.params.id)),
+  );
+
+  // 单条执行结果（404 不存在）
+  app.get(
+    "/api/execution/results/:id",
+    { schema: { params: IdParamSchema, response: { 200: ExecutionResultSchema } } },
+    async (request) => toExecutionResultDTO(await executionResultService.getResult(request.params.id)),
   );
 
   app.get(

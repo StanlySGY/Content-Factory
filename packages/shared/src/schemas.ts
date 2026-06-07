@@ -17,7 +17,9 @@ import {
   TOOL_INVOCATION_STATUSES,
   EXECUTION_JOB_STATUSES,
   EXECUTION_JOB_TYPES,
+  EXECUTION_RESULT_STATUSES,
   EXECUTION_SUBJECT_TYPES,
+  RUNTIME_ERROR_TYPES,
   WORKFLOW_RUN_STATUSES,
 } from "./enums.js";
 
@@ -844,3 +846,42 @@ export const RequestStageExecutionSchema = Type.Object(
   { additionalProperties: false },
 );
 export type RequestStageExecutionBody = Static<typeof RequestStageExecutionSchema>;
+
+// ---- Execution Result Ledger (S5 Phase 1.9；只追加，runtime attempt 结果账本) ----
+const ExecutionResultStatusSchema = StringEnum(EXECUTION_RESULT_STATUSES);
+const RuntimeErrorTypeSchema = StringEnum(RUNTIME_ERROR_TYPES);
+
+export const ExecutionResultSchema = Type.Object(
+  {
+    id: Uuid(),
+    execution_job_id: Uuid(),
+    attempt_no: Type.Integer(),
+    job_type: ExecutionJobTypeSchema,
+    status: ExecutionResultStatusSchema,
+    runtime_status: ExecutionResultStatusSchema,
+    error_type: Nullable(RuntimeErrorTypeSchema),
+    retryable: Type.Boolean(),
+    duration_ms: Type.Integer(),
+    request_snapshot: JsonRecord(),
+    response_snapshot: JsonRecord(),
+    subject_snapshot: Nullable(JsonRecord()),
+    created_at: Type.String({ format: "date-time" }),
+  },
+  { additionalProperties: false },
+);
+export type ExecutionResultDTO = Static<typeof ExecutionResultSchema>;
+
+export const ExecutionResultsResponseSchema = Type.Array(ExecutionResultSchema);
+
+export const ExecutionResultSummarySchema = Type.Object(
+  {
+    job_id: Uuid(),
+    attempts: Type.Integer(),
+    latest_status: Nullable(ExecutionResultStatusSchema),
+    latest_error_type: Nullable(RuntimeErrorTypeSchema),
+    latest_retryable: Nullable(Type.Boolean()),
+    total_duration_ms: Type.Integer(),
+  },
+  { additionalProperties: false },
+);
+export type ExecutionResultSummaryDTO = Static<typeof ExecutionResultSummarySchema>;

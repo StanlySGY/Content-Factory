@@ -231,3 +231,7 @@ export const EXECUTION_SUBJECT_TYPES = [
   "publisher_target",
 ] as const;
 export type ExecutionSubjectType = (typeof EXECUTION_SUBJECT_TYPES)[number];
+
+/** 执行结果账本状态（Phase 1.9；runtime attempt 终态二值，区别于 job 四态生命周期）*/
+export const EXECUTION_RESULT_STATUSES = ["success", "failed"] as const;
+export type ExecutionResultStatus = (typeof EXECUTION_RESULT_STATUSES)[number];

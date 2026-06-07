@@ -289,6 +289,23 @@ export const outboxEvents = pgTable("outbox_events", {
   retryCount: integer("retry_count").notNull().default(0),
 });
 
+// Sprint-5 执行结果账本（Phase 1.9；只追加，每次 runtime attempt 一条；仅 FK execution_jobs，不 join 业务表）
+export const executionResults = pgTable("execution_results", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  executionJobId: uuid("execution_job_id").notNull(),
+  attemptNo: integer("attempt_no").notNull(),
+  jobType: varchar("job_type", { length: 32 }).notNull(),
+  status: varchar("status", { length: 16 }).notNull(),
+  runtimeStatus: varchar("runtime_status", { length: 16 }).notNull(),
+  errorType: varchar("error_type", { length: 32 }),
+  retryable: boolean("retryable").notNull(),
+  durationMs: integer("duration_ms").notNull(),
+  requestSnapshot: jsonb("request_snapshot").$type<JsonRecord>().notNull(),
+  responseSnapshot: jsonb("response_snapshot").$type<JsonRecord>().notNull(),
+  subjectSnapshot: jsonb("subject_snapshot").$type<JsonRecord>(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export type WorkflowDefinitionRow = typeof workflowDefinitions.$inferSelect;
 export type WorkflowStageRow = typeof workflowStages.$inferSelect;
 export type WorkflowStageDependencyRow = typeof workflowStageDependencies.$inferSelect;
@@ -305,3 +322,4 @@ export type McpToolRow = typeof mcpTools.$inferSelect;
 export type ToolInvocationRow = typeof toolInvocations.$inferSelect;
 export type ExecutionJobRow = typeof executionJobs.$inferSelect;
 export type OutboxEventRow = typeof outboxEvents.$inferSelect;
+export type ExecutionResultRow = typeof executionResults.$inferSelect;

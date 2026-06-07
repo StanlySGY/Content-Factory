@@ -6,6 +6,7 @@ import {
 } from "../domain/execution/bridge.js";
 import { transitionExecutionJobStatus } from "../domain/execution/job-status.js";
 import { markExecutionFailure } from "../domain/execution/retry-policy.js";
+import { buildExecutionResultRecord } from "../domain/execution/result.js";
 import {
   failedRuntimeResponse,
   normalizeRuntimeError,
@@ -20,6 +21,7 @@ import type { Db } from "../infrastructure/db/client.js";
 import type { ExecutionJobRow } from "../infrastructure/db/schema.js";
 import * as jobRepo from "../infrastructure/repositories/execution-job.repository.js";
 import * as outboxRepo from "../infrastructure/repositories/outbox.repository.js";
+import * as resultRepo from "../infrastructure/repositories/execution-result.repository.js";
 import {
   MockRuntimeAdapterFactory,
   type RuntimeAdapterFactory,
@@ -71,54 +73,69 @@ export class ExecutionWorker {
     return jobRepo.recoverStaleRunningJobs(this.db, this.lockTimeoutMs);
   }
 
-  // job → RuntimeRequest：runtime 只接收 input（envelope 已解包），subject 透传至 metadata。
-  private buildRequest(
+  // 组装 RuntimeRequest（不校验/不解析超时，永不抛错）—— 用于结果账本快照，即使校验失败也有请求快照。
+  private assembleRequest(
     job: ExecutionJobRow,
     input: Record<string, unknown>,
     subject: ExecutionSubject | null,
+    timeoutMs: number,
   ): RuntimeRequest {
-    const request: RuntimeRequest = {
+    return {
       jobId: job.id,
       jobType: job.type as ExecutionJobType,
       payload: input,
       attemptCount: job.attemptCount,
       idempotencyKey: job.idempotencyKey,
-      timeoutMs: resolveTimeoutMs(input, this.runtimeTimeoutMs),
+      timeoutMs,
       metadata: { maxAttempts: job.maxAttempts, ...(subject ? { subject } : {}) },
     };
+  }
+
+  // job → RuntimeRequest：runtime 只接收 input（envelope 已解包），subject 透传至 metadata；解析超时 + 校验。
+  private buildRequest(
+    job: ExecutionJobRow,
+    input: Record<string, unknown>,
+    subject: ExecutionSubject | null,
+  ): RuntimeRequest {
+    const request = this.assembleRequest(job, input, subject, resolveTimeoutMs(input, this.runtimeTimeoutMs));
     validateRuntimeRequest(request);
     return request;
   }
 
-  // 调用适配器：请求构造/校验失败 → validation_error；adapter 抛错 → normalize（不吞错）。
+  // 调用适配器：始终返回所用（或尝试构造）的 request + response。
+  // 请求构造/校验失败 → validation_error；adapter 抛错 → normalize（不吞错）。
   private async invoke(
     job: ExecutionJobRow,
     input: Record<string, unknown>,
     subject: ExecutionSubject | null,
-  ): Promise<RuntimeResponse> {
+  ): Promise<{ request: RuntimeRequest; response: RuntimeResponse }> {
     let request: RuntimeRequest;
     try {
       request = this.buildRequest(job, input, subject);
     } catch (e) {
-      return failedRuntimeResponse(job.id, "validation_error", (e as Error).message);
+      // 校验失败仍保留请求快照（用默认超时占位），结果账本据此可追溯
+      const snapshot = this.assembleRequest(job, input, subject, this.runtimeTimeoutMs);
+      return { request: snapshot, response: failedRuntimeResponse(job.id, "validation_error", (e as Error).message) };
     }
     try {
       const response = await this.factory.getRuntime(request.jobType).execute(request);
       validateRuntimeResponse(response); // 契约防御
-      return response;
+      return { request, response };
     } catch (e) {
       const n = normalizeRuntimeError(e);
-      return failedRuntimeResponse(job.id, n.errorType, n.message);
+      return { request, response: failedRuntimeResponse(job.id, n.errorType, n.message) };
     }
   }
 
   private async process(job: ExecutionJobRow): Promise<ExecutionJobRow> {
-    // 解包 bridge envelope：input 交给 runtime，subject 透传到 RuntimeRequest.metadata 与 outbox payload
+    // 解包 bridge envelope：input 交给 runtime，subject 透传到 RuntimeRequest.metadata、结果账本与 outbox payload
     const { input, subject } = unwrapExecutionPayload(job.payload);
     const subjectMeta = subject ? { subject } : {};
-    const response = await this.invoke(job, input, subject);
+    const { request, response } = await this.invoke(job, input, subject);
     const result = toExecutionResult(response);
     const snapshot = runtimeSnapshot(response);
+    // 结果账本记录：与 job 状态变化同事务写入；插入失败则整体回滚（结果不得仅存于 outbox）
+    const record = buildExecutionResultRecord(job, request, response, subject as Record<string, unknown> | null);
 
     if (result.status === "success") {
       transitionExecutionJobStatus("running", "success");
@@ -128,11 +145,12 @@ export class ExecutionWorker {
           finishedAt: new Date(),
           lockedAt: null,
         }))!;
+        const ledger = await resultRepo.createExecutionResult(tx, record);
         await outboxRepo.createOutboxEvent(tx, {
           aggregate_type: "execution_job",
           aggregate_id: job.id,
           event_type: EXECUTION_OUTBOX_EVENTS.success,
-          payload: { output: result.output, runtime: snapshot, ...subjectMeta },
+          payload: { output: result.output, runtime: snapshot, result_id: ledger.id, attempt_no: job.attemptCount, ...subjectMeta },
         });
         return updated;
       });
@@ -149,11 +167,12 @@ export class ExecutionWorker {
           lastError: error,
           lockedAt: null,
         }))!;
+        const ledger = await resultRepo.createExecutionResult(tx, record);
         await outboxRepo.createOutboxEvent(tx, {
           aggregate_type: "execution_job",
           aggregate_id: job.id,
           event_type: EXECUTION_OUTBOX_EVENTS.failed,
-          payload: { error, error_type: result.errorType ?? null, attempt: job.attemptCount, runtime: snapshot, ...subjectMeta },
+          payload: { error, error_type: result.errorType ?? null, attempt: job.attemptCount, runtime: snapshot, result_id: ledger.id, attempt_no: job.attemptCount, ...subjectMeta },
         });
         return updated;
       });
@@ -170,11 +189,12 @@ export class ExecutionWorker {
         lastError: outcome.lastError,
         lockedAt: null,
       }))!;
+      const ledger = await resultRepo.createExecutionResult(tx, record);
       await outboxRepo.createOutboxEvent(tx, {
         aggregate_type: "execution_job",
         aggregate_id: job.id,
         event_type: outcome.event,
-        payload: { error: outcome.lastError, error_type: result.errorType ?? null, attempt: job.attemptCount, runtime: snapshot, ...subjectMeta },
+        payload: { error: outcome.lastError, error_type: result.errorType ?? null, attempt: job.attemptCount, runtime: snapshot, result_id: ledger.id, attempt_no: job.attemptCount, ...subjectMeta },
       });
       return updated;
     });

@@ -7,6 +7,8 @@ import type {
   ContextPackDTO,
   EditorStateDTO,
   ExecutionJobDTO,
+  ExecutionResultDTO,
+  ExecutionResultSummaryDTO,
   McpServerDTO,
   McpToolDTO,
   OutboxEventDTO,
@@ -28,6 +30,7 @@ import type {
   ContentTaskRow,
   ContextPackRow,
   ExecutionJobRow,
+  ExecutionResultRow,
   McpServerRow,
   McpToolRow,
   OutboxEventRow,
@@ -37,6 +40,7 @@ import type {
   WorkflowDefinitionRow,
   WorkflowRunRow,
 } from "../infrastructure/db/schema.js";
+import type { ExecutionResultSummary } from "../domain/execution/result.js";
 
 const iso = (d: Date | null): string | null => (d ? d.toISOString() : null);
 
@@ -326,5 +330,37 @@ export function toOutboxEventDTO(r: OutboxEventRow): OutboxEventDTO {
     error: r.error,
     retry_count: r.retryCount,
     created_at: r.createdAt.toISOString(),
+  };
+}
+
+export function toExecutionResultDTO(r: ExecutionResultRow): ExecutionResultDTO {
+  return {
+    id: r.id,
+    execution_job_id: r.executionJobId,
+    attempt_no: r.attemptNo,
+    job_type: r.jobType as ExecutionResultDTO["job_type"],
+    status: r.status as ExecutionResultDTO["status"],
+    runtime_status: r.runtimeStatus as ExecutionResultDTO["runtime_status"],
+    error_type: r.errorType as ExecutionResultDTO["error_type"],
+    retryable: r.retryable,
+    duration_ms: r.durationMs,
+    request_snapshot: r.requestSnapshot,
+    response_snapshot: r.responseSnapshot,
+    subject_snapshot: r.subjectSnapshot ?? null,
+    created_at: r.createdAt.toISOString(),
+  };
+}
+
+export function toExecutionResultSummaryDTO(
+  jobId: string,
+  s: ExecutionResultSummary,
+): ExecutionResultSummaryDTO {
+  return {
+    job_id: jobId,
+    attempts: s.attempts,
+    latest_status: s.latestStatus as ExecutionResultSummaryDTO["latest_status"],
+    latest_error_type: s.latestErrorType as ExecutionResultSummaryDTO["latest_error_type"],
+    latest_retryable: s.latestRetryable,
+    total_duration_ms: s.totalDurationMs,
   };
 }
