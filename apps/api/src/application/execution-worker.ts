@@ -1,5 +1,9 @@
 import { EXECUTION_OUTBOX_EVENTS, type ExecutionJobType } from "@cf/shared";
 import { ConflictError, NotFoundError } from "../domain/errors.js";
+import {
+  unwrapExecutionPayload,
+  type ExecutionSubject,
+} from "../domain/execution/bridge.js";
 import { transitionExecutionJobStatus } from "../domain/execution/job-status.js";
 import { markExecutionFailure } from "../domain/execution/retry-policy.js";
 import {
@@ -67,26 +71,34 @@ export class ExecutionWorker {
     return jobRepo.recoverStaleRunningJobs(this.db, this.lockTimeoutMs);
   }
 
-  // job → RuntimeRequest（timeout 解析 + 校验）
-  private buildRequest(job: ExecutionJobRow): RuntimeRequest {
+  // job → RuntimeRequest：runtime 只接收 input（envelope 已解包），subject 透传至 metadata。
+  private buildRequest(
+    job: ExecutionJobRow,
+    input: Record<string, unknown>,
+    subject: ExecutionSubject | null,
+  ): RuntimeRequest {
     const request: RuntimeRequest = {
       jobId: job.id,
       jobType: job.type as ExecutionJobType,
-      payload: job.payload,
+      payload: input,
       attemptCount: job.attemptCount,
       idempotencyKey: job.idempotencyKey,
-      timeoutMs: resolveTimeoutMs(job.payload, this.runtimeTimeoutMs),
-      metadata: { maxAttempts: job.maxAttempts },
+      timeoutMs: resolveTimeoutMs(input, this.runtimeTimeoutMs),
+      metadata: { maxAttempts: job.maxAttempts, ...(subject ? { subject } : {}) },
     };
     validateRuntimeRequest(request);
     return request;
   }
 
   // 调用适配器：请求构造/校验失败 → validation_error；adapter 抛错 → normalize（不吞错）。
-  private async invoke(job: ExecutionJobRow): Promise<RuntimeResponse> {
+  private async invoke(
+    job: ExecutionJobRow,
+    input: Record<string, unknown>,
+    subject: ExecutionSubject | null,
+  ): Promise<RuntimeResponse> {
     let request: RuntimeRequest;
     try {
-      request = this.buildRequest(job);
+      request = this.buildRequest(job, input, subject);
     } catch (e) {
       return failedRuntimeResponse(job.id, "validation_error", (e as Error).message);
     }
@@ -101,7 +113,10 @@ export class ExecutionWorker {
   }
 
   private async process(job: ExecutionJobRow): Promise<ExecutionJobRow> {
-    const response = await this.invoke(job);
+    // 解包 bridge envelope：input 交给 runtime，subject 透传到 RuntimeRequest.metadata 与 outbox payload
+    const { input, subject } = unwrapExecutionPayload(job.payload);
+    const subjectMeta = subject ? { subject } : {};
+    const response = await this.invoke(job, input, subject);
     const result = toExecutionResult(response);
     const snapshot = runtimeSnapshot(response);
 
@@ -117,7 +132,7 @@ export class ExecutionWorker {
           aggregate_type: "execution_job",
           aggregate_id: job.id,
           event_type: EXECUTION_OUTBOX_EVENTS.success,
-          payload: { output: result.output, runtime: snapshot },
+          payload: { output: result.output, runtime: snapshot, ...subjectMeta },
         });
         return updated;
       });
@@ -138,7 +153,7 @@ export class ExecutionWorker {
           aggregate_type: "execution_job",
           aggregate_id: job.id,
           event_type: EXECUTION_OUTBOX_EVENTS.failed,
-          payload: { error, error_type: result.errorType ?? null, attempt: job.attemptCount, runtime: snapshot },
+          payload: { error, error_type: result.errorType ?? null, attempt: job.attemptCount, runtime: snapshot, ...subjectMeta },
         });
         return updated;
       });
@@ -159,7 +174,7 @@ export class ExecutionWorker {
         aggregate_type: "execution_job",
         aggregate_id: job.id,
         event_type: outcome.event,
-        payload: { error: outcome.lastError, error_type: result.errorType ?? null, attempt: job.attemptCount, runtime: snapshot },
+        payload: { error: outcome.lastError, error_type: result.errorType ?? null, attempt: job.attemptCount, runtime: snapshot, ...subjectMeta },
       });
       return updated;
     });

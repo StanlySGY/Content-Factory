@@ -1,5 +1,6 @@
 import type { FastifyPluginAsyncTypebox } from "@fastify/type-provider-typebox";
 import {
+  CreateBridgeJobSchema,
   CreateExecutionJobSchema,
   ExecutionJobSchema,
   ExecutionJobsResponseSchema,
@@ -10,6 +11,7 @@ import {
   OutboxEventsResponseSchema,
   ProcessOutboxEventResponseSchema,
 } from "@cf/shared";
+import type { ExecutionBridgeService } from "../../../application/execution-bridge.service.js";
 import type { ExecutionJobService } from "../../../application/execution-job.service.js";
 import type { ExecutionWorker } from "../../../application/execution-worker.js";
 import type { OutboxRelay } from "../../../application/outbox-relay.js";
@@ -22,13 +24,14 @@ export interface ExecutionRoutesOptions {
   executionWorker: ExecutionWorker;
   outboxService: OutboxService;
   outboxRelay: OutboxRelay;
+  executionBridgeService: ExecutionBridgeService;
 }
 
-// Sprint-5 Phase 1.6：execution 控制面 + 出箱可观测面（list/get/手动 process/按 job 查事件）。
-// 不接入 Agent/MCP/Workflow 状态机与 UI；relay 仅处理 outbox_events 自身生命周期，不碰 execution_jobs/业务表/audit。
+// Sprint-5 Phase 1.6/1.8：execution 控制面 + 出箱可观测面 + control plane bridge（Mock-only）。
+// 不接入 Agent/MCP/Workflow 状态机与 UI；bridge 仅创建 execution job，不改任何业务表。
 export const executionRoutes: FastifyPluginAsyncTypebox<ExecutionRoutesOptions> = async (
   app,
-  { executionJobService, executionWorker, outboxService, outboxRelay },
+  { executionJobService, executionWorker, outboxService, outboxRelay, executionBridgeService },
 ) => {
   app.post(
     "/api/execution/jobs",
@@ -93,6 +96,28 @@ export const executionRoutes: FastifyPluginAsyncTypebox<ExecutionRoutesOptions> 
     async (request) => {
       const event = await outboxRelay.processEvent(request.params.id);
       return { processed: isOutboxProcessed(event), event: toOutboxEventDTO(event) };
+    },
+  );
+
+  // Control Plane Bridge：控制平面显式请求 execution job（Mock-only）。subject/job 不匹配 → 400，幂等冲突 → 409。
+  app.post(
+    "/api/execution/bridge/jobs",
+    { schema: { body: CreateBridgeJobSchema, response: { 201: ExecutionJobSchema } } },
+    async (request, reply) => {
+      const b = request.body;
+      const job = await executionBridgeService.requestExecution({
+        subjectRef: {
+          subjectType: b.subject_type,
+          subjectId: b.subject_id,
+          projectId: b.project_id ?? null,
+          metadata: b.metadata ?? {},
+        },
+        jobType: b.job_type,
+        payload: b.payload,
+        idempotencyKey: b.idempotency_key,
+      });
+      reply.code(201);
+      return toExecutionJobDTO(job);
     },
   );
 };

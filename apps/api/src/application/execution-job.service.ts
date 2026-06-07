@@ -1,5 +1,6 @@
 import type { CreateExecutionJobBody } from "@cf/shared";
 import { EXECUTION_OUTBOX_EVENTS } from "@cf/shared";
+import { unwrapExecutionPayload } from "../domain/execution/bridge.js";
 import { validateExecutionJob } from "../domain/execution/job.js";
 import { ConflictError, NotFoundError } from "../domain/errors.js";
 import type { Db } from "../infrastructure/db/client.js";
@@ -12,12 +13,13 @@ function isUniqueViolation(e: unknown): boolean {
 }
 
 // ExecutionJobService：执行作业控制面（独立体系，无 project 上下文、不耦合控制平面审计）。
-// create：校验（Domain）→ 同事务写 job + outbox（出箱待 Phase 2 消费）；幂等键冲突 → 409。
+// create：校验（Domain）→ 同事务写 job + outbox（created payload 携带 subject + idempotency_key，待 Phase 2 消费）；幂等键冲突 → 409。
 export class ExecutionJobService {
   constructor(private readonly db: Db) {}
 
   async createJob(input: CreateExecutionJobBody): Promise<ExecutionJobRow> {
     validateExecutionJob({ type: input.type, payload: input.payload, idempotencyKey: input.idempotency_key });
+    const { subject } = unwrapExecutionPayload(input.payload); // bridge envelope → subject；flat → null
     try {
       return await this.db.transaction(async (tx) => {
         const job = await jobRepo.createJob(tx, {
@@ -30,7 +32,7 @@ export class ExecutionJobService {
           aggregate_type: "execution_job",
           aggregate_id: job.id,
           event_type: EXECUTION_OUTBOX_EVENTS.created,
-          payload: { type: job.type },
+          payload: { type: job.type, subject, idempotency_key: job.idempotencyKey },
         });
         return job;
       });

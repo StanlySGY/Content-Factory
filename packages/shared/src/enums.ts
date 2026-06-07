@@ -222,3 +222,12 @@ export const RUNTIME_ERROR_TYPES = [
   "unknown",
 ] as const;
 export type RuntimeErrorType = (typeof RUNTIME_ERROR_TYPES)[number];
+
+/** 执行桥接 subject 类型（Phase 1.8 Control Plane Bridge；控制平面经此显式请求 execution job，不入表、不 join）*/
+export const EXECUTION_SUBJECT_TYPES = [
+  "workflow_stage_run",
+  "agent_profile",
+  "mcp_tool",
+  "publisher_target",
+] as const;
+export type ExecutionSubjectType = (typeof EXECUTION_SUBJECT_TYPES)[number];

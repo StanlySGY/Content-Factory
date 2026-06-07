@@ -17,6 +17,7 @@ import {
   TOOL_INVOCATION_STATUSES,
   EXECUTION_JOB_STATUSES,
   EXECUTION_JOB_TYPES,
+  EXECUTION_SUBJECT_TYPES,
   WORKFLOW_RUN_STATUSES,
 } from "./enums.js";
 
@@ -814,3 +815,32 @@ export const ProcessOutboxEventResponseSchema = Type.Object(
   { additionalProperties: false },
 );
 export type ProcessOutboxEventResponse = Static<typeof ProcessOutboxEventResponseSchema>;
+
+// ---- Control Plane Bridge (S5 Phase 1.8；Mock-only 桥接入口，控制平面显式请求 execution job) ----
+export const ExecutionSubjectTypeSchema = StringEnum(EXECUTION_SUBJECT_TYPES);
+
+export const CreateBridgeJobSchema = Type.Object(
+  {
+    subject_type: ExecutionSubjectTypeSchema,
+    subject_id: Type.String({ minLength: 1, maxLength: 200 }),
+    project_id: Type.Optional(Uuid()),
+    job_type: ExecutionJobTypeSchema,
+    payload: JsonRecord(),
+    idempotency_key: Type.Optional(Type.String({ minLength: 1, maxLength: 200 })),
+    metadata: Type.Optional(JsonRecord()),
+  },
+  { additionalProperties: false },
+);
+export type CreateBridgeJobBody = Static<typeof CreateBridgeJobSchema>;
+
+// 可选 stage-run 手动执行请求（Mock-only；仅以 path id 作为 subject，不触碰 stage_runs）
+export const RequestStageExecutionSchema = Type.Object(
+  {
+    mock_status: Type.Optional(StringEnum(["success", "failed", "blocked"] as const)),
+    input: Type.Optional(JsonRecord()),
+    project_id: Type.Optional(Uuid()),
+    idempotency_key: Type.Optional(Type.String({ minLength: 1, maxLength: 200 })),
+  },
+  { additionalProperties: false },
+);
+export type RequestStageExecutionBody = Static<typeof RequestStageExecutionSchema>;
