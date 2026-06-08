@@ -1141,6 +1141,112 @@ export type ExecutionWritebackApplyGuardReadinessResponse = Static<
   typeof ExecutionWritebackApplyGuardReadinessResponseSchema
 >;
 
+export const ExecutionWritebackTransactionPrototypeInputSchema = Type.Object(
+  {
+    writeback_id: Uuid(),
+    execution_result_id: Uuid(),
+    execution_job_id: Uuid(),
+    subject_type: Type.String(),
+    subject_id: Type.String(),
+    subject_snapshot_required: Type.Boolean(),
+    expected_current_status: StringEnum(["running"] as const),
+    target_status_on_success: StringEnum(["completed"] as const),
+    target_status_on_failure: StringEnum(["failed"] as const),
+    audit_event_type: StringEnum(["execution.writeback.applied"] as const),
+    idempotency_key_required: Type.Boolean(),
+  },
+  { additionalProperties: false },
+);
+
+export const ExecutionWritebackTransactionPrototypeOutputSchema = Type.Object(
+  {
+    status: StringEnum(["blocked"] as const),
+    applied: Type.Boolean(),
+    control_plane_read_performed: Type.Boolean(),
+    control_plane_write_performed: Type.Boolean(),
+    audit_write_performed: Type.Boolean(),
+    rollback_performed: Type.Boolean(),
+  },
+  { additionalProperties: false },
+);
+
+export const ExecutionWritebackTransactionPrototypeRollbackSchema = Type.Object(
+  {
+    strategy: StringEnum(["transaction_rollback"] as const),
+    required: Type.Boolean(),
+    ready: Type.Boolean(),
+    compensating_action_allowed: Type.Boolean(),
+    missing_requirements: Type.Array(Type.String()),
+  },
+  { additionalProperties: false },
+);
+
+export const ExecutionWritebackTransactionPrototypeErrorContractSchema = Type.Object(
+  {
+    error_type: StringEnum(["writeback_apply_blocked"] as const),
+    retryable: Type.Boolean(),
+    rollback_required: Type.Boolean(),
+    audit_event_required_on_success: Type.Boolean(),
+    mark_writeback_applied_after_commit: Type.Boolean(),
+  },
+  { additionalProperties: false },
+);
+
+export const ExecutionWritebackTransactionPrototypeSchema = Type.Object(
+  {
+    writeback_id: Uuid(),
+    execution_result_id: Uuid(),
+    execution_job_id: Uuid(),
+    subject_type: Type.String(),
+    subject_id: Type.String(),
+    writeback_status: Type.String(),
+    mode: StringEnum(["disabled_transaction_prototype"] as const),
+    executable: Type.Boolean(),
+    subject_supported: Type.Boolean(),
+    apply_guard_required: Type.Boolean(),
+    apply_guard_decision: StringEnum(["blocked"] as const),
+    control_plane_read_allowed: Type.Boolean(),
+    control_plane_write_allowed: Type.Boolean(),
+    audit_write_allowed: Type.Boolean(),
+    transaction_required: Type.Boolean(),
+    rollback_required: Type.Boolean(),
+    rollback_plan_ready: Type.Boolean(),
+    error_contract_ready: Type.Boolean(),
+    subject_snapshot_required: Type.Boolean(),
+    input: ExecutionWritebackTransactionPrototypeInputSchema,
+    output: ExecutionWritebackTransactionPrototypeOutputSchema,
+    rollback: ExecutionWritebackTransactionPrototypeRollbackSchema,
+    error_contract: ExecutionWritebackTransactionPrototypeErrorContractSchema,
+    missing_requirements: Type.Array(Type.String()),
+    next_phase_requirements: Type.Array(Type.String()),
+  },
+  { additionalProperties: false },
+);
+export type ExecutionWritebackTransactionPrototypeDTO = Static<
+  typeof ExecutionWritebackTransactionPrototypeSchema
+>;
+
+export const ExecutionWritebackTransactionPrototypeReadinessResponseSchema = Type.Object(
+  {
+    mode: StringEnum(["disabled_transaction_prototype"] as const),
+    executable: Type.Boolean(),
+    supported_subject_types: Type.Array(StringEnum(["workflow_stage_run"] as const)),
+    real_transaction_executor_registered: Type.Boolean(),
+    control_plane_read_allowed: Type.Boolean(),
+    control_plane_write_allowed: Type.Boolean(),
+    audit_write_allowed: Type.Boolean(),
+    apply_guard_required: Type.Boolean(),
+    rollback_plan_ready: Type.Boolean(),
+    error_contract_ready: Type.Boolean(),
+    missing_requirements: Type.Array(Type.String()),
+    next_phase_requirements: Type.Array(Type.String()),
+  },
+  { additionalProperties: false },
+);
+export type ExecutionWritebackTransactionPrototypeReadinessResponse = Static<
+  typeof ExecutionWritebackTransactionPrototypeReadinessResponseSchema
+>;
+
 // ---- Execution Ops (S5 Phase 1.10；运维健康观测 + 恢复控制，仅 execution plane) ----
 export const ExecutionSystemHealthSchema = Type.Object(
   {

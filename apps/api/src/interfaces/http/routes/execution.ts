@@ -11,6 +11,7 @@ import {
   ExecutionWritebackDryRunSchema,
   ExecutionWritebackGuardSchema,
   ExecutionWritebackTransactionPlanSchema,
+  ExecutionWritebackTransactionPrototypeSchema,
   ExecutionWritebackSchema,
   ExecutionWritebacksResponseSchema,
   IdParamSchema,
@@ -37,6 +38,7 @@ import {
   toExecutionWritebackDryRunDTO,
   toExecutionWritebackGuardDTO,
   toExecutionWritebackTransactionPlanDTO,
+  toExecutionWritebackTransactionPrototypeDTO,
   toExecutionWritebackDTO,
   toOutboxEventDTO,
 } from "../../../application/mappers.js";
@@ -176,6 +178,16 @@ export const executionRoutes: FastifyPluginAsyncTypebox<ExecutionRoutesOptions> 
     "/api/execution/writebacks/:id/apply-guard",
     { schema: { params: IdParamSchema, response: { 200: ExecutionWritebackApplyGuardSchema } } },
     async (request) => toExecutionWritebackApplyGuardDTO(await executionWritebackService.getApplyGuard(request.params.id)),
+  );
+
+  // 未来真实回写 executor 的事务原型：disabled，只定义 shape/rollback/error contract。
+  app.get(
+    "/api/execution/writebacks/:id/transaction-prototype",
+    { schema: { params: IdParamSchema, response: { 200: ExecutionWritebackTransactionPrototypeSchema } } },
+    async (request) =>
+      toExecutionWritebackTransactionPrototypeDTO(
+        await executionWritebackService.getTransactionPrototype(request.params.id),
+      ),
   );
 
   app.get(

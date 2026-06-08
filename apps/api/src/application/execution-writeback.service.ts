@@ -13,6 +13,10 @@ import {
   buildExecutionWritebackTransactionPlanFromGuard,
   type ExecutionWritebackTransactionPlan,
 } from "../domain/execution/writeback-transaction-plan.js";
+import {
+  buildExecutionWritebackTransactionPrototype,
+  type ExecutionWritebackTransactionPrototype,
+} from "../domain/execution/writeback-transaction-prototype.js";
 import type { Db } from "../infrastructure/db/client.js";
 import type { ExecutionWritebackRow } from "../infrastructure/db/schema.js";
 import * as writebackRepo from "../infrastructure/repositories/execution-writeback.repository.js";
@@ -58,6 +62,10 @@ export class ExecutionWritebackService {
       adapter: buildDisabledControlPlaneWritebackAdapter(),
     });
     return buildExecutionWritebackApplyGuard({ guard, plan, dryRun });
+  }
+
+  async getTransactionPrototype(id: string): Promise<ExecutionWritebackTransactionPrototype> {
+    return buildExecutionWritebackTransactionPrototype({ applyGuard: await this.getApplyGuard(id) });
   }
 
   listByResult(resultId: string): Promise<ExecutionWritebackRow[]> {

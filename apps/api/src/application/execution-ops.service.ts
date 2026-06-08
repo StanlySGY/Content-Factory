@@ -18,6 +18,10 @@ import {
   type ExecutionWritebackTransactionPlanReadiness,
 } from "../domain/execution/writeback-transaction-plan.js";
 import {
+  buildExecutionWritebackTransactionPrototypeReadiness,
+  type ExecutionWritebackTransactionPrototypeReadiness,
+} from "../domain/execution/writeback-transaction-prototype.js";
+import {
   buildRuntimeExecutionContext,
   type RuntimeCredentialRef,
   type RuntimeSafetyPolicy,
@@ -437,6 +441,10 @@ export class ExecutionOpsService {
 
   getWritebackApplyGuardReadiness(): ExecutionWritebackApplyGuardReadiness {
     return buildExecutionWritebackApplyGuardReadiness();
+  }
+
+  getWritebackTransactionPrototypeReadiness(): ExecutionWritebackTransactionPrototypeReadiness {
+    return buildExecutionWritebackTransactionPrototypeReadiness();
   }
 
   async dryRunRuntimeAdapter(input: {
