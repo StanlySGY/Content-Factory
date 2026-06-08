@@ -1,7 +1,9 @@
 import type { RuntimeSafetyPolicy } from "../../domain/execution/runtime-safety.js";
 import type { RuntimeAdapterMode, RuntimeAdapterStatus } from "./adapter-registry.js";
+import { AGENT_REAL_ADAPTER_DISABLED_FIXTURE } from "./agent-real-adapter-disabled-fixture.js";
 
 export const AGENT_REAL_ADAPTER_MISSING_REQUIREMENTS = [
+  "agent real adapter executable implementation",
   "real agent adapter implementation",
   "real provider http transport",
   "secret store connection",
@@ -15,8 +17,15 @@ export interface AgentRealAdapterRegistrationGuard {
   registrationReady: false;
   realAdapterRegistered: false;
   realAdapterWorkerEnabled: false;
+  disabledFixtureReady: true;
+  disabledFixtureExecutable: false;
+  disabledFixture: {
+    name: typeof AGENT_REAL_ADAPTER_DISABLED_FIXTURE.name;
+    version: typeof AGENT_REAL_ADAPTER_DISABLED_FIXTURE.version;
+    status: Extract<RuntimeAdapterStatus, "blocked">;
+  };
   descriptorStatus: Extract<RuntimeAdapterStatus, "blocked">;
-  blockedRealAdapterReason: "no real adapter registered";
+  blockedRealAdapterReason: typeof AGENT_REAL_ADAPTER_DISABLED_FIXTURE.blockedReason;
   requiredAdapterType: "agent";
   requiredAdapterMode: Extract<RuntimeAdapterMode, "real">;
   configGates: {
@@ -39,7 +48,7 @@ export interface AgentRealAdapterRegistrationGuard {
   };
   missingRequirements: typeof AGENT_REAL_ADAPTER_MISSING_REQUIREMENTS[number][];
   failClosedError: {
-    message: "no real adapter registered";
+    message: typeof AGENT_REAL_ADAPTER_DISABLED_FIXTURE.blockedReason;
     retryable: false;
   };
 }
@@ -56,8 +65,15 @@ export function buildAgentRealAdapterRegistrationGuard(input: {
     registrationReady: false,
     realAdapterRegistered: false,
     realAdapterWorkerEnabled: false,
+    disabledFixtureReady: true,
+    disabledFixtureExecutable: false,
+    disabledFixture: {
+      name: AGENT_REAL_ADAPTER_DISABLED_FIXTURE.name,
+      version: AGENT_REAL_ADAPTER_DISABLED_FIXTURE.version,
+      status: "blocked",
+    },
     descriptorStatus: "blocked",
-    blockedRealAdapterReason: "no real adapter registered",
+    blockedRealAdapterReason: AGENT_REAL_ADAPTER_DISABLED_FIXTURE.blockedReason,
     requiredAdapterType: "agent",
     requiredAdapterMode: "real",
     configGates: {
@@ -80,7 +96,7 @@ export function buildAgentRealAdapterRegistrationGuard(input: {
     },
     missingRequirements: [...AGENT_REAL_ADAPTER_MISSING_REQUIREMENTS],
     failClosedError: {
-      message: "no real adapter registered",
+      message: AGENT_REAL_ADAPTER_DISABLED_FIXTURE.blockedReason,
       retryable: false,
     },
   };

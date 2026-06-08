@@ -78,8 +78,10 @@ describe("Provider quota and cost preflight ops API", () => {
       .find((a) => a.type === "agent" && a.mode === "real");
 
     expect(realAgent).toMatchObject({
+      name: "agent-real-disabled-fixture",
+      version: "2.12.0",
       status: "blocked",
-      blocked_reason: "no real adapter registered",
+      blocked_reason: "agent real adapter disabled fixture is not executable",
     });
   });
 });

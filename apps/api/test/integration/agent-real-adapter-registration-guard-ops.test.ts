@@ -50,8 +50,15 @@ describe("Agent real adapter registration guard ops API", () => {
       registration_ready: false,
       real_adapter_registered: false,
       real_adapter_worker_enabled: false,
+      disabled_fixture_ready: true,
+      disabled_fixture_executable: false,
+      disabled_fixture: {
+        name: "agent-real-disabled-fixture",
+        version: "2.12.0",
+        status: "blocked",
+      },
       descriptor_status: "blocked",
-      blocked_real_adapter_reason: "no real adapter registered",
+      blocked_real_adapter_reason: "agent real adapter disabled fixture is not executable",
       required_adapter_type: "agent",
       required_adapter_mode: "real",
       config_gates: {
@@ -73,6 +80,7 @@ describe("Agent real adapter registration guard ops API", () => {
         cost_preflight_ready: true,
       },
       missing_requirements: [
+        "agent real adapter executable implementation",
         "real agent adapter implementation",
         "real provider http transport",
         "secret store connection",
@@ -81,7 +89,7 @@ describe("Agent real adapter registration guard ops API", () => {
         "real provider billing calculation",
       ],
       fail_closed_error: {
-        message: "no real adapter registered",
+        message: "agent real adapter disabled fixture is not executable",
         retryable: false,
       },
     });
@@ -92,12 +100,27 @@ describe("Agent real adapter registration guard ops API", () => {
 
   it("keeps real runtime adapter blocked at the registry boundary", async () => {
     const res = await app.inject({ method: "GET", url: "/api/execution/ops/runtime-adapters" });
-    const realAgent = (res.json().adapters as Array<{ type: string; mode: string; status: string; blocked_reason?: string }>)
+    const realAgent = (res.json().adapters as Array<{
+      type: string;
+      mode: string;
+      name: string;
+      version: string;
+      capabilities: string[];
+      allow_network: boolean;
+      allow_process_spawn: boolean;
+      status: string;
+      blocked_reason?: string;
+    }>)
       .find((a) => a.type === "agent" && a.mode === "real");
 
     expect(realAgent).toMatchObject({
+      name: "agent-real-disabled-fixture",
+      version: "2.12.0",
+      capabilities: ["real_adapter_disabled_fixture", "fail_closed"],
+      allow_network: false,
+      allow_process_spawn: false,
       status: "blocked",
-      blocked_reason: "no real adapter registered",
+      blocked_reason: "agent real adapter disabled fixture is not executable",
     });
   });
 });

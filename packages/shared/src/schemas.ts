@@ -1179,6 +1179,16 @@ export const AgentRealAdapterRegistrationGuardResponseSchema = Type.Object(
     registration_ready: Type.Boolean(),
     real_adapter_registered: Type.Boolean(),
     real_adapter_worker_enabled: Type.Boolean(),
+    disabled_fixture_ready: Type.Boolean(),
+    disabled_fixture_executable: Type.Boolean(),
+    disabled_fixture: Type.Object(
+      {
+        name: Type.String(),
+        version: Type.String(),
+        status: StringEnum(["blocked"] as const),
+      },
+      { additionalProperties: false },
+    ),
     descriptor_status: StringEnum(["blocked"] as const),
     blocked_real_adapter_reason: Type.String(),
     required_adapter_type: StringEnum(["agent"] as const),

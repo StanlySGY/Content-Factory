@@ -14,6 +14,7 @@ import {
 } from "./dry-run-runtimes.js";
 import { AgentProviderRuntime } from "./agent-provider-runtime.js";
 import { AgentProviderPreflightRuntime } from "./provider-preflight-runtime.js";
+import { throwAgentRealAdapterDisabledFixture } from "./agent-real-adapter-disabled-fixture.js";
 import type { RuntimeAdapterMode } from "./adapter-registry.js";
 import {
   AgentMockRuntime,
@@ -62,7 +63,7 @@ export class MockRuntimeAdapterFactory implements RuntimeAdapterFactory {
 
   getRuntime(type: ExecutionJobType, context?: RuntimeExecutionContext): AnyRuntime {
     const policy = context?.policy ?? this.policy;
-    if (this.adapterMode === "real") throw new ValidationError("no real adapter registered");
+    if (this.adapterMode === "real") throwAgentRealAdapterDisabledFixture();
     if (this.adapterMode === "fake_provider") {
       if (policy.mode !== "real_enabled" || !policy.allowRealExecution)
         throw new ValidationError("fake provider adapter requires real_enabled mode and allowRealExecution=true");

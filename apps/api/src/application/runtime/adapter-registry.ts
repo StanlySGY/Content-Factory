@@ -1,6 +1,7 @@
 import type { ExecutionJobType } from "@cf/shared";
 import { ValidationError } from "../../domain/errors.js";
 import type { RuntimeSafetyPolicy } from "../../domain/execution/runtime-safety.js";
+import { buildAgentRealAdapterDisabledFixtureDescriptor } from "./agent-real-adapter-disabled-fixture.js";
 
 export const RUNTIME_ADAPTER_MODES = ["mock", "dry_run", "fake_provider", "provider_preflight", "real"] as const;
 export type RuntimeAdapterMode = (typeof RUNTIME_ADAPTER_MODES)[number];
@@ -109,18 +110,22 @@ export function createDefaultRuntimeAdapterRegistry(): RuntimeAdapterRegistry {
       status: type === "agent" ? "available" : "blocked",
       ...(type === "agent" ? {} : { blockedReason: "provider preflight only supports agent" }),
     });
-    registry.registerAdapter({
-      type,
-      mode: "real",
-      name: `${type}-real-runtime`,
-      version: "0.0.0",
-      capabilities: [],
-      requiresCredentialRef: true,
-      allowNetwork: true,
-      allowProcessSpawn: type === "mcp",
-      status: "blocked",
-      blockedReason: "no real adapter registered",
-    });
+    registry.registerAdapter(
+      type === "agent"
+        ? buildAgentRealAdapterDisabledFixtureDescriptor()
+        : {
+            type,
+            mode: "real",
+            name: `${type}-real-runtime`,
+            version: "0.0.0",
+            capabilities: [],
+            requiresCredentialRef: true,
+            allowNetwork: true,
+            allowProcessSpawn: type === "mcp",
+            status: "blocked",
+            blockedReason: "no real adapter registered",
+          },
+    );
   }
   return registry;
 }

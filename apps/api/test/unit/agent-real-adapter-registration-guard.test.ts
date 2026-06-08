@@ -25,8 +25,15 @@ describe("Agent real adapter registration guard", () => {
       registrationReady: false,
       realAdapterRegistered: false,
       realAdapterWorkerEnabled: false,
+      disabledFixtureReady: true,
+      disabledFixtureExecutable: false,
+      disabledFixture: {
+        name: "agent-real-disabled-fixture",
+        version: "2.12.0",
+        status: "blocked",
+      },
       descriptorStatus: "blocked",
-      blockedRealAdapterReason: "no real adapter registered",
+      blockedRealAdapterReason: "agent real adapter disabled fixture is not executable",
       requiredAdapterType: "agent",
       requiredAdapterMode: "real",
       configGates: {
@@ -48,6 +55,7 @@ describe("Agent real adapter registration guard", () => {
         costPreflightReady: true,
       },
       missingRequirements: [
+        "agent real adapter executable implementation",
         "real agent adapter implementation",
         "real provider http transport",
         "secret store connection",
@@ -56,7 +64,7 @@ describe("Agent real adapter registration guard", () => {
         "real provider billing calculation",
       ],
       failClosedError: {
-        message: "no real adapter registered",
+        message: "agent real adapter disabled fixture is not executable",
         retryable: false,
       },
     });

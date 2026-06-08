@@ -611,6 +611,13 @@ export function toAgentRealAdapterRegistrationGuardDTO(
     registration_ready: s.registrationReady,
     real_adapter_registered: s.realAdapterRegistered,
     real_adapter_worker_enabled: s.realAdapterWorkerEnabled,
+    disabled_fixture_ready: s.disabledFixtureReady,
+    disabled_fixture_executable: s.disabledFixtureExecutable,
+    disabled_fixture: {
+      name: s.disabledFixture.name,
+      version: s.disabledFixture.version,
+      status: s.disabledFixture.status,
+    },
     descriptor_status: s.descriptorStatus,
     blocked_real_adapter_reason: s.blockedRealAdapterReason,
     required_adapter_type: s.requiredAdapterType,

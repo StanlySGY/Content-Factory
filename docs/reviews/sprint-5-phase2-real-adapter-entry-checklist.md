@@ -1,7 +1,7 @@
 # Sprint-5 Phase 2 — Real Adapter Entry Checklist
 
 > 接入真实 Agent / MCP / LLM / Publisher 前的准入清单。标注每项：**[已满足] Phase 1.x 已就位 / [缺失] 待补 / [必须] 接真实外部系统前硬性前置**。
-> 基线：Phase 1.x 冻结（`fc001fb`→`32fd423`，见 release-gate 文档）；Phase 2.0 Runtime Safety Foundation、Phase 2.1 Dry-run Readiness Harness、Phase 2.2 Agent Fake Provider Harness、Phase 2.3 Agent Provider Safety Preflight、Phase 2.4 Agent Real Adapter Preflight Spike、Phase 2.5 Runtime Secret Resolver Boundary、Phase 2.6 Agent Provider HTTP Boundary、Phase 2.7 Agent Real HTTP Adapter Skeleton、Phase 2.8 Runtime Secret Store Injection Preflight、Phase 2.9 Agent Real HTTP Timeout/Abort Harness、Phase 2.10 Provider Quota + Cost Metrics Preflight 与 Phase 2.11 Agent Real Adapter Registration Guard 已补安全准入基础。
+> 基线：Phase 1.x 冻结（`fc001fb`→`32fd423`，见 release-gate 文档）；Phase 2.0 Runtime Safety Foundation、Phase 2.1 Dry-run Readiness Harness、Phase 2.2 Agent Fake Provider Harness、Phase 2.3 Agent Provider Safety Preflight、Phase 2.4 Agent Real Adapter Preflight Spike、Phase 2.5 Runtime Secret Resolver Boundary、Phase 2.6 Agent Provider HTTP Boundary、Phase 2.7 Agent Real HTTP Adapter Skeleton、Phase 2.8 Runtime Secret Store Injection Preflight、Phase 2.9 Agent Real HTTP Timeout/Abort Harness、Phase 2.10 Provider Quota + Cost Metrics Preflight、Phase 2.11 Agent Real Adapter Registration Guard 与 Phase 2.12 Agent Real Adapter Disabled Fixture 已补安全准入基础。
 
 ## 1. 真实 Agent Runtime 准入
 
@@ -18,13 +18,14 @@
 - [已满足] Agent real HTTP client skeleton 已就位：`RealAgentProviderHttpClient`、`IAgentProviderHttpTransport`、disabled default transport、endpointMap + allowedHosts 双闸门；worker real adapter 仍 blocked。
 - [已满足] Agent real HTTP timeout/abort harness 已就位：client 层创建内部 `AbortController`，向 transport 转发 signal，timeout / parent abort 映射为稳定 `AgentProviderHttpError`。
 - [已满足] Agent real adapter registration guard 已就位：冻结 `agent:real` 注册前 config/readiness gates、missing requirements 与 fail-closed error；真实 adapter 仍未注册。
+- [已满足] Agent real adapter disabled fixture 已就位：`agent:real` descriptor 展示 `agent-real-disabled-fixture@2.12.0`，但 `status=blocked`、`executable=false`，Factory/Registry 仍 fail-closed。
 - [缺失] 多轮会话 / agent_messages 模型（若需要）。
 
 ## 2. 真实 MCP Runtime 准入
 
 - [缺失][必须] `IMCPRuntime` 真实实现：stdio / HTTP / SSE / WS transport + 工具分发，替换 `MCPMockRuntime`。
 - [已满足] Adapter Factory 路由（getRuntime(type)）作为替换点。
-- [已满足] Runtime Adapter Registry 已登记 `mock/dry_run/fake_provider/provider_preflight/real` descriptor；real descriptor 当前 blocked，MCP/Publisher fake_provider 与 provider_preflight 当前 blocked。
+- [已满足] Runtime Adapter Registry 已登记 `mock/dry_run/fake_provider/provider_preflight/real` descriptor；`agent:real` 当前为 disabled fixture blocked，MCP/Publisher real descriptor 当前通用 blocked，MCP/Publisher fake_provider 与 provider_preflight 当前 blocked。
 - [已满足] MCP dry-run runtime readiness validation 已就位（不实现 transport、不发网络、不 spawn process）。
 - [缺失][必须] MCP `risk_level` 驱动的隔离/确认策略接入（见 §7）。
 - [已满足] RuntimeExecutionContext + AbortController 基础已就位。
@@ -100,6 +101,7 @@
 - [已满足] ops secret injection preflight endpoint：`GET /secret-injection-preflight` 已就位，只读展示 external placeholder resolver、transport-local header plan 与 secret material 禁止持久化边界。
 - [已满足] ops provider quota/cost preflight endpoint：`GET /provider-quota-cost-preflight` 已就位，只读展示 quota/cost 准入字段，不写 execution tables。
 - [已满足] ops agent real adapter registration guard endpoint：`GET /agent-real-adapter-registration-guard` 已就位，只读展示真实 adapter 注册缺口，不写 execution tables。
+- [已满足] ops runtime adapter endpoint 已展示 `agent:real` disabled fixture 元数据；guard endpoint 已展示 `disabled_fixture_ready=true` / `disabled_fixture_executable=false`。
 - [缺失] 真实 runtime 的指标维度（错误类型分布、耗时分位、真实成本）；账本归档/保留策略。
 - [已满足] provider_preflight token usage / costEstimate(`not_calculated`) envelope 已就位，为真实成本指标预留字段。
 
@@ -107,7 +109,7 @@
 
 - [已满足] feature flag（EXECUTION_WORKER_ENABLED / OUTBOX_RELAY_ENABLED）默认关闭。
 - [已满足] `EXECUTION_RUNTIME_MODE=mock|real_disabled|real_enabled` + `EXECUTION_ALLOW_REAL_RUNTIME=false` 已接入 Factory/Worker；默认 Mock，real_disabled 安全失败，real_enabled 仍需显式总开关。
-- [已满足] `EXECUTION_RUNTIME_ADAPTER_MODE=mock|dry_run|fake_provider|provider_preflight|real` 已接入；`fake_provider` 与 `provider_preflight` 仅 agent 可用，`real` 当前始终失败为 `no real adapter registered`。
+- [已满足] `EXECUTION_RUNTIME_ADAPTER_MODE=mock|dry_run|fake_provider|provider_preflight|real` 已接入；`fake_provider` 与 `provider_preflight` 仅 agent 可用，`agent:real` 当前始终失败为 `agent real adapter disabled fixture is not executable`。
 - [已满足] 无 DB 迁移的阶段可代码回滚；Real Adapter 接入须保证可快速停摆。
 
 ## 11. 结果回写（execution → Control Plane）
@@ -118,9 +120,9 @@
 
 ## 12. 最小 Phase 2 Spike 建议
 
-1. **Agent Real Adapter disabled fixture**：在不启用真实网络/secret 的前提下，提供可注册但默认 disabled/blocked 的真实 adapter fixture，用于验证 factory routing 与 fail-closed 错误，不执行真实 provider。
+1. **Agent Real Adapter Provider Config Preflight**：定义真实 provider config 的只读 schema/readiness/redaction，不读取 secret、不发网络、不启用 worker real adapter。
 2. **Agent Real Adapter spike（最小闭环）**：单一 LLM provider 的 `IAgentRuntime` 实现 + 隔离层（真实 HTTP transport + 凭证作用域化）+ 错误映射；经 Bridge 创建 job → worker 真实执行 → 结果落账本。**不回写控制平面**（先证执行，再证回写）。
-3. **Relay 回写 spike**：实现一个真实 handler，按 result_id/subject 幂等回写**单一** stage_run 状态（经状态机），含并发领取保护。
+3. **Relay 回写 spike**：实现一个真实 handler，按 result_id/subject 幂等回写**单一** stage_run 状态（经 ADR-006 状态机），含并发领取保护。
 4. 各 spike 独立验证后再合流；Publisher 单独立项，不混入。
 
 ---
@@ -140,5 +142,6 @@
 - **Phase 2.9 已补齐**：Agent real HTTP timeout/abort harness、transport signal forwarding、timeout/parent abort 稳定错误映射、agent real HTTP adapter ops readiness 字段。
 - **Phase 2.10 已补齐**：Provider quota + cost metrics preflight readiness、quota allow/throttle 样例、429 rate_limited 错误类型、cost not_calculated envelope、只读 ops endpoint、不写 execution tables。
 - **Phase 2.11 已补齐**：Agent real adapter registration guard、config/readiness gates、missing requirements、fail-closed error、只读 ops endpoint、不写 execution tables。
+- **Phase 2.12 已补齐**：Agent real adapter disabled fixture、`agent:real` descriptor 元数据、factory/registry fail-closed、guard disabled fixture readiness。
 - **接真实外部系统前仍必须完成**：MCP / 进程级取消、资源限额/沙箱、真实 secret store 解析与 material 注入、分布式 provider 配额 enforcement、真实 billing/cost calculation、high-risk 确认闸门、relay 真实回写 + 并发领取保护。
 - **仍缺失（非 Real Adapter 阻塞，但需规划）**：Publisher + publish_records、审批态建模、账本归档、成本/指标维度。
