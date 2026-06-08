@@ -17,6 +17,7 @@ import type {
   ExecutionWritebackApplyGuardReadinessResponse,
   ExecutionWritebackDryRunDTO,
   ExecutionWritebackDryRunReadinessResponse,
+  ExecutionWritebackExecutorPreflightMatrixResponse,
   ExecutionWritebackGuardDTO,
   ExecutionWritebackGuardReadinessResponse,
   ExecutionWritebackStateTransitionPolicyReadinessResponse,
@@ -75,6 +76,7 @@ import type {
   ExecutionWritebackApplyGuardReadiness,
 } from "../domain/execution/writeback-apply-guard.js";
 import type { ExecutionWritebackDryRun, ExecutionWritebackDryRunReadiness } from "../domain/execution/writeback-dry-run.js";
+import type { ExecutionWritebackExecutorPreflightMatrix } from "../domain/execution/writeback-executor-preflight-matrix.js";
 import type { ExecutionWritebackGuard, ExecutionWritebackGuardReadiness } from "../domain/execution/writeback-guard.js";
 import type {
   ExecutionWritebackTransactionPlan,
@@ -800,6 +802,29 @@ export function toExecutionWritebackSubjectSnapshotReadinessDTO(
       redaction_applied: r.snapshotShape.redactionApplied,
       redaction_policy: r.snapshotShape.redactionPolicy,
     },
+    missing_requirements: r.missingRequirements,
+    next_phase_requirements: r.nextPhaseRequirements,
+  };
+}
+
+export function toExecutionWritebackExecutorPreflightMatrixDTO(
+  r: ExecutionWritebackExecutorPreflightMatrix,
+): ExecutionWritebackExecutorPreflightMatrixResponse {
+  return {
+    mode: r.mode,
+    ready: r.ready,
+    executable: r.executable,
+    real_executor_registered: r.realExecutorRegistered,
+    control_plane_read_allowed: r.controlPlaneReadAllowed,
+    control_plane_write_allowed: r.controlPlaneWriteAllowed,
+    audit_write_allowed: r.auditWriteAllowed,
+    subject_type: r.subjectType,
+    gates: r.gates.map((gate) => ({
+      key: gate.key,
+      status: gate.status,
+      passed: gate.passed,
+      missing_requirements: gate.missingRequirements,
+    })),
     missing_requirements: r.missingRequirements,
     next_phase_requirements: r.nextPhaseRequirements,
   };

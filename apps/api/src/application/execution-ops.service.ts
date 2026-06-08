@@ -26,6 +26,10 @@ import {
   type ExecutionWritebackSubjectSnapshotReadiness,
 } from "../domain/execution/writeback-subject-snapshot.js";
 import {
+  buildExecutionWritebackExecutorPreflightMatrix,
+  type ExecutionWritebackExecutorPreflightMatrix,
+} from "../domain/execution/writeback-executor-preflight-matrix.js";
+import {
   buildExecutionWritebackTransactionPrototypeReadiness,
   type ExecutionWritebackTransactionPrototypeReadiness,
 } from "../domain/execution/writeback-transaction-prototype.js";
@@ -469,6 +473,10 @@ export class ExecutionOpsService {
 
   getWritebackSubjectSnapshotReadiness(): ExecutionWritebackSubjectSnapshotReadiness {
     return buildExecutionWritebackSubjectSnapshotReadiness();
+  }
+
+  getWritebackExecutorPreflightMatrix(): ExecutionWritebackExecutorPreflightMatrix {
+    return buildExecutionWritebackExecutorPreflightMatrix();
   }
 
   async dryRunRuntimeAdapter(input: {
