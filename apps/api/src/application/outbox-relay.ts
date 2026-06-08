@@ -8,6 +8,7 @@ import * as outboxRepo from "../infrastructure/repositories/outbox.repository.js
 // OutboxHandler：事件投递处理器（Phase 1.6 仅结构）。handle 仅确认事件可识别，不触发真实副作用。
 export interface OutboxHandler {
   eventType: string;
+  eventTypes?: string[];
   handle(event: OutboxEventRow): Promise<void>;
 }
 
@@ -36,7 +37,9 @@ export class OutboxRelay {
     private readonly owner = "outbox-relay",
     private readonly leaseMs = 30000,
   ) {
-    this.handlers = new Map(handlers.map((h) => [h.eventType, h]));
+    this.handlers = new Map(
+      handlers.flatMap((h) => (h.eventTypes ?? [h.eventType]).map((eventType) => [eventType, h])),
+    );
   }
 
   /** 领取并投递下一个未处理事件（轮询入口）。无可领取返回 null。*/

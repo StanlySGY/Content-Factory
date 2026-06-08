@@ -1,6 +1,6 @@
 import { ValidationError } from "../errors.js";
 
-export const EXECUTION_WRITEBACK_STATUSES = ["planned", "skipped", "failed"] as const;
+export const EXECUTION_WRITEBACK_STATUSES = ["planned", "applied", "skipped", "failed"] as const;
 export type ExecutionWritebackStatus = (typeof EXECUTION_WRITEBACK_STATUSES)[number];
 
 export interface ExecutionWritebackRecord {

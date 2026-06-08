@@ -894,7 +894,7 @@ export const ExecutionResultSummarySchema = Type.Object(
 export type ExecutionResultSummaryDTO = Static<typeof ExecutionResultSummarySchema>;
 
 // ---- Execution Writeback Ledger (S5 Phase 2.18；disabled no-op writeback 幂等消费账本) ----
-export const ExecutionWritebackStatusSchema = StringEnum(["planned", "skipped", "failed"] as const);
+export const ExecutionWritebackStatusSchema = StringEnum(["planned", "applied", "skipped", "failed"] as const);
 
 export const ExecutionWritebackSchema = Type.Object(
   {

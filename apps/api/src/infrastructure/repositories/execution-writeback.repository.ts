@@ -1,5 +1,8 @@
 import { asc, eq, and } from "drizzle-orm";
-import type { ExecutionWritebackRecord } from "../../domain/execution/writeback.js";
+import type {
+  ExecutionWritebackRecord,
+  ExecutionWritebackStatus,
+} from "../../domain/execution/writeback.js";
 import type { Db } from "../db/client.js";
 import { executionWritebacks, type ExecutionWritebackRow } from "../db/schema.js";
 
@@ -73,4 +76,33 @@ export async function markWritebackFailed(
     .where(eq(executionWritebacks.id, id))
     .returning();
   return row ?? null;
+}
+
+async function markWritebackStatus(
+  db: Db,
+  id: string,
+  status: ExecutionWritebackStatus,
+  error: string | null,
+): Promise<ExecutionWritebackRow | null> {
+  const [row] = await db
+    .update(executionWritebacks)
+    .set({ status, error, updatedAt: new Date() })
+    .where(eq(executionWritebacks.id, id))
+    .returning();
+  return row ?? null;
+}
+
+export async function markWritebackApplied(
+  db: Db,
+  id: string,
+): Promise<ExecutionWritebackRow | null> {
+  return markWritebackStatus(db, id, "applied", null);
+}
+
+export async function markWritebackSkipped(
+  db: Db,
+  id: string,
+  error: string,
+): Promise<ExecutionWritebackRow | null> {
+  return markWritebackStatus(db, id, "skipped", error);
 }

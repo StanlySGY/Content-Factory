@@ -55,7 +55,12 @@ function resultIdFromEvent(event: OutboxEventRow): string {
   return payload.result_id;
 }
 
-function subjectFrom(input: ExecutionWritebackInput): JsonRecord {
+export function subjectFromExecutionWritebackInput(input: ExecutionWritebackInput): {
+  type: string;
+  id: string;
+  project_id?: unknown;
+  metadata?: unknown;
+} {
   const payload = input.event.payload;
   const fromEvent = isRecord(payload) && isRecord(payload.subject) ? payload.subject : null;
   const fromResult = isRecord(input.result.subjectSnapshot) ? input.result.subjectSnapshot : null;
@@ -65,7 +70,12 @@ function subjectFrom(input: ExecutionWritebackInput): JsonRecord {
     throw new ValidationError("execution writeback subject type is required");
   if (typeof subject.id !== "string" || subject.id.trim().length === 0)
     throw new ValidationError("execution writeback subject id is required");
-  return subject;
+  return subject as {
+    type: string;
+    id: string;
+    project_id?: unknown;
+    metadata?: unknown;
+  };
 }
 
 export function validateExecutionWritebackInput(input: ExecutionWritebackInput): void {
@@ -78,12 +88,12 @@ export function validateExecutionWritebackInput(input: ExecutionWritebackInput):
     throw new ValidationError("execution writeback result_id does not match execution result");
   if (input.result.executionJobId !== input.event.aggregateId)
     throw new ValidationError("execution writeback result does not belong to event aggregate");
-  subjectFrom(input);
+  subjectFromExecutionWritebackInput(input);
 }
 
 export function buildExecutionWritebackIdempotencyKey(input: ExecutionWritebackInput): string {
   validateExecutionWritebackInput(input);
-  const subject = subjectFrom(input);
+  const subject = subjectFromExecutionWritebackInput(input);
   const source = JSON.stringify({
     eventType: input.event.eventType,
     eventId: input.event.id,
@@ -98,7 +108,7 @@ export function buildExecutionWritebackIdempotencyKey(input: ExecutionWritebackI
 
 export function buildExecutionWritebackPlan(input: ExecutionWritebackInput): ExecutionWritebackPlan {
   validateExecutionWritebackInput(input);
-  const subject = subjectFrom(input);
+  const subject = subjectFromExecutionWritebackInput(input);
   return {
     mode: "disabled_noop",
     enabled: false,

@@ -99,6 +99,20 @@
 
 ## 4. 路线 B：Workflow Stage Writeback MVP
 
+### 当前进度
+
+| 项目 | 状态 |
+|---|---|
+| Sprint-9 Workflow Stage Writeback MVP | 已完成 |
+| `workflow_stage_run` 单 subject 回写 | 已验证 |
+| success result: `running -> waiting_review` | 已验证 |
+| failed result: `running -> failed` | 已验证 |
+| 非 running subject 跳过 | 已验证 |
+| duplicate terminal event 幂等 | 已验证 |
+| audit append 失败回滚 stage update | 已验证 |
+| 默认 relay 自动回写控制面 | 未打开 |
+| 审计文档 | `docs/reviews/sprint-9-workflow-stage-writeback-audit.md` |
+
 ### 目标
 
 在 writeback ledger、outbox lease、apply guard、transaction port、state transition policy、subject snapshot 和 registration contract 基础上，实现 `workflow_stage_run` 单 subject 的真实幂等回写。
@@ -266,39 +280,70 @@
 
 ---
 
-## 7. 推荐下一步提示词
+## 7. 项目停止线
+
+| Sprint | 状态 | 说明 |
+|---|---|---|
+| Sprint-6 Agent Real Runtime MVP | 已完成 | Agent real runtime safety / transport / provider contract |
+| Sprint-7 MCP Runtime Safety MVP | 已完成 | MCP sandbox / timeout / high-risk confirmation |
+| Sprint-8 Publisher Runtime Safety MVP | 已完成 | Publisher preview / approval / rollback plan snapshot |
+| Sprint-9 Workflow Stage Writeback MVP | 已完成 | `workflow_stage_run` 单 subject 真实回写闭环 |
+| Sprint-10 Production Readiness | 下一步且最后一步 | 全量审计、验证、runbook、风险清单、功能冻结 |
+
+停止规则：
+
+- 不再新增 Phase 2.x。
+- 不再新增 Sprint-11 或新功能路线，除非项目 owner 明确扩 scope。
+- Sprint-10 后只允许 bugfix、测试修复、文档补齐和安全修正。
+
+---
+
+## 8. 推荐下一步提示词
 
 Sprint-6 Agent Real Runtime 已完成 MVP、Credential Boundary、Production Transport Gate 与 Provider Response Contract Hardening。
 Sprint-7 MCP Runtime Safety MVP 已完成 fake/local harness、sandbox、timeout/cancel、high-risk confirmation 与 snapshot redaction。
 Sprint-8 Publisher Runtime Safety MVP 已完成 fake/local harness、preview、approval gate、credential boundary、idempotent request id 与 rollback plan snapshot。
+Sprint-9 Workflow Stage Writeback MVP 已完成 `workflow_stage_run` 单 subject 真实回写闭环。
 
-不再继续新增 Phase 2.x；下一步进入有限 Sprint 路线，建议从 **Sprint-9 Workflow Stage Writeback MVP** 开始：
+不再继续新增 Phase 2.x；下一步进入最终收尾 **Sprint-10 Production Readiness / Final Audit / Delivery Freeze**：
 
 ```text
-实现 Sprint-9 Workflow Stage Writeback MVP。
+实现 Sprint-10 Production Readiness / Final Audit / Delivery Freeze。
 
-目标：首次打开 execution -> control plane 的真实回写，但只支持 workflow_stage_run 单 subject，并且必须经 ADR-006 状态边、writeback ledger 幂等保护、outbox relay handler、audit append 同事务保护。
+目标：对 Sprint-5 至 Sprint-9 的 execution layer、runtime safety、outbox relay、writeback ledger、workflow_stage_run 回写闭环做最终生产就绪审计，并冻结功能范围。
 
 边界：
-- 只允许 workflow_stage_run subject。
-- 不支持 content_asset / review_record / publisher_target 回写。
-- 不接真实 LLM / MCP / Publisher。
-- 不改变 execution job 状态机。
-- 不绕过 audit hash chain。
+- 不新增功能。
 - 不新增 Phase 2.x。
+- 不新增 Sprint-11。
+- 不打开默认真实 runtime / 默认 writeback relay handler。
+- 不修改 Sprint-4 Control Plane 业务状态机。
+- 不引入 Redis / MQ / 外部平台调用。
 
 要求：
-1. TDD 先行，先写失败测试并确认 RED。
-2. 新增/启用 writeback relay handler，仅消费 terminal execution outbox event。
-3. 通过 result_id 读取 execution_results，通过 subject snapshot 定位 workflow_stage_run。
-4. 经 ADR-006 状态边执行：
-   - success result: running -> waiting_review
-   - failed result: running -> failed
-5. control-plane update 与 audit append 必须同事务；audit 失败必须回滚 stage update。
-6. writeback ledger 必须 exactly-once：重复 outbox process 幂等跳过。
-7. 非 running subject 必须 blocked/skipped，不更新控制面。
-8. 不支持的 subject type 必须 skipped/failed，不写控制面。
-9. 更新 Sprint-9 审计文档与 roadmap。
-10. 运行相关回归、API 全量、shared/web、typecheck、lint、git diff --check。
+1. 汇总 Sprint-5 Phase 1 到 Sprint-9 的当前能力矩阵。
+2. 审计所有 execution plane 默认开关，确认 fail-closed。
+3. 审计 DB migration、grant、append-only、RLS、audit hash chain 边界。
+4. 审计 runtime adapter registry：agent/mcp/publisher real 默认 blocked，测试 harness 显式注入。
+5. 审计 outbox relay 与 workflow writeback handler：默认不自动回写，显式 handler 具备事务/幂等测试。
+6. 更新最终 runbook：如何启动 worker/relay、如何手动 process outbox、如何 recover stale jobs、如何手动 retry failed job。
+7. 新增 docs/reviews/sprint-10-production-readiness-audit.md。
+8. 更新 docs/reviews/sprint-6-implementation-roadmap.md，标记 Sprint-10 完成后功能冻结。
+9. 运行全量质量门禁：
+   - pnpm --dir apps/api exec vitest run
+   - pnpm --dir packages/shared exec vitest run
+   - pnpm --dir apps/web exec vitest run
+   - pnpm -r typecheck
+   - pnpm lint
+   - git diff --check
+10. 若发现阻断级问题，只做 bugfix / test fix / doc fix，不新增功能。
 11. 独立 commit 并 push origin main。
+
+输出：
+- Sprint-10 commit hash
+- origin/main hash
+- 验证命令和结果
+- 完整任务剩余项表格；若无功能剩余，明确写“功能路线已冻结，只剩后续产品化扩 scope”
+- 未提交/未跟踪无关文件列表
+- 明确声明没有 force push、没有提交无关 sprint-2 文档、未 amend / squash 既有提交
 ```
