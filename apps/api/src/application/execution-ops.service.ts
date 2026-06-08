@@ -42,6 +42,10 @@ import {
   buildDefaultAgentRealProviderConfig,
   type AgentRealProviderConfigPreflight,
 } from "./runtime/agent-real-provider-config-preflight.js";
+import {
+  buildAgentRealProviderTransportDisabledHarness,
+  type AgentRealProviderTransportDisabledHarness,
+} from "./runtime/agent-real-provider-transport-disabled-harness.js";
 import type { OutboxRelay } from "./outbox-relay.js";
 
 // 运维健康只读聚合（camelCase；mapper → snake_case DTO）。仅聚合 execution plane 表，不 join 业务表/不读 audit。
@@ -357,6 +361,24 @@ export class ExecutionOpsService {
       config: buildDefaultAgentRealProviderConfig(this.config.runtimeSafetyPolicy.timeoutMs),
       activeAdapterMode: this.config.runtimeAdapterMode,
       runtimeSafetyPolicy: this.config.runtimeSafetyPolicy,
+    });
+  }
+
+  getAgentRealProviderTransportDisabledHarness(): Promise<AgentRealProviderTransportDisabledHarness> {
+    const config = buildDefaultAgentRealProviderConfig(this.config.runtimeSafetyPolicy.timeoutMs);
+    return buildAgentRealProviderTransportDisabledHarness({
+      config,
+      messages: [{ role: "user", content: "phase 2.14 disabled transport harness" }],
+      requestId: "ops-agent-real-provider-transport-disabled-harness",
+      policy: {
+        realHttpEnabled: this.config.runtimeSafetyPolicy.allowRealExecution,
+        allowNetwork: this.config.runtimeSafetyPolicy.allowNetwork,
+        allowedHosts: [...this.config.networkAllowlist],
+        endpointMap: {
+          [config.endpointRef]: "https://api.openai.test/v1/chat/completions",
+        },
+      },
+      contextTimeoutMs: this.config.runtimeSafetyPolicy.timeoutMs,
     });
   }
 

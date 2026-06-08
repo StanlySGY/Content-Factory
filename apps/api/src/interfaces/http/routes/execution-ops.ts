@@ -3,6 +3,7 @@ import {
   AgentRealAdapterRegistrationGuardResponseSchema,
   AgentRealHttpAdapterReadinessResponseSchema,
   AgentRealProviderConfigPreflightResponseSchema,
+  AgentRealProviderTransportDisabledHarnessResponseSchema,
   ExecutionSystemHealthSchema,
   IdParamSchema,
   ManualRetryJobResponseSchema,
@@ -29,6 +30,7 @@ import {
   toAgentRealAdapterRegistrationGuardDTO,
   toAgentRealHttpAdapterReadinessDTO,
   toAgentRealProviderConfigPreflightDTO,
+  toAgentRealProviderTransportDisabledHarnessDTO,
   toExecutionJobDTO,
   toExecutionSystemHealthDTO,
   toRuntimeAdapterDryRunResponseDTO,
@@ -112,6 +114,15 @@ export const executionOpsRoutes: FastifyPluginAsyncTypebox<ExecutionOpsRoutesOpt
     "/api/execution/ops/agent-real-provider-config-preflight",
     { schema: { response: { 200: AgentRealProviderConfigPreflightResponseSchema } } },
     async () => toAgentRealProviderConfigPreflightDTO(executionOpsService.getAgentRealProviderConfigPreflight()),
+  );
+
+  app.get(
+    "/api/execution/ops/agent-real-provider-transport-disabled-harness",
+    { schema: { response: { 200: AgentRealProviderTransportDisabledHarnessResponseSchema } } },
+    async () =>
+      toAgentRealProviderTransportDisabledHarnessDTO(
+        await executionOpsService.getAgentRealProviderTransportDisabledHarness(),
+      ),
   );
 
   app.get(

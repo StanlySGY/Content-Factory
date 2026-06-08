@@ -1293,6 +1293,32 @@ export type AgentRealProviderConfigPreflightResponse = Static<
   typeof AgentRealProviderConfigPreflightResponseSchema
 >;
 
+export const AgentRealProviderTransportDisabledHarnessResponseSchema = Type.Object(
+  {
+    mode: StringEnum(["agent_real_provider_transport_disabled_harness"] as const),
+    request_shape_ready: Type.Boolean(),
+    provider_kind: StringEnum(["openai_compatible"] as const),
+    request_method: StringEnum(["POST"] as const),
+    url_ref: Type.String(),
+    timeout_ms: Type.Integer(),
+    disabled_transport_ready: Type.Boolean(),
+    transport_executable: Type.Boolean(),
+    network_attempted: Type.Boolean(),
+    endpoint_resolved: Type.Boolean(),
+    secret_material_read: Type.Boolean(),
+    secret_material_returned: Type.Boolean(),
+    fail_closed: Type.Boolean(),
+    fail_closed_error_type: Type.String(),
+    fail_closed_retryable: Type.Boolean(),
+    real_adapter_worker_enabled: Type.Boolean(),
+    redacted_request: JsonRecord(),
+  },
+  { additionalProperties: false },
+);
+export type AgentRealProviderTransportDisabledHarnessResponse = Static<
+  typeof AgentRealProviderTransportDisabledHarnessResponseSchema
+>;
+
 export const SecretInjectionPreflightReadinessResponseSchema = Type.Object(
   {
     mode: StringEnum(["secret_injection_preflight"] as const),

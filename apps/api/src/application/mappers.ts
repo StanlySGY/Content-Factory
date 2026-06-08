@@ -3,6 +3,7 @@ import type {
   AgentRealAdapterRegistrationGuardResponse,
   AgentRealHttpAdapterReadinessResponse,
   AgentRealProviderConfigPreflightResponse,
+  AgentRealProviderTransportDisabledHarnessResponse,
   AgentSessionDTO,
   AssetVersionDTO,
   ContentAssetDTO,
@@ -68,6 +69,7 @@ import type {
 import type { ProviderQuotaCostPreflightReadiness } from "./runtime/provider-quota-cost-preflight.js";
 import type { AgentRealAdapterRegistrationGuard } from "./runtime/agent-real-adapter-registration-guard.js";
 import type { AgentRealProviderConfigPreflight } from "./runtime/agent-real-provider-config-preflight.js";
+import type { AgentRealProviderTransportDisabledHarness } from "./runtime/agent-real-provider-transport-disabled-harness.js";
 
 const iso = (d: Date | null): string | null => (d ? d.toISOString() : null);
 
@@ -82,8 +84,10 @@ function snakeRuntimeValue(value: unknown): unknown {
       key === "providerPreflight" ? "provider_preflight" :
       key === "inputAccepted" ? "input_accepted" :
       key === "credentialRef" ? "credential_ref" :
+      key === "headersRef" ? "headers_ref" :
       key === "keyRef" ? "key_ref" :
       key === "endpointRef" ? "endpoint_ref" :
+      key === "urlRef" ? "url_ref" :
       key === "blockedReason" ? "blocked_reason" :
       key === "requiresCredentialRef" ? "requires_credential_ref" :
       key === "allowNetwork" ? "allow_network" :
@@ -99,6 +103,8 @@ function snakeRuntimeValue(value: unknown): unknown {
       key === "maxRequestsPerWindow" ? "max_requests_per_window" :
       key === "windowMs" ? "window_ms" :
       key === "costProfile" ? "cost_profile" :
+      key === "requestId" ? "request_id" :
+      key === "timeoutMs" ? "timeout_ms" :
       key === "tokenUsage" ? "token_usage" :
       key === "promptTokens" ? "prompt_tokens" :
       key === "completionTokens" ? "completion_tokens" :
@@ -710,6 +716,30 @@ export function toAgentRealProviderConfigPreflightDTO(
     allow_network: s.allowNetwork,
     blocked_real_adapter_reason: s.blockedRealAdapterReason,
     redacted_config: snakeRuntimeValue(s.redactedConfig) as Record<string, unknown>,
+  };
+}
+
+export function toAgentRealProviderTransportDisabledHarnessDTO(
+  s: AgentRealProviderTransportDisabledHarness,
+): AgentRealProviderTransportDisabledHarnessResponse {
+  return {
+    mode: s.mode,
+    request_shape_ready: s.requestShapeReady,
+    provider_kind: s.providerKind,
+    request_method: s.requestMethod,
+    url_ref: s.urlRef,
+    timeout_ms: s.timeoutMs,
+    disabled_transport_ready: s.disabledTransportReady,
+    transport_executable: s.transportExecutable,
+    network_attempted: s.networkAttempted,
+    endpoint_resolved: s.endpointResolved,
+    secret_material_read: s.secretMaterialRead,
+    secret_material_returned: s.secretMaterialReturned,
+    fail_closed: s.failClosed,
+    fail_closed_error_type: s.failClosedErrorType,
+    fail_closed_retryable: s.failClosedRetryable,
+    real_adapter_worker_enabled: s.realAdapterWorkerEnabled,
+    redacted_request: snakeRuntimeValue(s.redactedRequest) as Record<string, unknown>,
   };
 }
 
