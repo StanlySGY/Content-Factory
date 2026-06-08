@@ -37,12 +37,14 @@
 |---|---|
 | Sprint-6 Agent Real Runtime MVP 应用级闭环 | 已完成 |
 | Sprint-6 Agent Real Runtime Provider Credential MVP | 已完成 |
+| Sprint-6 Agent Real Runtime Production Transport Gate | 已完成 |
 | 默认 `agent:real` fail-closed | 保持 |
 | 显式测试装配 closed-loop | 已完成 |
 | transport-boundary credential injection | 已验证 |
+| production transport gate metadata | 已验证 |
 | 输出限制在 `execution_results` / `outbox` | 已验证 |
 | Sprint-4 Control Plane 写入 | 未打开 |
-| 审计文档 | `docs/reviews/sprint-6-agent-real-runtime-mvp-audit.md`；`docs/reviews/sprint-6-agent-real-runtime-credential-audit.md` |
+| 审计文档 | `docs/reviews/sprint-6-agent-real-runtime-mvp-audit.md`；`docs/reviews/sprint-6-agent-real-runtime-credential-audit.md`；`docs/reviews/sprint-6-agent-real-runtime-production-transport-gate-audit.md` |
 
 ### 目标
 
@@ -71,6 +73,8 @@
 - feature flag false blocks `agent:real`
 - network allowlist rejects unknown host
 - secret resolver returns material only inside transport boundary
+- production transport gate blocks missing resolver/allowlist/readiness before transport
+- production transport gate metadata persists without secret material
 - secret material never persists in snapshots
 - timeout / abort still maps to stable runtime error
 - successful fake/local real transport writes `execution_results`

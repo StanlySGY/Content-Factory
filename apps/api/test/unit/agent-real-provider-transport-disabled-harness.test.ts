@@ -73,7 +73,7 @@ describe("Agent real provider transport disabled harness", () => {
       secretMaterialRead: false,
       secretMaterialReturned: false,
       failClosed: true,
-      failClosedErrorType: "connection_failed",
+      failClosedErrorType: "auth_failed",
       failClosedRetryable: false,
       realAdapterWorkerEnabled: false,
     });

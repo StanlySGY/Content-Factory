@@ -62,7 +62,7 @@ describe("Agent real provider transport disabled harness ops API", () => {
       secret_material_read: false,
       secret_material_returned: false,
       fail_closed: true,
-      fail_closed_error_type: "connection_failed",
+      fail_closed_error_type: "auth_failed",
       fail_closed_retryable: false,
       real_adapter_worker_enabled: false,
       redacted_request: {

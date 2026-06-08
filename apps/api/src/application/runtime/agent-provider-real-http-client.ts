@@ -7,6 +7,11 @@ import {
   validateAgentProviderHttpRequest,
   validateAgentProviderHttpResponse,
 } from "./agent-provider-http-boundary.js";
+import {
+  assertAgentRealProductionTransportGate,
+  buildAgentRealProductionTransportGateSnapshot,
+  type AgentRealProductionTransportGateSnapshot,
+} from "./agent-real-production-transport-gate.js";
 import type { IRuntimeCredentialResolver } from "./credential-resolver.js";
 
 export interface AgentProviderHttpNetworkPolicy {
@@ -14,6 +19,10 @@ export interface AgentProviderHttpNetworkPolicy {
   allowNetwork: boolean;
   allowedHosts: string[];
   endpointMap: Record<string, string>;
+  requireCredentialResolver?: boolean;
+  allowInsecureCredentialRefPassthrough?: boolean;
+  quotaPolicyReady?: boolean;
+  costMetricsReady?: boolean;
 }
 
 export interface AgentProviderHttpTransportRequest {
@@ -109,6 +118,22 @@ export class RealAgentProviderHttpClient implements IAgentProviderHttpClient {
     if (!this.policy.realHttpEnabled || !this.policy.allowNetwork)
       throw httpError({ type: "network_disabled", retryable: false, message: "real HTTP network execution is disabled" });
 
+    const endpointMapped = Object.prototype.hasOwnProperty.call(this.policy.endpointMap, request.urlRef);
+    const gate = this.buildGateSnapshot(request, endpointMapped);
+    try {
+      assertAgentRealProductionTransportGate(gate);
+    } catch (e) {
+      if (e instanceof Error && gate.missingRequirements.includes("credential_resolver"))
+        throw authFailed(e.message);
+      throw httpError({
+        type: gate.missingRequirements.some((req) => req.includes("network") || req.includes("host")) ?
+          "network_disabled" :
+          "connection_failed",
+        retryable: false,
+        message: e instanceof Error ? e.message : String(e),
+      });
+    }
+
     const url = resolveEndpoint(request.urlRef, this.policy);
     const timeoutMs = Math.min(request.timeoutMs, context.timeoutMs);
     const controller = new AbortController();
@@ -174,6 +199,26 @@ export class RealAgentProviderHttpClient implements IAgentProviderHttpClient {
       )
         throw authFailed("runtime credential resolution failed");
       return { Authorization: `Bearer ${resolved.material}` };
+    });
+  }
+
+  private buildGateSnapshot(
+    request: AgentProviderHttpRequest,
+    endpointMapped: boolean,
+  ): AgentRealProductionTransportGateSnapshot {
+    const authRef = request.headersRef.authorization_ref ?? request.headersRef.Authorization;
+    const requireCredentialResolver = this.policy.requireCredentialResolver ?? true;
+    return buildAgentRealProductionTransportGateSnapshot({
+      realHttpEnabled: this.policy.realHttpEnabled,
+      allowNetwork: this.policy.allowNetwork,
+      allowedHosts: this.policy.allowedHosts,
+      endpointMapped,
+      credentialRefPresent: typeof authRef === "string" && authRef.trim().length > 0,
+      credentialResolverPresent: !requireCredentialResolver ||
+        Boolean(this.credentialResolver) ||
+        this.policy.allowInsecureCredentialRefPassthrough === true,
+      quotaPolicyReady: this.policy.quotaPolicyReady ?? true,
+      costMetricsReady: this.policy.costMetricsReady ?? true,
     });
   }
 }

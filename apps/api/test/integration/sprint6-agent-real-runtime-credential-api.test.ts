@@ -40,16 +40,16 @@ beforeAll(async () => {
       seenTransportHeaders = input.headers;
       return {
         statusCode: 200,
-        headersSnapshot: { "x-request-id": "credential-boundary" },
+        headersSnapshot: { "x-request-id": "prod-gate-boundary" },
         bodySnapshot: {
-          id: "credential-boundary-response",
+          id: "prod-gate-boundary-response",
           model: "gpt-test",
           choices: [{ index: 0, message: { role: "assistant", content: "credential-ok" }, finish_reason: "stop" }],
           usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
           created: 1,
-          provider_metadata: { provider_request_id: "credential-boundary" },
+          provider_metadata: { provider_request_id: "prod-gate-boundary" },
         },
-        providerRequestId: "credential-boundary",
+        providerRequestId: "prod-gate-boundary",
         durationMs: 1,
       };
     },
@@ -123,6 +123,22 @@ describe("Sprint-6 Agent Real Runtime credential boundary", () => {
     const persisted = JSON.stringify({ resultRows, outboxRows });
 
     expect(resultRows).toHaveLength(1);
+    expect(resultRows[0]!.responseSnapshot).toMatchObject({
+      metadata: {
+        providerRequestId: "prod-gate-boundary",
+        httpStatusCode: 200,
+        providerDurationMs: 1,
+        productionTransportGate: {
+          ready: true,
+          checks: {
+            credentialResolverPresent: true,
+            quotaPolicyReady: true,
+            costMetricsReady: true,
+          },
+        },
+        costEstimate: { source: "not_calculated", amount: null, currency: null },
+      },
+    });
     expect(outboxRows.some((e) => e.eventType === "execution_job.success")).toBe(true);
     expect(persisted).not.toContain("sk-test-transport-only");
     expect(persisted).not.toContain("Bearer");

@@ -22,6 +22,7 @@ import {
   type AgentRealProviderMessage,
 } from "./agent-real-provider-transport-disabled-harness.js";
 import { buildDefaultAgentRealProviderConfig } from "./agent-real-provider-config-preflight.js";
+import { buildAgentRealProductionTransportGateSnapshot } from "./agent-real-production-transport-gate.js";
 import {
   normalizeOpenAICompatibleRawResponse,
   type OpenAICompatibleRawResponse,
@@ -124,11 +125,22 @@ export class AgentRealRuntime implements IAgentRuntime {
           providerKind: "openai_compatible",
           providerRequestId: raw.providerRequestId ?? normalized.rawMetadata.providerRequestId,
           httpStatusCode: raw.statusCode,
+          providerDurationMs: raw.durationMs,
           httpBoundary: {
             httpClientKind: "injected",
             networkUsed: false,
             secret_material_injected: false,
           },
+          productionTransportGate: buildAgentRealProductionTransportGateSnapshot({
+            realHttpEnabled: true,
+            allowNetwork: context.policy.allowNetwork,
+            allowedHosts: ["injected-local-transport"],
+            endpointMapped: true,
+            credentialRefPresent: true,
+            credentialResolverPresent: true,
+            quotaPolicyReady: true,
+            costMetricsReady: true,
+          }),
           networkUsed: false,
           processSpawned: false,
           secret_material_read: false,

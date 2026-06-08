@@ -38,12 +38,12 @@ describe("AgentRealRuntime", () => {
 
     expect(res).toMatchObject({
       status: "failed",
-      errorType: "external_unavailable",
+      errorType: "permission_denied",
       retryable: false,
       metadata: {
         adapterMode: "real",
         providerKind: "openai_compatible",
-        providerErrorType: "connection_failed",
+        providerErrorType: "auth_failed",
         realTransportInjected: false,
         secret_material_read: false,
         secret_material_returned: false,
@@ -70,6 +70,17 @@ describe("AgentRealRuntime", () => {
           secret_material_injected: false,
         },
         providerRequestId: "fake-agent-provider-http-request",
+        httpStatusCode: 200,
+        providerDurationMs: 0,
+        productionTransportGate: {
+          ready: true,
+          checks: {
+            credentialResolverPresent: true,
+            quotaPolicyReady: true,
+            costMetricsReady: true,
+          },
+        },
+        costEstimate: { source: "not_calculated", amount: null, currency: null },
         secret_material_read: false,
         secret_material_returned: false,
         realTransportInjected: true,

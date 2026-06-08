@@ -89,6 +89,8 @@ function isSecretKey(key: string): boolean {
     "secret_material_read",
     "secretmaterialreturned",
     "secret_material_returned",
+    "credentialresolverpresent",
+    "credential_resolver_present",
     "tokenusage",
     "token_usage",
   ].includes(normalized))

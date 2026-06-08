@@ -40,15 +40,39 @@ describe("RealAgentProviderHttpClient skeleton", () => {
   });
 
   it("requires endpoint mapping and host allowlist before using transport", async () => {
-    await expect(new RealAgentProviderHttpClient(policy({ endpointMap: {} })).send(request(), {
+    await expect(new RealAgentProviderHttpClient(
+      policy({ endpointMap: {}, allowInsecureCredentialRefPassthrough: true }),
+    ).send(request(), {
       signal: new AbortController().signal,
       timeoutMs: 30000,
     })).rejects.toMatchObject({ type: "connection_failed", retryable: false });
 
-    await expect(new RealAgentProviderHttpClient(policy({ allowedHosts: ["other.test"] })).send(request(), {
+    await expect(new RealAgentProviderHttpClient(
+      policy({ allowedHosts: ["other.test"], allowInsecureCredentialRefPassthrough: true }),
+    ).send(request(), {
       signal: new AbortController().signal,
       timeoutMs: 30000,
     })).rejects.toMatchObject({ type: "network_disabled", retryable: false });
+  });
+
+  it("requires credential resolver before production transport can be used", async () => {
+    let called = false;
+    const transport: IAgentProviderHttpTransport = {
+      async send() {
+        called = true;
+        throw new Error("should not call transport");
+      },
+    };
+
+    await expect(new RealAgentProviderHttpClient(policy(), transport).send(request(), {
+      signal: new AbortController().signal,
+      timeoutMs: 30000,
+    })).rejects.toMatchObject({
+      type: "auth_failed",
+      retryable: false,
+      message: expect.stringContaining("credential_resolver"),
+    });
+    expect(called).toBe(false);
   });
 
   it("uses injected transport without injecting secret material", async () => {
@@ -69,7 +93,10 @@ describe("RealAgentProviderHttpClient skeleton", () => {
     };
 
     const controller = new AbortController();
-    const res = await new RealAgentProviderHttpClient(policy(), transport).send(request(), {
+    const res = await new RealAgentProviderHttpClient(
+      policy({ allowInsecureCredentialRefPassthrough: true }),
+      transport,
+    ).send(request(), {
       signal: controller.signal,
       timeoutMs: 30000,
     });
@@ -171,7 +198,10 @@ describe("RealAgentProviderHttpClient skeleton", () => {
           };
         },
       };
-      await expect(new RealAgentProviderHttpClient(policy(), transport).send(request(), {
+      await expect(new RealAgentProviderHttpClient(
+        policy({ allowInsecureCredentialRefPassthrough: true }),
+        transport,
+      ).send(request(), {
         signal: new AbortController().signal,
         timeoutMs: 30000,
       })).rejects.toMatchObject({ type, retryable, statusCode, providerRequestId: `req-${statusCode}` });
@@ -189,7 +219,10 @@ describe("RealAgentProviderHttpClient skeleton", () => {
       },
     };
 
-    await expect(new RealAgentProviderHttpClient(policy(), transport).send(request(), {
+    await expect(new RealAgentProviderHttpClient(
+      policy({ allowInsecureCredentialRefPassthrough: true }),
+      transport,
+    ).send(request(), {
       signal: new AbortController().signal,
       timeoutMs: 5,
     })).rejects.toMatchObject({ type: "timeout", retryable: true, statusCode: 408 });
@@ -210,7 +243,10 @@ describe("RealAgentProviderHttpClient skeleton", () => {
     };
 
     const controller = new AbortController();
-    const pending = new RealAgentProviderHttpClient(policy(), transport).send(request(), {
+    const pending = new RealAgentProviderHttpClient(
+      policy({ allowInsecureCredentialRefPassthrough: true }),
+      transport,
+    ).send(request(), {
       signal: controller.signal,
       timeoutMs: 30000,
     });
