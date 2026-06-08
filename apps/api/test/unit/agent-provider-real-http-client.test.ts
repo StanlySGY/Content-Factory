@@ -75,7 +75,9 @@ describe("RealAgentProviderHttpClient skeleton", () => {
     });
 
     expect(res.providerRequestId).toBe("real-provider-request");
-    expect(seenSignal).toBe(controller.signal);
+    expect(seenSignal).not.toBeNull();
+    expect(seenSignal).not.toBe(controller.signal);
+    expect(seenSignal!.aborted).toBe(false);
     expect(JSON.stringify(seenHeaders)).not.toContain("Bearer");
     expect(JSON.stringify(seenHeaders)).not.toContain("sk-");
     expect(seenHeaders.authorization_ref).toBe("secret://llm/openai-compatible");
@@ -106,5 +108,47 @@ describe("RealAgentProviderHttpClient skeleton", () => {
         timeoutMs: 30000,
       })).rejects.toMatchObject({ type, retryable, statusCode, providerRequestId: `req-${statusCode}` });
     }
+  });
+
+  it("aborts the transport signal and maps client timeout without network IO", async () => {
+    let transportAbortSeen = false;
+    const transport: IAgentProviderHttpTransport = {
+      async send(input) {
+        input.signal.addEventListener("abort", () => {
+          transportAbortSeen = true;
+        });
+        return new Promise(() => undefined);
+      },
+    };
+
+    await expect(new RealAgentProviderHttpClient(policy(), transport).send(request(), {
+      signal: new AbortController().signal,
+      timeoutMs: 5,
+    })).rejects.toMatchObject({ type: "timeout", retryable: true, statusCode: 408 });
+    expect(transportAbortSeen).toBe(true);
+  });
+
+  it("propagates parent abort to the transport boundary", async () => {
+    let transportAbortSeen = false;
+    const transport: IAgentProviderHttpTransport = {
+      async send(input) {
+        return new Promise((_, reject) => {
+          input.signal.addEventListener("abort", () => {
+            transportAbortSeen = true;
+            reject({ type: "aborted", retryable: true, statusCode: 408, message: "request aborted" });
+          });
+        });
+      },
+    };
+
+    const controller = new AbortController();
+    const pending = new RealAgentProviderHttpClient(policy(), transport).send(request(), {
+      signal: controller.signal,
+      timeoutMs: 30000,
+    });
+    controller.abort();
+
+    await expect(pending).rejects.toMatchObject({ type: "aborted", retryable: true, statusCode: 408 });
+    expect(transportAbortSeen).toBe(true);
   });
 });

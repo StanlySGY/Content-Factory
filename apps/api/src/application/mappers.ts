@@ -592,6 +592,10 @@ export function toAgentRealHttpAdapterReadinessDTO(
     runtime_mode: s.runtimeMode,
     blocked_real_adapter_reason: s.blockedRealAdapterReason,
     secret_material_injected: s.secretMaterialInjected,
+    real_http_timeout_abort_harness_ready: s.realHttpTimeoutAbortHarnessReady,
+    transport_signal_forwarded: s.transportSignalForwarded,
+    timeout_error_type: s.timeoutErrorType,
+    abort_error_type: s.abortErrorType,
   };
 }
 

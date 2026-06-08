@@ -57,6 +57,10 @@ describe("Agent real HTTP adapter ops readiness", () => {
       runtime_mode: "real_enabled",
       blocked_real_adapter_reason: "no real adapter registered",
       secret_material_injected: false,
+      real_http_timeout_abort_harness_ready: true,
+      transport_signal_forwarded: true,
+      timeout_error_type: "timeout",
+      abort_error_type: "aborted",
     });
     expect(await countRows(executionJobs)).toBe(before.jobs);
     expect(await countRows(executionResults)).toBe(before.results);

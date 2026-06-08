@@ -39,6 +39,19 @@ function httpError(input: AgentProviderHttpError): AgentProviderHttpError {
   return input;
 }
 
+function timeoutError(timeoutMs: number): AgentProviderHttpError {
+  return httpError({
+    type: "timeout",
+    retryable: true,
+    statusCode: 408,
+    message: `request timed out after ${timeoutMs}ms`,
+  });
+}
+
+function abortedError(): AgentProviderHttpError {
+  return httpError({ type: "aborted", retryable: true, statusCode: 408, message: "request aborted" });
+}
+
 function messageFromBody(body: Record<string, unknown>, fallback: string): string {
   const message = body.message;
   return typeof message === "string" && message.trim().length > 0 ? message : fallback;
@@ -86,20 +99,46 @@ export class RealAgentProviderHttpClient implements IAgentProviderHttpClient {
     context: AgentProviderHttpClientContext,
   ): Promise<AgentProviderHttpResponse> {
     validateAgentProviderHttpRequest(request);
-    if (context.signal.aborted)
-      throw httpError({ type: "aborted", retryable: true, statusCode: 408, message: "request aborted" });
+    if (context.signal.aborted) throw abortedError();
     if (!this.policy.realHttpEnabled || !this.policy.allowNetwork)
       throw httpError({ type: "network_disabled", retryable: false, message: "real HTTP network execution is disabled" });
 
     const url = resolveEndpoint(request.urlRef, this.policy);
-    const response = await this.transport.send({
-      url,
-      method: request.method,
-      headers: { ...request.headersRef },
-      body: request.body,
-      timeoutMs: context.timeoutMs,
-      signal: context.signal,
-      requestId: request.requestId,
+    const timeoutMs = Math.min(request.timeoutMs, context.timeoutMs);
+    const controller = new AbortController();
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    let removeParentAbortListener: (() => void) | null = null;
+
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(() => {
+        controller.abort();
+        reject(timeoutError(timeoutMs));
+      }, timeoutMs);
+    });
+    const parentAbortPromise = new Promise<never>((_, reject) => {
+      const onAbort = () => {
+        controller.abort();
+        reject(abortedError());
+      };
+      context.signal.addEventListener("abort", onAbort, { once: true });
+      removeParentAbortListener = () => context.signal.removeEventListener("abort", onAbort);
+    });
+
+    const response = await Promise.race([
+      this.transport.send({
+        url,
+        method: request.method,
+        headers: { ...request.headersRef },
+        body: request.body,
+        timeoutMs,
+        signal: controller.signal,
+        requestId: request.requestId,
+      }),
+      timeoutPromise,
+      parentAbortPromise,
+    ]).finally(() => {
+      if (timeoutId) clearTimeout(timeoutId);
+      removeParentAbortListener?.();
     });
     validateAgentProviderHttpResponse(response);
     const statusError = errorFromStatus(response);

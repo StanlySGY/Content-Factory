@@ -145,6 +145,10 @@ export interface AgentRealHttpAdapterReadiness {
   runtimeMode: RuntimeSafetyPolicy["mode"];
   blockedRealAdapterReason: "no real adapter registered";
   secretMaterialInjected: false;
+  realHttpTimeoutAbortHarnessReady: true;
+  transportSignalForwarded: true;
+  timeoutErrorType: "timeout";
+  abortErrorType: "aborted";
 }
 
 export interface SecretInjectionPreflightReadiness {
@@ -309,6 +313,10 @@ export class ExecutionOpsService {
       runtimeMode: this.config.runtimeSafetyPolicy.mode,
       blockedRealAdapterReason: "no real adapter registered",
       secretMaterialInjected: false,
+      realHttpTimeoutAbortHarnessReady: true,
+      transportSignalForwarded: true,
+      timeoutErrorType: "timeout",
+      abortErrorType: "aborted",
     };
   }
 

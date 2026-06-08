@@ -1164,6 +1164,10 @@ export const AgentRealHttpAdapterReadinessResponseSchema = Type.Object(
     runtime_mode: RuntimeModeSchema,
     blocked_real_adapter_reason: Type.String(),
     secret_material_injected: Type.Boolean(),
+    real_http_timeout_abort_harness_ready: Type.Boolean(),
+    transport_signal_forwarded: Type.Boolean(),
+    timeout_error_type: StringEnum(["timeout"] as const),
+    abort_error_type: StringEnum(["aborted"] as const),
   },
   { additionalProperties: false },
 );
