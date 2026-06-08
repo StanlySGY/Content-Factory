@@ -195,11 +195,15 @@ pnpm --dir apps/api exec vitest run \
 
 ---
 
-## 8. Phase 2.30 建议
+## 8. Phase 2 收口结论
 
-下一步建议进入 **Writeback Executor No-op Invocation Contract Disabled Harness**：
+Phase 2 停止于 Phase 2.29。后续不再新增 Phase 2.30 / 2.31 disabled harness。
 
-1. 定义真实 writeback executor 的 invocation input/output/error contract。
-2. 通过 registration readiness gate 阻止 invocation。
-3. 当前只返回 blocked no-op invocation result，明确 `invoked=false`、`controlPlaneReadPerformed=false`、`controlPlaneWritePerformed=false`、`auditWritePerformed=false`。
-4. 不读取、不写入任何控制面表。
+原因：
+
+1. Phase 2.29 已经定义真实 writeback executor 的 registry / descriptor / registration readiness contract。
+2. `registered=false` / `registrationAllowed=false` / `executable=false` 已足够阻止 invocation。
+3. 继续添加 no-op invocation disabled harness 会增加 API 和测试表面积，但不会显著降低真实实现风险。
+4. 下一阶段应进入 Sprint-6 真实能力路线选择：Agent Real Runtime MVP、Workflow Stage Writeback MVP 或 MCP Runtime Safety MVP。
+
+详见：`docs/reviews/sprint-5-execution-phase2-exit-readiness-audit.md` 与 `docs/reviews/sprint-6-implementation-roadmap.md`。

@@ -143,13 +143,19 @@
 - [缺失][必须] 真实 writeback guard 执行版：在写 `stage_runs/assets/reviews` 前校验状态机允许边、ledger 状态、audit 计划与 feature flag，并执行同事务写入。
 - [缺失][必须] 真实 writeback transaction executor：按 plan 在同一事务内读取 subject、校验 ADR-006 状态边、更新控制面、追加 audit event、最后标记 writeback applied。
 
-## 12. 最小 Phase 2 Spike 建议
+## 12. Phase 2 收口与 Sprint-6 路线建议
 
-1. **Writeback Executor No-op Invocation Contract Disabled Harness**：定义真实 writeback executor invocation input/output/error contract，但通过 registration readiness 阻止执行；当前返回 `invoked=false` / `blocked`，不读写控制面。
-2. **Relay 真实回写 spike**：在 readiness handler、lease、writeback ledger、guard、transaction plan、apply guard、transaction prototype、transaction port、state transition policy、subject snapshot 与 executor registration readiness 基础上实现单一 subject 类型的幂等 control-plane writeback，经 ADR-006 状态机，不旁路。
-3. **Agent Real Transport spike**：在 `AgentRealRuntime` skeleton 基础上接真实 HTTP transport 与真实 secret material 注入，但仍需独立 kill switch 与人工确认。
-4. **MCP Real Runtime safety spike**：先做 stdio/process cancel + sandbox/资源限额，再接 transport。
-5. 各 spike 独立验证后再合流；Publisher 单独立项，不混入。
+Phase 2 readiness / disabled harness 阶段已在 Phase 2.29 收口。后续不再新增 Phase 2.30 / 2.31 disabled harness。
+
+Sprint-6 推荐三选一进入真实能力落地：
+
+| 优先级 | 路线 | 目标 | 前置条件 | 主要风险 |
+|---|---|---|---|---|
+| 1 | Agent Real Runtime MVP | 在显式测试配置中让 `agent:real` 完成 provider HTTP closed-loop，输出仍限制在 `execution_results` / outbox | runtime safety、HTTP boundary、timeout/abort、secret resolver 测试实现 | secret 泄漏、成本失控、网络策略错误 |
+| 2 | Workflow Stage Writeback MVP | 对 `workflow_stage_run` 单 subject 做真实幂等回写，经 ADR-006 状态机与 audit 同事务 | writeback ledger、lease、transaction port、state policy、subject snapshot、registration contract | 状态机绕过、audit 原子性、重复投递 |
+| 3 | MCP Runtime Safety MVP | 先实现 MCP process/transport 安全边界，再考虑真实 MCP 调用 | runtime context、process spawn kill switch、risk level model | sandbox 逃逸、资源耗尽、高风险工具误执行 |
+
+Publisher MVP 暂缓：它需要 `publish_records`、preview / approval / rollback 独立产品线，不应混入 Real Adapter 或 Writeback MVP。
 
 ---
 
