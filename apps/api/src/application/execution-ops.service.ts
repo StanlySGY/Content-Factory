@@ -22,6 +22,10 @@ import {
   type ExecutionWritebackStateTransitionPolicyReadiness,
 } from "../domain/execution/writeback-state-transition-policy.js";
 import {
+  buildExecutionWritebackSubjectSnapshotReadiness,
+  type ExecutionWritebackSubjectSnapshotReadiness,
+} from "../domain/execution/writeback-subject-snapshot.js";
+import {
   buildExecutionWritebackTransactionPrototypeReadiness,
   type ExecutionWritebackTransactionPrototypeReadiness,
 } from "../domain/execution/writeback-transaction-prototype.js";
@@ -461,6 +465,10 @@ export class ExecutionOpsService {
 
   getWritebackStateTransitionPolicyReadiness(): ExecutionWritebackStateTransitionPolicyReadiness {
     return buildExecutionWritebackStateTransitionPolicyReadiness();
+  }
+
+  getWritebackSubjectSnapshotReadiness(): ExecutionWritebackSubjectSnapshotReadiness {
+    return buildExecutionWritebackSubjectSnapshotReadiness();
   }
 
   async dryRunRuntimeAdapter(input: {

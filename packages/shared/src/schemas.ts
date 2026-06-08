@@ -1340,6 +1340,83 @@ export type ExecutionWritebackStateTransitionPolicyReadinessResponse = Static<
   typeof ExecutionWritebackStateTransitionPolicyReadinessResponseSchema
 >;
 
+export const WorkflowStageRunSnapshotFieldNameSchema = StringEnum([
+  "id",
+  "workflow_run_id",
+  "workflow_stage_id",
+  "status",
+  "attempt_count",
+  "gate_result",
+  "updated_at",
+] as const);
+
+export const WorkflowStageRunSubjectSnapshotFieldSchema = Type.Object(
+  {
+    name: WorkflowStageRunSnapshotFieldNameSchema,
+    type: StringEnum(["uuid", "stage_run_status", "integer", "json", "datetime"] as const),
+    required: Type.Boolean(),
+    nullable: Type.Boolean(),
+    redacted: Type.Boolean(),
+  },
+  { additionalProperties: false },
+);
+export type WorkflowStageRunSubjectSnapshotFieldDTO = Static<
+  typeof WorkflowStageRunSubjectSnapshotFieldSchema
+>;
+
+export const WorkflowStageRunSubjectSnapshotSampleSchema = Type.Object(
+  {
+    id: Type.Null(),
+    workflow_run_id: Type.Null(),
+    workflow_stage_id: Type.Null(),
+    status: Type.Null(),
+    attempt_count: Type.Null(),
+    gate_result: Type.Null(),
+    updated_at: Type.Null(),
+  },
+  { additionalProperties: false },
+);
+
+export const WorkflowStageRunSubjectSnapshotShapeSchema = Type.Object(
+  {
+    subject_type: StringEnum(["workflow_stage_run"] as const),
+    source_table: StringEnum(["stage_runs"] as const),
+    fields: Type.Array(WorkflowStageRunSubjectSnapshotFieldSchema),
+    sample: WorkflowStageRunSubjectSnapshotSampleSchema,
+    db_read_performed: Type.Boolean(),
+    control_plane_write_performed: Type.Boolean(),
+    redaction_applied: Type.Boolean(),
+    redaction_policy: StringEnum(["metadata_only_no_secret_material"] as const),
+  },
+  { additionalProperties: false },
+);
+export type WorkflowStageRunSubjectSnapshotShapeDTO = Static<
+  typeof WorkflowStageRunSubjectSnapshotShapeSchema
+>;
+
+export const ExecutionWritebackSubjectSnapshotReadinessResponseSchema = Type.Object(
+  {
+    mode: StringEnum(["disabled_subject_snapshot_readiness"] as const),
+    enabled: Type.Boolean(),
+    executable: Type.Boolean(),
+    subject_type: StringEnum(["workflow_stage_run"] as const),
+    snapshot_reader_registered: Type.Boolean(),
+    can_read_subject: Type.Boolean(),
+    can_build_snapshot: Type.Boolean(),
+    can_persist_snapshot: Type.Boolean(),
+    redaction_required: Type.Boolean(),
+    sample_snapshot_built: Type.Boolean(),
+    required_fields: Type.Array(WorkflowStageRunSnapshotFieldNameSchema),
+    snapshot_shape: WorkflowStageRunSubjectSnapshotShapeSchema,
+    missing_requirements: Type.Array(Type.String()),
+    next_phase_requirements: Type.Array(Type.String()),
+  },
+  { additionalProperties: false },
+);
+export type ExecutionWritebackSubjectSnapshotReadinessResponse = Static<
+  typeof ExecutionWritebackSubjectSnapshotReadinessResponseSchema
+>;
+
 // ---- Execution Ops (S5 Phase 1.10；运维健康观测 + 恢复控制，仅 execution plane) ----
 export const ExecutionSystemHealthSchema = Type.Object(
   {

@@ -20,6 +20,7 @@ import type {
   ExecutionWritebackGuardDTO,
   ExecutionWritebackGuardReadinessResponse,
   ExecutionWritebackStateTransitionPolicyReadinessResponse,
+  ExecutionWritebackSubjectSnapshotReadinessResponse,
   ExecutionWritebackTransactionPlanDTO,
   ExecutionWritebackTransactionPlanReadinessResponse,
   ExecutionWritebackTransactionPortReadinessResponse,
@@ -80,6 +81,7 @@ import type {
   ExecutionWritebackTransactionPlanReadiness,
 } from "../domain/execution/writeback-transaction-plan.js";
 import type { ExecutionWritebackStateTransitionPolicyReadiness } from "../domain/execution/writeback-state-transition-policy.js";
+import type { ExecutionWritebackSubjectSnapshotReadiness } from "../domain/execution/writeback-subject-snapshot.js";
 import type {
   ExecutionWritebackTransactionPrototype,
   ExecutionWritebackTransactionPrototypeReadiness,
@@ -762,6 +764,42 @@ export function toExecutionWritebackStateTransitionPolicyReadinessDTO(
       control_plane_write_performed: evaluation.controlPlaneWritePerformed,
       missing_requirements: evaluation.missingRequirements,
     })),
+    missing_requirements: r.missingRequirements,
+    next_phase_requirements: r.nextPhaseRequirements,
+  };
+}
+
+export function toExecutionWritebackSubjectSnapshotReadinessDTO(
+  r: ExecutionWritebackSubjectSnapshotReadiness,
+): ExecutionWritebackSubjectSnapshotReadinessResponse {
+  return {
+    mode: r.mode,
+    enabled: r.enabled,
+    executable: r.executable,
+    subject_type: r.subjectType,
+    snapshot_reader_registered: r.snapshotReaderRegistered,
+    can_read_subject: r.canReadSubject,
+    can_build_snapshot: r.canBuildSnapshot,
+    can_persist_snapshot: r.canPersistSnapshot,
+    redaction_required: r.redactionRequired,
+    sample_snapshot_built: r.sampleSnapshotBuilt,
+    required_fields: r.requiredFields,
+    snapshot_shape: {
+      subject_type: r.snapshotShape.subjectType,
+      source_table: r.snapshotShape.sourceTable,
+      fields: r.snapshotShape.fields.map((field) => ({
+        name: field.name,
+        type: field.type,
+        required: field.required,
+        nullable: field.nullable,
+        redacted: field.redacted,
+      })),
+      sample: r.snapshotShape.sample,
+      db_read_performed: r.snapshotShape.dbReadPerformed,
+      control_plane_write_performed: r.snapshotShape.controlPlaneWritePerformed,
+      redaction_applied: r.snapshotShape.redactionApplied,
+      redaction_policy: r.snapshotShape.redactionPolicy,
+    },
     missing_requirements: r.missingRequirements,
     next_phase_requirements: r.nextPhaseRequirements,
   };

@@ -9,6 +9,7 @@ import {
   ExecutionWritebackDryRunReadinessResponseSchema,
   ExecutionWritebackGuardReadinessResponseSchema,
   ExecutionWritebackStateTransitionPolicyReadinessResponseSchema,
+  ExecutionWritebackSubjectSnapshotReadinessResponseSchema,
   ExecutionWritebackTransactionPlanReadinessResponseSchema,
   ExecutionWritebackTransactionPortReadinessResponseSchema,
   ExecutionWritebackTransactionPrototypeReadinessResponseSchema,
@@ -44,6 +45,7 @@ import {
   toExecutionWritebackDryRunReadinessDTO,
   toExecutionWritebackGuardReadinessDTO,
   toExecutionWritebackStateTransitionPolicyReadinessDTO,
+  toExecutionWritebackSubjectSnapshotReadinessDTO,
   toExecutionWritebackTransactionPlanReadinessDTO,
   toExecutionWritebackTransactionPortReadinessDTO,
   toExecutionWritebackTransactionPrototypeReadinessDTO,
@@ -196,6 +198,15 @@ export const executionOpsRoutes: FastifyPluginAsyncTypebox<ExecutionOpsRoutesOpt
     async () =>
       toExecutionWritebackStateTransitionPolicyReadinessDTO(
         executionOpsService.getWritebackStateTransitionPolicyReadiness(),
+      ),
+  );
+
+  app.get(
+    "/api/execution/ops/writeback-subject-snapshot-readiness",
+    { schema: { response: { 200: ExecutionWritebackSubjectSnapshotReadinessResponseSchema } } },
+    async () =>
+      toExecutionWritebackSubjectSnapshotReadinessDTO(
+        executionOpsService.getWritebackSubjectSnapshotReadiness(),
       ),
   );
 
