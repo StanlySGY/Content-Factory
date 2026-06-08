@@ -39,6 +39,73 @@ export interface IAgentProviderHttpTransport {
   send(request: AgentProviderHttpTransportRequest): Promise<AgentProviderHttpResponse>;
 }
 
+export type AgentProviderFetch = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
+
+function providerRequestIdFromHeaders(headers: Headers): string | undefined {
+  return headers.get("x-request-id") ?? headers.get("x-provider-request-id") ?? headers.get("openai-request-id") ?? undefined;
+}
+
+function safeResponseHeaders(headers: Headers): Record<string, unknown> {
+  const snapshot: Record<string, unknown> = {};
+  for (const [key, value] of headers.entries()) {
+    if (/authorization|api[-_]?key|token|secret|credential/i.test(key)) continue;
+    snapshot[key] = value;
+  }
+  return snapshot;
+}
+
+export class FetchAgentProviderHttpTransport implements IAgentProviderHttpTransport {
+  constructor(private readonly fetchFn: AgentProviderFetch = globalThis.fetch.bind(globalThis)) {}
+
+  async send(request: AgentProviderHttpTransportRequest): Promise<AgentProviderHttpResponse> {
+    const started = Date.now();
+    try {
+      const response = await this.fetchFn(request.url, {
+        method: request.method,
+        headers: {
+          "content-type": "application/json",
+          ...request.headers,
+        },
+        body: JSON.stringify(request.body),
+        signal: request.signal,
+      });
+      const rawBody = await response.text();
+      let bodySnapshot: Record<string, unknown> = {};
+      if (rawBody.trim().length > 0) {
+        const parsed = JSON.parse(rawBody) as unknown;
+        bodySnapshot = parsed !== null && typeof parsed === "object" && !Array.isArray(parsed) ?
+          parsed as Record<string, unknown> :
+          { value: parsed };
+      }
+      return {
+        statusCode: response.status,
+        headersSnapshot: safeResponseHeaders(response.headers),
+        bodySnapshot,
+        providerRequestId: providerRequestIdFromHeaders(response.headers) ?? request.requestId,
+        durationMs: Math.max(0, Date.now() - started),
+      };
+    } catch (e) {
+      if (e instanceof SyntaxError) {
+        throw httpError({
+          type: "malformed_response",
+          retryable: false,
+          message: e.message,
+          providerRequestId: request.requestId,
+        });
+      }
+      if (request.signal.aborted) {
+        throw abortedError();
+      }
+      throw httpError({
+        type: "connection_failed",
+        retryable: true,
+        message: e instanceof Error ? e.message : String(e),
+        providerRequestId: request.requestId,
+      });
+    }
+  }
+}
+
 export class DisabledAgentProviderHttpTransport implements IAgentProviderHttpTransport {
   async send(): Promise<AgentProviderHttpResponse> {
     throw httpError({ type: "connection_failed", retryable: false, message: "no real HTTP transport registered" });
@@ -108,6 +175,14 @@ export class RealAgentProviderHttpClient implements IAgentProviderHttpClient {
     private readonly transport: IAgentProviderHttpTransport = new DisabledAgentProviderHttpTransport(),
     private readonly credentialResolver: IRuntimeCredentialResolver | null = null,
   ) {}
+
+  describeBoundary(): Record<string, unknown> {
+    return {
+      httpClientKind: "real",
+      networkUsed: this.transport instanceof DisabledAgentProviderHttpTransport ? false : this.policy.allowNetwork,
+      secret_material_injected: Boolean(this.credentialResolver),
+    };
+  }
 
   async send(
     request: AgentProviderHttpRequest,

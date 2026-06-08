@@ -27,6 +27,7 @@ export interface Env {
   executionRequireCredentialRef: boolean;
   executionRedactSnapshots: boolean;
   executionRuntimeMaxTimeoutMs: number;
+  agentOpenAICompatibleEndpoint: string | null;
   outboxRelayEnabled: boolean;
   outboxRelayIntervalMs: number;
 }
@@ -86,6 +87,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     executionRequireCredentialRef: bool(source.EXECUTION_REQUIRE_CREDENTIAL_REF, true),
     executionRedactSnapshots: bool(source.EXECUTION_REDACT_SNAPSHOTS, true),
     executionRuntimeMaxTimeoutMs: Number(source.EXECUTION_RUNTIME_MAX_TIMEOUT_MS ?? 300000),
+    agentOpenAICompatibleEndpoint: source.AGENT_OPENAI_COMPATIBLE_ENDPOINT ?? null,
     outboxRelayEnabled: bool(source.OUTBOX_RELAY_ENABLED, false),
     outboxRelayIntervalMs: Number(source.OUTBOX_RELAY_INTERVAL_MS ?? 5000),
   };

@@ -108,6 +108,7 @@ export class AgentRealRuntime implements IAgentRuntime {
         signal: context.abortSignal,
       });
       const durationMs = Math.max(0, Date.now() - started);
+      const httpBoundary = this.httpBoundaryMetadata();
       let normalized: ReturnType<typeof normalizeOpenAICompatibleRawResponse>;
       try {
         normalized = normalizeOpenAICompatibleRawResponse(raw.bodySnapshot as unknown as OpenAICompatibleRawResponse);
@@ -132,11 +133,9 @@ export class AgentRealRuntime implements IAgentRuntime {
                 providerRequestId: raw.providerRequestId,
               }),
               httpBoundary: {
-                httpClientKind: "injected",
-                networkUsed: false,
-                secret_material_injected: false,
+                ...httpBoundary,
               },
-              networkUsed: false,
+              networkUsed: httpBoundary.networkUsed === true,
               processSpawned: false,
               secret_material_read: false,
               secret_material_returned: false,
@@ -166,11 +165,7 @@ export class AgentRealRuntime implements IAgentRuntime {
           httpStatusCode: raw.statusCode,
           providerDurationMs: raw.durationMs,
           providerResponseContract: normalized.envelope,
-          httpBoundary: {
-            httpClientKind: "injected",
-            networkUsed: false,
-            secret_material_injected: false,
-          },
+          httpBoundary,
           productionTransportGate: buildAgentRealProductionTransportGateSnapshot({
             realHttpEnabled: true,
             allowNetwork: context.policy.allowNetwork,
@@ -181,9 +176,9 @@ export class AgentRealRuntime implements IAgentRuntime {
             quotaPolicyReady: true,
             costMetricsReady: true,
           }),
-          networkUsed: false,
+          networkUsed: httpBoundary.networkUsed === true,
           processSpawned: false,
-          secret_material_read: false,
+          secret_material_read: httpBoundary.secret_material_injected === true,
           secret_material_returned: false,
           realTransportInjected: this.httpClient.constructor.name !== "RealAgentProviderHttpClient",
           request: requestSnapshot,
@@ -209,13 +204,11 @@ export class AgentRealRuntime implements IAgentRuntime {
             providerRequestId: e.providerRequestId,
             httpStatusCode: e.statusCode,
             httpBoundary: {
-              httpClientKind: "real",
-              networkUsed: false,
-              secret_material_injected: false,
+              ...this.httpBoundaryMetadata(),
             },
-            networkUsed: false,
+            networkUsed: this.httpBoundaryMetadata().networkUsed === true,
             processSpawned: false,
-            secret_material_read: false,
+            secret_material_read: this.httpBoundaryMetadata().secret_material_injected === true,
             secret_material_returned: false,
             realTransportInjected: false,
             ...(requestSnapshot ? { request: requestSnapshot } : {}),
@@ -245,6 +238,15 @@ export class AgentRealRuntime implements IAgentRuntime {
         secret_material_returned: false,
         realTransportInjected: this.httpClient.constructor.name !== "RealAgentProviderHttpClient",
       },
+    };
+  }
+
+  private httpBoundaryMetadata(): Record<string, unknown> {
+    const describer = this.httpClient as IAgentProviderHttpClient & { describeBoundary?: () => Record<string, unknown> };
+    return describer.describeBoundary?.() ?? {
+      httpClientKind: "injected",
+      networkUsed: false,
+      secret_material_injected: false,
     };
   }
 }

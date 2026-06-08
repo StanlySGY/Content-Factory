@@ -1,8 +1,9 @@
-# Execution Ops Runbook（Sprint-10）
+# Execution Ops Runbook（Sprint-10 + Productization-1）
 
 > execution layer（异步执行平面）运维手册。
 > 默认运行仍 fail-closed：worker / relay 均由 env 开关控制，默认 relay 使用 no-op handlers，不自动回写控制面。
 > Sprint-9 已提供显式 `workflow_stage_run` writeback handler；只有显式装配该 handler 时，terminal execution event 才会经同事务 audit 保护回写 `stage_runs`。
+> Productization-1 已提供显式 `agent` OpenAI-compatible HTTP transport；只有显式 real runtime/network/secret gate 全部满足时才会调用外部 LLM。
 
 所有端点前缀 `/api/execution`。错误遵循统一结构（`{ error: { code, message, retryable }, request_id }`）。
 
@@ -151,9 +152,65 @@ pnpm --dir apps/api exec vitest run test/integration/sprint9-workflow-stage-writ
 
 ---
 
-## 9. 非目标 / 边界
+## 9. Agent Real LLM（显式产品化路径）
 
-- 不做真实外部 LLM 调用、不读生产 API Key、不连接生产 MCP server、不真实发布。
+启用条件：
+
+```text
+EXECUTION_RUNTIME_MODE=real_enabled
+EXECUTION_RUNTIME_ADAPTER_MODE=real
+EXECUTION_ALLOW_REAL_RUNTIME=true
+EXECUTION_ALLOW_NETWORK=true
+EXECUTION_SECRET_STORE_ENABLED=true
+EXECUTION_SECRET_INJECTION_ENABLED=true
+EXECUTION_NETWORK_ALLOWLIST=<provider host>
+AGENT_OPENAI_COMPATIBLE_ENDPOINT=https://<provider host>/v1/chat/completions
+```
+
+job payload 示例：
+
+```json
+{
+  "type": "agent",
+  "payload": {
+    "prompt": "Write a concise draft.",
+    "model": "gpt-4.1-mini",
+    "credential_ref": {
+      "provider": "openai_compatible",
+      "key_ref": "env://CONTENT_FACTORY_OPENAI_KEY",
+      "scope": "project"
+    }
+  },
+  "idempotency_key": "agent-real-llm-demo-1",
+  "max_attempts": 1
+}
+```
+
+安全边界：
+
+| 项 | 规则 |
+| --- | --- |
+| secret value | 只在 transport boundary 内作为 `Authorization: Bearer ...` 使用 |
+| snapshots | `execution_results` / `outbox_events` 不应包含 API key 或 Bearer |
+| allowlist | endpoint host 必须在 `EXECUTION_NETWORK_ALLOWLIST` |
+| timeout/cancel | 由 real HTTP client 传递 `AbortSignal` 并映射 timeout/abort |
+| control plane | 不自动写 `stage_runs/assets/reviews` |
+
+验证：
+
+```text
+pnpm --dir apps/api exec vitest run \
+  test/unit/env-runtime-credential-resolver.test.ts \
+  test/unit/fetch-agent-provider-http-transport.test.ts \
+  test/integration/productization-agent-real-llm-api.test.ts
+```
+
+---
+
+## 10. 非目标 / 边界
+
+- 默认不做真实外部 LLM 调用；只有 Productization-1 显式 gate 满足时才允许 `agent` 外部 LLM 调用。
+- 不连接生产 MCP server、不真实发布。
 - 不引入 Redis/MQ/BullMQ（纯 DB 轮询）。
 - 不改 Workflow/Review/Agent/MCP 状态机、不做 UI。
 - ops 默认不自动把 execution result 写回 stage_runs/assets/reviews。

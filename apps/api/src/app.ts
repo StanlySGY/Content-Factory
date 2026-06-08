@@ -15,6 +15,13 @@ import { ExecutionResultService } from "./application/execution-result.service.j
 import { ExecutionWritebackService } from "./application/execution-writeback.service.js";
 import { ExecutionWorker } from "./application/execution-worker.js";
 import { MockRuntimeAdapterFactory, type RuntimeAdapterFactory } from "./application/runtime/adapter-factory.js";
+import { AgentRealRuntime } from "./application/runtime/agent-real-runtime.js";
+import {
+  FetchAgentProviderHttpTransport,
+  RealAgentProviderHttpClient,
+  type AgentProviderFetch,
+} from "./application/runtime/agent-provider-real-http-client.js";
+import { EnvRuntimeCredentialResolver } from "./application/runtime/credential-resolver.js";
 import { McpRuntimeMockService } from "./application/mcp-runtime-mock.service.js";
 import { McpServerService } from "./application/mcp-server.service.js";
 import { McpToolService } from "./application/mcp-tool.service.js";
@@ -50,6 +57,43 @@ export interface BuiltApp {
 export interface BuildOptions {
   logger?: boolean;
   runtimeAdapterFactory?: RuntimeAdapterFactory;
+  fetchImplementation?: AgentProviderFetch;
+  credentialEnvSource?: NodeJS.ProcessEnv | Record<string, string | undefined>;
+}
+
+function shouldAssembleProductizedAgentRuntime(env: Env): boolean {
+  return env.executionRuntimeMode === "real_enabled" &&
+    env.executionRuntimeAdapterMode === "real" &&
+    env.executionAllowRealRuntime &&
+    env.executionAllowNetwork &&
+    env.executionSecretStoreEnabled &&
+    env.executionSecretInjectionEnabled &&
+    typeof env.agentOpenAICompatibleEndpoint === "string" &&
+    env.agentOpenAICompatibleEndpoint.trim().length > 0;
+}
+
+function buildRuntimeAdapterFactory(env: Env, policy: RuntimeSafetyPolicy, opts: BuildOptions): RuntimeAdapterFactory {
+  if (opts.runtimeAdapterFactory) return opts.runtimeAdapterFactory;
+  if (!shouldAssembleProductizedAgentRuntime(env))
+    return new MockRuntimeAdapterFactory({ ...policy, adapterMode: env.executionRuntimeAdapterMode });
+
+  const endpoint = env.agentOpenAICompatibleEndpoint!;
+  const host = new URL(endpoint).hostname;
+  const allowedHosts = env.executionNetworkAllowlist.length > 0 ? env.executionNetworkAllowlist : [host];
+  return new MockRuntimeAdapterFactory({
+    ...policy,
+    adapterMode: "real",
+    realAgentRuntime: new AgentRealRuntime(new RealAgentProviderHttpClient(
+      {
+        realHttpEnabled: true,
+        allowNetwork: true,
+        allowedHosts,
+        endpointMap: { "provider://openai-compatible/default": endpoint },
+      },
+      new FetchAgentProviderHttpTransport(opts.fetchImplementation),
+      new EnvRuntimeCredentialResolver(opts.credentialEnvSource ?? process.env),
+    )),
+  });
 }
 
 /** 装配应用（分层组装 + 依赖注入）；返回 app 供 server 监听或测试 inject */
@@ -80,8 +124,7 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
   validateRuntimeSafetyPolicy(runtimeSafetyPolicy);
   const executionWorker = new ExecutionWorker(
     db,
-    opts.runtimeAdapterFactory ??
-      new MockRuntimeAdapterFactory({ ...runtimeSafetyPolicy, adapterMode: env.executionRuntimeAdapterMode }),
+    buildRuntimeAdapterFactory(env, runtimeSafetyPolicy, opts),
     env.executionWorkerIntervalMs,
     env.executionWorkerLockTimeoutMs,
     env.executionRuntimeTimeoutMs,

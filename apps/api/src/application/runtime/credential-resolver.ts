@@ -153,6 +153,70 @@ export class MockCredentialResolver implements IRuntimeCredentialResolver {
   }
 }
 
+function envNameFromKeyRef(keyRef: string): string | null {
+  if (!keyRef.startsWith("env://")) return null;
+  const name = keyRef.slice("env://".length);
+  if (!/^[A-Z_][A-Z0-9_]*$/.test(name)) throw new ValidationError("runtime env credential ref must use an env var name");
+  return name;
+}
+
+export class EnvRuntimeCredentialResolver implements IRuntimeCredentialResolver {
+  constructor(private readonly source: NodeJS.ProcessEnv | Record<string, string | undefined> = process.env) {}
+
+  async resolve(ref: RuntimeCredentialRef): Promise<ResolvedRuntimeCredential> {
+    validateRuntimeCredentialRef(ref);
+    const envName = envNameFromKeyRef(ref.keyRef);
+    if (!envName) {
+      return {
+        provider: ref.provider,
+        scope: ref.scope,
+        keyRef: ref.keyRef,
+        resolved: false,
+        material: undefined,
+        metadata: {
+          resolver_kind: "env",
+          key_ref_scheme: ref.keyRef.split("://", 1)[0] + "://",
+          failure_reason: "unsupported_key_ref_scheme",
+          secret_material_present: false,
+          secret_material_returned_to_transport: false,
+        },
+      };
+    }
+    const material = this.source[envName];
+    if (typeof material !== "string" || material.trim().length === 0) {
+      return {
+        provider: ref.provider,
+        scope: ref.scope,
+        keyRef: ref.keyRef,
+        resolved: false,
+        material: undefined,
+        metadata: {
+          resolver_kind: "env",
+          key_ref_scheme: "env://",
+          env_name: envName,
+          failure_reason: "missing_env_var",
+          secret_material_present: false,
+          secret_material_returned_to_transport: false,
+        },
+      };
+    }
+    return {
+      provider: ref.provider,
+      scope: ref.scope,
+      keyRef: ref.keyRef,
+      resolved: true,
+      material,
+      metadata: {
+        resolver_kind: "env",
+        key_ref_scheme: "env://",
+        env_name: envName,
+        secret_material_present: true,
+        secret_material_returned_to_transport: true,
+      },
+    };
+  }
+}
+
 export class MockRuntimeSecretResolver implements IRuntimeSecretResolver {
   async resolve(ref: RuntimeSecretRef, context: RuntimeSecretResolverContext): Promise<RuntimeSecretResolution> {
     validateRuntimeSecretRef(ref);
