@@ -120,14 +120,18 @@ export function createDefaultRuntimeAdapterRegistry(): RuntimeAdapterRegistry {
             version: type === "mcp" ? "7.0.0" : "0.0.0",
             capabilities: type === "mcp"
               ? ["mcp_safety_boundary", "fake_local_harness", "high_risk_confirmation", "snapshot_redaction"]
-              : [],
+              : type === "publisher"
+                ? ["publisher_safety_boundary", "preview_required", "approval_gate", "rollback_plan_snapshot"]
+                : [],
             requiresCredentialRef: true,
-            allowNetwork: true,
+            allowNetwork: type !== "publisher",
             allowProcessSpawn: type === "mcp",
             status: "blocked",
             blockedReason: type === "mcp"
               ? "mcp safety runtime requires explicit local harness registration"
-              : "no real adapter registered",
+              : type === "publisher"
+                ? "publisher safety runtime requires explicit local harness registration"
+                : "no real adapter registered",
           },
     );
   }

@@ -89,4 +89,27 @@ describe("RuntimeAdapterRegistry", () => {
       ),
     ).toThrow(ValidationError);
   });
+
+  it("keeps the default publisher real safety runtime blocked until an explicit harness is registered", () => {
+    const registry = createDefaultRuntimeAdapterRegistry();
+
+    const publisherReal = registry.getAdapterDescriptor("publisher", "real");
+
+    expect(publisherReal).toMatchObject({
+      type: "publisher",
+      mode: "real",
+      status: "blocked",
+      allowNetwork: false,
+      allowProcessSpawn: false,
+      blockedReason: "publisher safety runtime requires explicit local harness registration",
+    });
+    expect(publisherReal.capabilities).toContain("publisher_safety_boundary");
+    expect(publisherReal.capabilities).toContain("approval_gate");
+    expect(() =>
+      assertAdapterAllowedBySafetyPolicy(
+        publisherReal,
+        policy({ mode: "real_enabled", allowRealExecution: true }),
+      ),
+    ).toThrow(ValidationError);
+  });
 });

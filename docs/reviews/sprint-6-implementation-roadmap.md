@@ -210,6 +210,22 @@
 
 ## 6. 路线 D：Publisher MVP
 
+### 当前进度
+
+| 项目 | 状态 |
+|---|---|
+| Sprint-8 Publisher Runtime Safety MVP | 已完成 |
+| fake/local publisher harness | 已完成 |
+| preview required before publish | 已验证 |
+| approval required before publish | 已验证 |
+| credentialRef 仅引用、不落 secret material | 已验证 |
+| idempotent publisher request id | 已验证 |
+| rollback/unpublish plan snapshot only | 已验证 |
+| 默认 `publisher:real` blocked | 保持 |
+| 输出限制在 `execution_results` / `outbox` | 已验证 |
+| Sprint-4 Control Plane 写入 | 未打开 |
+| 审计文档 | `docs/reviews/sprint-8-publisher-runtime-safety-audit.md` |
+
 ### 目标
 
 建立 Publisher 产品线的真实发布前置模型：`publish_records`、preview、approval、external credential policy 与 rollback/unpublish strategy。
@@ -254,35 +270,35 @@
 
 Sprint-6 Agent Real Runtime 已完成 MVP、Credential Boundary、Production Transport Gate 与 Provider Response Contract Hardening。
 Sprint-7 MCP Runtime Safety MVP 已完成 fake/local harness、sandbox、timeout/cancel、high-risk confirmation 与 snapshot redaction。
+Sprint-8 Publisher Runtime Safety MVP 已完成 fake/local harness、preview、approval gate、credential boundary、idempotent request id 与 rollback plan snapshot。
 
-不再继续新增 Phase 2.x；下一步进入有限 Sprint 路线，建议从 **Sprint-8 Publisher Runtime MVP** 开始：
+不再继续新增 Phase 2.x；下一步进入有限 Sprint 路线，建议从 **Sprint-9 Workflow Stage Writeback MVP** 开始：
 
 ```text
-实现 Sprint-8 Publisher Runtime MVP。
+实现 Sprint-9 Workflow Stage Writeback MVP。
 
-目标：在不调用真实外部发布平台、不读取生产 secret、不写 Sprint-4 Workflow/Review/Agent/MCP 状态机的前提下，
-为 Publisher runtime 建立发布前安全模型：preview、approval gate、credential boundary、idempotent request contract、rollback/unpublish plan snapshot。
+目标：首次打开 execution -> control plane 的真实回写，但只支持 workflow_stage_run 单 subject，并且必须经 ADR-006 状态边、writeback ledger 幂等保护、outbox relay handler、audit append 同事务保护。
 
 边界：
-- 不调用真实外部平台。
-- 不执行真实发布。
-- 不读取生产 secret。
-- 不写 stage_runs/assets/reviews/audit_events。
-- 不改 Workflow/Review/Agent/MCP 状态机。
+- 只允许 workflow_stage_run subject。
+- 不支持 content_asset / review_record / publisher_target 回写。
+- 不接真实 LLM / MCP / Publisher。
+- 不改变 execution job 状态机。
+- 不绕过 audit hash chain。
 - 不新增 Phase 2.x。
 
 要求：
 1. TDD 先行，先写失败测试并确认 RED。
-2. 新增 Publisher runtime safety domain / contract：
-   - preview required before publish；
-   - approval required before external publish；
-   - credentialRef 仅作为引用，不落库 secret material；
-   - duplicate publish idempotency key 稳定；
-   - rollback/unpublish plan 只写 snapshot，不真实执行。
-3. 新增 fake/local Publisher harness，仅测试使用，不连真实平台。
-4. Worker/runtime factory 只在显式配置下可选择 Publisher safety runtime，默认仍 mock/blocked。
-5. 不新增真实发布 DB 表；结果仍只进入 execution_results/outbox。
-6. 更新 Sprint-8 审计文档与 roadmap。
-7. 运行相关回归、API 全量、shared/web、typecheck、lint、git diff --check。
-8. 独立 commit 并 push origin main。
+2. 新增/启用 writeback relay handler，仅消费 terminal execution outbox event。
+3. 通过 result_id 读取 execution_results，通过 subject snapshot 定位 workflow_stage_run。
+4. 经 ADR-006 状态边执行：
+   - success result: running -> waiting_review
+   - failed result: running -> failed
+5. control-plane update 与 audit append 必须同事务；audit 失败必须回滚 stage update。
+6. writeback ledger 必须 exactly-once：重复 outbox process 幂等跳过。
+7. 非 running subject 必须 blocked/skipped，不更新控制面。
+8. 不支持的 subject type 必须 skipped/failed，不写控制面。
+9. 更新 Sprint-9 审计文档与 roadmap。
+10. 运行相关回归、API 全量、shared/web、typecheck、lint、git diff --check。
+11. 独立 commit 并 push origin main。
 ```

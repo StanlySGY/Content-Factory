@@ -17,6 +17,7 @@ import { AgentProviderPreflightRuntime } from "./provider-preflight-runtime.js";
 import { throwAgentRealAdapterDisabledFixture } from "./agent-real-adapter-disabled-fixture.js";
 import type { AgentRealRuntime } from "./agent-real-runtime.js";
 import type { MCPSafetyRuntime } from "./mcp-safety-runtime.js";
+import type { PublisherSafetyRuntime } from "./publisher-safety-runtime.js";
 import type { RuntimeAdapterMode } from "./adapter-registry.js";
 import {
   AgentMockRuntime,
@@ -37,6 +38,7 @@ export interface RuntimeAdapterFactoryOptions extends Partial<RuntimeSafetyPolic
   adapterMode?: RuntimeAdapterMode;
   realAgentRuntime?: AgentRealRuntime;
   mcpSafetyRuntime?: MCPSafetyRuntime;
+  publisherSafetyRuntime?: PublisherSafetyRuntime;
 }
 
 export class MockRuntimeAdapterFactory implements RuntimeAdapterFactory {
@@ -59,12 +61,20 @@ export class MockRuntimeAdapterFactory implements RuntimeAdapterFactory {
   private readonly agentProviderPreflightRuntime = new AgentProviderPreflightRuntime();
   private readonly realAgentRuntime: AgentRealRuntime | null;
   private readonly mcpSafetyRuntime: MCPSafetyRuntime | null;
+  private readonly publisherSafetyRuntime: PublisherSafetyRuntime | null;
 
   constructor(policy: RuntimeAdapterFactoryOptions = {}) {
-    const { adapterMode = "mock", realAgentRuntime = null, mcpSafetyRuntime = null, ...safetyPolicy } = policy;
+    const {
+      adapterMode = "mock",
+      realAgentRuntime = null,
+      mcpSafetyRuntime = null,
+      publisherSafetyRuntime = null,
+      ...safetyPolicy
+    } = policy;
     this.adapterMode = adapterMode;
     this.realAgentRuntime = realAgentRuntime;
     this.mcpSafetyRuntime = mcpSafetyRuntime;
+    this.publisherSafetyRuntime = publisherSafetyRuntime;
     this.policy = { ...DEFAULT_RUNTIME_SAFETY_POLICY, ...safetyPolicy };
     validateRuntimeSafetyPolicy(this.policy);
   }
@@ -85,6 +95,16 @@ export class MockRuntimeAdapterFactory implements RuntimeAdapterFactory {
           throw new ValidationError("mcp safety adapter requires allowProcessSpawn=true");
         return this.mcpSafetyRuntime;
       }
+      if (type === "publisher" && this.publisherSafetyRuntime) {
+        if (policy.mode !== "real_enabled" || !policy.allowRealExecution)
+          throw new ValidationError("publisher safety adapter requires real_enabled mode and allowRealExecution=true");
+        if (policy.allowNetwork)
+          throw new ValidationError("publisher safety adapter requires allowNetwork=false");
+        return this.publisherSafetyRuntime;
+      }
+      if (type === "mcp") throw new ValidationError("mcp safety runtime requires explicit local harness registration");
+      if (type === "publisher")
+        throw new ValidationError("publisher safety runtime requires explicit local harness registration");
       throwAgentRealAdapterDisabledFixture();
     }
     if (this.adapterMode === "fake_provider") {
