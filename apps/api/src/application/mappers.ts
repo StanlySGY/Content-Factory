@@ -19,6 +19,7 @@ import type {
   ExecutionWritebackDryRunReadinessResponse,
   ExecutionWritebackGuardDTO,
   ExecutionWritebackGuardReadinessResponse,
+  ExecutionWritebackStateTransitionPolicyReadinessResponse,
   ExecutionWritebackTransactionPlanDTO,
   ExecutionWritebackTransactionPlanReadinessResponse,
   ExecutionWritebackTransactionPortReadinessResponse,
@@ -78,6 +79,7 @@ import type {
   ExecutionWritebackTransactionPlan,
   ExecutionWritebackTransactionPlanReadiness,
 } from "../domain/execution/writeback-transaction-plan.js";
+import type { ExecutionWritebackStateTransitionPolicyReadiness } from "../domain/execution/writeback-state-transition-policy.js";
 import type {
   ExecutionWritebackTransactionPrototype,
   ExecutionWritebackTransactionPrototypeReadiness,
@@ -725,6 +727,40 @@ export function toExecutionWritebackTransactionPortReadinessDTO(
       status: m.status,
       executed: m.executed,
       missing_requirements: m.missingRequirements,
+    })),
+    missing_requirements: r.missingRequirements,
+    next_phase_requirements: r.nextPhaseRequirements,
+  };
+}
+
+export function toExecutionWritebackStateTransitionPolicyReadinessDTO(
+  r: ExecutionWritebackStateTransitionPolicyReadiness,
+): ExecutionWritebackStateTransitionPolicyReadinessResponse {
+  return {
+    mode: r.mode,
+    enabled: r.enabled,
+    executable: r.executable,
+    subject_type: r.subjectType,
+    policy_registered: r.policyRegistered,
+    can_read_subject: r.canReadSubject,
+    can_validate_transition: r.canValidateTransition,
+    can_apply_transition: r.canApplyTransition,
+    expected_current_status: r.expectedCurrentStatus,
+    success_target_status: r.successTargetStatus,
+    failed_target_status: r.failedTargetStatus,
+    sample_evaluations: r.sampleEvaluations.map((evaluation) => ({
+      status: evaluation.status,
+      subject_type: evaluation.subjectType,
+      subject_supported: evaluation.subjectSupported,
+      current_status: evaluation.currentStatus,
+      runtime_status: evaluation.runtimeStatus,
+      expected_current_status: evaluation.expectedCurrentStatus,
+      target_status: evaluation.targetStatus,
+      transition_allowed: evaluation.transitionAllowed,
+      policy_enabled: evaluation.policyEnabled,
+      db_read_performed: evaluation.dbReadPerformed,
+      control_plane_write_performed: evaluation.controlPlaneWritePerformed,
+      missing_requirements: evaluation.missingRequirements,
     })),
     missing_requirements: r.missingRequirements,
     next_phase_requirements: r.nextPhaseRequirements,

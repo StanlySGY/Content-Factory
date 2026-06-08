@@ -18,6 +18,10 @@ import {
   type ExecutionWritebackTransactionPlanReadiness,
 } from "../domain/execution/writeback-transaction-plan.js";
 import {
+  buildExecutionWritebackStateTransitionPolicyReadiness,
+  type ExecutionWritebackStateTransitionPolicyReadiness,
+} from "../domain/execution/writeback-state-transition-policy.js";
+import {
   buildExecutionWritebackTransactionPrototypeReadiness,
   type ExecutionWritebackTransactionPrototypeReadiness,
 } from "../domain/execution/writeback-transaction-prototype.js";
@@ -453,6 +457,10 @@ export class ExecutionOpsService {
 
   getWritebackTransactionPortReadiness(): ExecutionWritebackTransactionPortReadiness {
     return buildExecutionWritebackTransactionPortReadiness();
+  }
+
+  getWritebackStateTransitionPolicyReadiness(): ExecutionWritebackStateTransitionPolicyReadiness {
+    return buildExecutionWritebackStateTransitionPolicyReadiness();
   }
 
   async dryRunRuntimeAdapter(input: {

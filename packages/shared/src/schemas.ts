@@ -1296,6 +1296,50 @@ export type ExecutionWritebackTransactionPortReadinessResponse = Static<
   typeof ExecutionWritebackTransactionPortReadinessResponseSchema
 >;
 
+export const ExecutionWritebackStateTransitionEvaluationSchema = Type.Object(
+  {
+    status: StringEnum(["blocked"] as const),
+    subject_type: Type.String(),
+    subject_supported: Type.Boolean(),
+    current_status: Nullable(StringEnum(STAGE_RUN_STATUSES)),
+    runtime_status: StringEnum(EXECUTION_RESULT_STATUSES),
+    expected_current_status: StringEnum(["running"] as const),
+    target_status: Nullable(StringEnum(STAGE_RUN_STATUSES)),
+    transition_allowed: Type.Boolean(),
+    policy_enabled: Type.Boolean(),
+    db_read_performed: Type.Boolean(),
+    control_plane_write_performed: Type.Boolean(),
+    missing_requirements: Type.Array(Type.String()),
+  },
+  { additionalProperties: false },
+);
+export type ExecutionWritebackStateTransitionEvaluationDTO = Static<
+  typeof ExecutionWritebackStateTransitionEvaluationSchema
+>;
+
+export const ExecutionWritebackStateTransitionPolicyReadinessResponseSchema = Type.Object(
+  {
+    mode: StringEnum(["disabled_state_transition_policy"] as const),
+    enabled: Type.Boolean(),
+    executable: Type.Boolean(),
+    subject_type: StringEnum(["workflow_stage_run"] as const),
+    policy_registered: Type.Boolean(),
+    can_read_subject: Type.Boolean(),
+    can_validate_transition: Type.Boolean(),
+    can_apply_transition: Type.Boolean(),
+    expected_current_status: StringEnum(["running"] as const),
+    success_target_status: StringEnum(["waiting_review"] as const),
+    failed_target_status: StringEnum(["failed"] as const),
+    sample_evaluations: Type.Array(ExecutionWritebackStateTransitionEvaluationSchema),
+    missing_requirements: Type.Array(Type.String()),
+    next_phase_requirements: Type.Array(Type.String()),
+  },
+  { additionalProperties: false },
+);
+export type ExecutionWritebackStateTransitionPolicyReadinessResponse = Static<
+  typeof ExecutionWritebackStateTransitionPolicyReadinessResponseSchema
+>;
+
 // ---- Execution Ops (S5 Phase 1.10；运维健康观测 + 恢复控制，仅 execution plane) ----
 export const ExecutionSystemHealthSchema = Type.Object(
   {
