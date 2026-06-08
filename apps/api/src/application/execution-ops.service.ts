@@ -55,6 +55,7 @@ export interface ExecutionOpsConfig {
   runtimeSafetyPolicy: RuntimeSafetyPolicy;
   runtimeAdapterMode: RuntimeAdapterMode;
   runtimeAdapterRegistry: RuntimeAdapterRegistry;
+  networkAllowlist: string[];
 }
 
 export interface ProviderSafetySummary {
@@ -128,6 +129,20 @@ export interface ProviderHttpBoundaryReadiness {
   activeAdapterMode: RuntimeAdapterMode;
   runtimeMode: RuntimeSafetyPolicy["mode"];
   blockedRealAdapterReason: "no real adapter registered";
+}
+
+export interface AgentRealHttpAdapterReadiness {
+  mode: "real_http_skeleton";
+  realHttpClientKind: "skeleton";
+  realTransportRegistered: false;
+  realAdapterWorkerEnabled: false;
+  allowRealRuntime: boolean;
+  allowNetwork: boolean;
+  networkAllowlist: string[];
+  activeAdapterMode: RuntimeAdapterMode;
+  runtimeMode: RuntimeSafetyPolicy["mode"];
+  blockedRealAdapterReason: "no real adapter registered";
+  secretMaterialInjected: false;
 }
 
 // ExecutionOpsService：execution layer 安全运维入口（health / stale 恢复 / outbox 批处理 / manual retry）。
@@ -253,6 +268,22 @@ export class ExecutionOpsService {
       activeAdapterMode: this.config.runtimeAdapterMode,
       runtimeMode: this.config.runtimeSafetyPolicy.mode,
       blockedRealAdapterReason: "no real adapter registered",
+    };
+  }
+
+  getAgentRealHttpAdapterReadiness(): AgentRealHttpAdapterReadiness {
+    return {
+      mode: "real_http_skeleton",
+      realHttpClientKind: "skeleton",
+      realTransportRegistered: false,
+      realAdapterWorkerEnabled: false,
+      allowRealRuntime: this.config.runtimeSafetyPolicy.allowRealExecution,
+      allowNetwork: this.config.runtimeSafetyPolicy.allowNetwork,
+      networkAllowlist: [...this.config.networkAllowlist],
+      activeAdapterMode: this.config.runtimeAdapterMode,
+      runtimeMode: this.config.runtimeSafetyPolicy.mode,
+      blockedRealAdapterReason: "no real adapter registered",
+      secretMaterialInjected: false,
     };
   }
 

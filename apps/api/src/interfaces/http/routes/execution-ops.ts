@@ -1,5 +1,6 @@
 import type { FastifyPluginAsyncTypebox } from "@fastify/type-provider-typebox";
 import {
+  AgentRealHttpAdapterReadinessResponseSchema,
   ExecutionSystemHealthSchema,
   IdParamSchema,
   ManualRetryJobResponseSchema,
@@ -21,6 +22,7 @@ import {
 } from "@cf/shared";
 import type { ExecutionOpsService } from "../../../application/execution-ops.service.js";
 import {
+  toAgentRealHttpAdapterReadinessDTO,
   toExecutionJobDTO,
   toExecutionSystemHealthDTO,
   toRuntimeAdapterDryRunResponseDTO,
@@ -77,6 +79,12 @@ export const executionOpsRoutes: FastifyPluginAsyncTypebox<ExecutionOpsRoutesOpt
     "/api/execution/ops/provider-http-boundary",
     { schema: { response: { 200: ProviderHttpBoundaryResponseSchema } } },
     async () => toProviderHttpBoundaryDTO(executionOpsService.getProviderHttpBoundaryReadiness()),
+  );
+
+  app.get(
+    "/api/execution/ops/agent-real-http-adapter",
+    { schema: { response: { 200: AgentRealHttpAdapterReadinessResponseSchema } } },
+    async () => toAgentRealHttpAdapterReadinessDTO(executionOpsService.getAgentRealHttpAdapterReadiness()),
   );
 
   app.post(

@@ -1150,3 +1150,21 @@ export const ProviderHttpBoundaryResponseSchema = Type.Object(
   { additionalProperties: false },
 );
 export type ProviderHttpBoundaryResponse = Static<typeof ProviderHttpBoundaryResponseSchema>;
+
+export const AgentRealHttpAdapterReadinessResponseSchema = Type.Object(
+  {
+    mode: StringEnum(["real_http_skeleton"] as const),
+    real_http_client_kind: StringEnum(["skeleton"] as const),
+    real_transport_registered: Type.Boolean(),
+    real_adapter_worker_enabled: Type.Boolean(),
+    allow_real_runtime: Type.Boolean(),
+    allow_network: Type.Boolean(),
+    network_allowlist: Type.Array(Type.String()),
+    active_adapter_mode: RuntimeAdapterModeSchema,
+    runtime_mode: RuntimeModeSchema,
+    blocked_real_adapter_reason: Type.String(),
+    secret_material_injected: Type.Boolean(),
+  },
+  { additionalProperties: false },
+);
+export type AgentRealHttpAdapterReadinessResponse = Static<typeof AgentRealHttpAdapterReadinessResponseSchema>;

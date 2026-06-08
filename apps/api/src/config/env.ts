@@ -20,6 +20,7 @@ export interface Env {
   executionAllowRealRuntime: boolean;
   executionAllowNetwork: boolean;
   executionAllowProcessSpawn: boolean;
+  executionNetworkAllowlist: string[];
   executionRequireCredentialRef: boolean;
   executionRedactSnapshots: boolean;
   executionRuntimeMaxTimeoutMs: number;
@@ -51,6 +52,11 @@ function runtimeAdapterMode(value: string | undefined): Env["executionRuntimeAda
   throw new Error(`invalid EXECUTION_RUNTIME_ADAPTER_MODE: ${value}`);
 }
 
+function csv(value: string | undefined): string[] {
+  if (!value) return [];
+  return value.split(",").map((item) => item.trim()).filter((item) => item.length > 0);
+}
+
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
   const databaseUrl = required("DATABASE_URL", source.DATABASE_URL);
   return {
@@ -70,6 +76,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     executionAllowRealRuntime: bool(source.EXECUTION_ALLOW_REAL_RUNTIME, false),
     executionAllowNetwork: bool(source.EXECUTION_ALLOW_NETWORK, false),
     executionAllowProcessSpawn: bool(source.EXECUTION_ALLOW_PROCESS_SPAWN, false),
+    executionNetworkAllowlist: csv(source.EXECUTION_NETWORK_ALLOWLIST),
     executionRequireCredentialRef: bool(source.EXECUTION_REQUIRE_CREDENTIAL_REF, true),
     executionRedactSnapshots: bool(source.EXECUTION_REDACT_SNAPSHOTS, true),
     executionRuntimeMaxTimeoutMs: Number(source.EXECUTION_RUNTIME_MAX_TIMEOUT_MS ?? 300000),

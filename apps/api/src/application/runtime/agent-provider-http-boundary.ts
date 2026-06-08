@@ -5,6 +5,7 @@ import { redactRuntimeSnapshot } from "../../domain/execution/runtime-safety.js"
 export const AGENT_PROVIDER_HTTP_ERROR_TYPES = [
   "timeout",
   "aborted",
+  "network_disabled",
   "rate_limited",
   "auth_failed",
   "connection_failed",
@@ -130,6 +131,7 @@ export function mapAgentProviderHttpErrorToRuntimeErrorType(error: AgentProvider
 } {
   const errorType: RuntimeErrorType =
     error.type === "timeout" || error.type === "aborted" ? "timeout" :
+    error.type === "network_disabled" ? "permission_denied" :
     error.type === "rate_limited" ? "rate_limited" :
     error.type === "auth_failed" ? "permission_denied" :
     error.type === "bad_request" || error.type === "malformed_response" ? "validation_error" :

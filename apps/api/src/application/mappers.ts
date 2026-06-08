@@ -1,5 +1,6 @@
 import type {
   AgentProfileDTO,
+  AgentRealHttpAdapterReadinessResponse,
   AgentSessionDTO,
   AssetVersionDTO,
   ContentAssetDTO,
@@ -54,6 +55,7 @@ import type { RuntimeResponse } from "../domain/execution/runtime-contract.js";
 import type { RuntimeAdapterDescriptor, RuntimeAdapterMode } from "./runtime/adapter-registry.js";
 import type {
   ExecutionSystemHealth,
+  AgentRealHttpAdapterReadiness,
   ProviderHttpBoundaryReadiness,
   ProviderSafetySummary,
   SecretResolverReadiness,
@@ -570,5 +572,23 @@ export function toProviderHttpBoundaryDTO(s: ProviderHttpBoundaryReadiness): Pro
     active_adapter_mode: s.activeAdapterMode,
     runtime_mode: s.runtimeMode,
     blocked_real_adapter_reason: s.blockedRealAdapterReason,
+  };
+}
+
+export function toAgentRealHttpAdapterReadinessDTO(
+  s: AgentRealHttpAdapterReadiness,
+): AgentRealHttpAdapterReadinessResponse {
+  return {
+    mode: s.mode,
+    real_http_client_kind: s.realHttpClientKind,
+    real_transport_registered: s.realTransportRegistered,
+    real_adapter_worker_enabled: s.realAdapterWorkerEnabled,
+    allow_real_runtime: s.allowRealRuntime,
+    allow_network: s.allowNetwork,
+    network_allowlist: s.networkAllowlist,
+    active_adapter_mode: s.activeAdapterMode,
+    runtime_mode: s.runtimeMode,
+    blocked_real_adapter_reason: s.blockedRealAdapterReason,
+    secret_material_injected: s.secretMaterialInjected,
   };
 }
