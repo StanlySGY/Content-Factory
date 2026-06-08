@@ -3,6 +3,12 @@ import { buildRuntimeExecutionContext } from "../../src/domain/execution/runtime
 import type { RuntimeRequest } from "../../src/domain/execution/runtime-contract.js";
 import { AgentRealRuntime } from "../../src/application/runtime/agent-real-runtime.js";
 import { FakeAgentProviderHttpClient } from "../../src/application/runtime/fake-agent-provider-http-client.js";
+import type {
+  AgentProviderHttpClientContext,
+  AgentProviderHttpRequest,
+  AgentProviderHttpResponse,
+  IAgentProviderHttpClient,
+} from "../../src/application/runtime/agent-provider-http-boundary.js";
 
 const request = (payload: Record<string, unknown> = {}): RuntimeRequest => ({
   jobId: "real-runtime-unit",
@@ -31,6 +37,28 @@ const context = () =>
     },
     credentialRef: { provider: "openai_compatible", keyRef: "secret://llm/openai-compatible", scope: "project" },
   });
+
+class MalformedSuccessHttpClient implements IAgentProviderHttpClient {
+  async send(
+    _request: AgentProviderHttpRequest,
+    _context: AgentProviderHttpClientContext,
+  ): Promise<AgentProviderHttpResponse> {
+    return {
+      statusCode: 200,
+      headersSnapshot: { "x-request-id": "malformed-provider-request" },
+      bodySnapshot: {
+        id: "malformed-response",
+        model: "gpt-4.1-mini",
+        choices: [],
+        usage: { prompt_tokens: 1, completion_tokens: 0, total_tokens: 1 },
+        created: 1,
+        provider_metadata: { provider_request_id: "malformed-provider-request" },
+      },
+      providerRequestId: "malformed-provider-request",
+      durationMs: 2,
+    };
+  }
+}
 
 describe("AgentRealRuntime", () => {
   it("fails closed by default through disabled real transport", async () => {
@@ -72,6 +100,16 @@ describe("AgentRealRuntime", () => {
         providerRequestId: "fake-agent-provider-http-request",
         httpStatusCode: 200,
         providerDurationMs: 0,
+        providerResponseContract: {
+          schemaVersion: 1,
+          provider: "openai_compatible",
+          model: "gpt-4.1-mini",
+          providerResponseId: "fake-openai-compatible-response",
+          providerRequestId: "fake-agent-provider-http-request",
+          finishReason: "stop",
+          output: { text: "real-ok" },
+          tokenUsage: { promptTokens: 2, completionTokens: 1, totalTokens: 3 },
+        },
         productionTransportGate: {
           ready: true,
           checks: {
@@ -116,6 +154,33 @@ describe("AgentRealRuntime", () => {
       metadata: {
         adapterMode: "real",
         secret_material_read: false,
+      },
+    });
+  });
+
+  it("maps malformed provider success bodies to a non-retryable response contract error", async () => {
+    const res = await new AgentRealRuntime(new MalformedSuccessHttpClient()).execute(request(), context());
+
+    expect(res).toMatchObject({
+      status: "failed",
+      errorType: "validation_error",
+      retryable: false,
+      metadata: {
+        adapterMode: "real",
+        providerKind: "openai_compatible",
+        providerRequestId: "malformed-provider-request",
+        httpStatusCode: 200,
+        providerDurationMs: 2,
+        providerResponseContract: {
+          schemaVersion: 1,
+          provider: "openai_compatible",
+          httpStatusCode: 200,
+          providerErrorCode: "malformed_response",
+          providerErrorType: "validation_error",
+          runtimeErrorType: "validation_error",
+          retryable: false,
+          providerRequestId: "malformed-provider-request",
+        },
       },
     });
   });

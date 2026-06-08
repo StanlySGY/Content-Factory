@@ -44,7 +44,20 @@ describe("OpenAI-compatible provider schema", () => {
       created: 1,
       provider_metadata: { provider_request_id: "req-1" },
     });
-    expect(ok).toMatchObject({ status: "success", output: { text: "ok" } });
+    expect(ok).toMatchObject({
+      status: "success",
+      output: { text: "ok" },
+      envelope: {
+        schemaVersion: 1,
+        provider: "openai_compatible",
+        model: "gpt-test",
+        providerResponseId: "resp-1",
+        providerRequestId: "req-1",
+        finishReason: "stop",
+        output: { text: "ok" },
+        tokenUsage: { promptTokens: 2, completionTokens: 1, totalTokens: 3 },
+      },
+    });
     expect(ok.rawMetadata.tokenUsage).toEqual({ promptTokens: 2, completionTokens: 1, totalTokens: 3 });
 
     expect(() => normalizeOpenAICompatibleRawResponse({
@@ -57,8 +70,32 @@ describe("OpenAI-compatible provider schema", () => {
   });
 
   it("normalizes provider raw errors", () => {
-    expect(normalizeOpenAICompatibleRawError({ status_code: 429, code: "rate_limit", message: "limited" }).providerErrorType).toBe("rate_limited");
+    expect(normalizeOpenAICompatibleRawError({
+      status_code: 429,
+      code: "rate_limit",
+      message: "limited",
+      provider_request_id: "req-429",
+    })).toMatchObject({
+      providerErrorType: "rate_limited",
+      runtimeErrorType: "rate_limited",
+      retryable: true,
+      envelope: {
+        schemaVersion: 1,
+        provider: "openai_compatible",
+        httpStatusCode: 429,
+        providerErrorCode: "rate_limit",
+        providerErrorType: "rate_limited",
+        runtimeErrorType: "rate_limited",
+        retryable: true,
+        providerRequestId: "req-429",
+      },
+    });
     expect(normalizeOpenAICompatibleRawError({ status_code: 408, code: "timeout", message: "timeout" }).providerErrorType).toBe("timeout");
     expect(normalizeOpenAICompatibleRawError({ status_code: 403, code: "forbidden", message: "forbidden" }).providerErrorType).toBe("permission_denied");
+    expect(normalizeOpenAICompatibleRawError({ status_code: 400, code: "bad_request", message: "bad" }).runtimeErrorType).toBe("validation_error");
+    expect(normalizeOpenAICompatibleRawError({ status_code: 500, code: "server_error", message: "down" })).toMatchObject({
+      runtimeErrorType: "external_unavailable",
+      retryable: true,
+    });
   });
 });

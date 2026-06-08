@@ -38,13 +38,15 @@
 | Sprint-6 Agent Real Runtime MVP 应用级闭环 | 已完成 |
 | Sprint-6 Agent Real Runtime Provider Credential MVP | 已完成 |
 | Sprint-6 Agent Real Runtime Production Transport Gate | 已完成 |
+| Sprint-6 Agent Real Runtime Provider Response Contract Hardening | 已完成 |
 | 默认 `agent:real` fail-closed | 保持 |
 | 显式测试装配 closed-loop | 已完成 |
 | transport-boundary credential injection | 已验证 |
 | production transport gate metadata | 已验证 |
+| provider response envelope / retry 分类 | 已验证 |
 | 输出限制在 `execution_results` / `outbox` | 已验证 |
 | Sprint-4 Control Plane 写入 | 未打开 |
-| 审计文档 | `docs/reviews/sprint-6-agent-real-runtime-mvp-audit.md`；`docs/reviews/sprint-6-agent-real-runtime-credential-audit.md`；`docs/reviews/sprint-6-agent-real-runtime-production-transport-gate-audit.md` |
+| 审计文档 | `docs/reviews/sprint-6-agent-real-runtime-mvp-audit.md`；`docs/reviews/sprint-6-agent-real-runtime-credential-audit.md`；`docs/reviews/sprint-6-agent-real-runtime-production-transport-gate-audit.md`；`docs/reviews/sprint-6-agent-real-runtime-provider-response-contract-audit.md` |
 
 ### 目标
 
@@ -234,14 +236,37 @@
 
 ## 7. 推荐下一步提示词
 
-建议 Sprint-6 从 **Agent Real Runtime MVP** 开始：
+Sprint-6 Agent Real Runtime 已完成 MVP、Credential Boundary、Production Transport Gate 与 Provider Response Contract Hardening。
+
+不再继续新增 Phase 2.x；下一步进入有限 Sprint 路线，建议从 **Sprint-7 MCP Runtime Safety MVP** 开始：
 
 ```text
-实现 Sprint-6 Agent Real Runtime MVP。
+实现 Sprint-7 MCP Runtime Safety MVP。
 
-目标：在不写 Sprint-4 Control Plane 的前提下，让 agent:real 在显式测试配置中完成一次 provider HTTP closed-loop，并继续把输出限制在 execution_results/outbox。
+目标：在不启动生产 MCP server、不默认允许 process spawn、不读取 secret、不写 Sprint-4 Control Plane 的前提下，
+为 MCP real runtime 建立安全执行边界：sandbox policy、timeout/cancel contract、high-risk tool blocked/awaiting confirmation contract、stdout/stderr snapshot redaction。
 
-边界：默认仍 blocked；不读生产 secret；不写 stage_runs/assets/reviews/audit_events；不启用 MCP/Publisher real adapter。
+边界：
+- 不调用真实外部 MCP server。
+- 不默认开启 process spawn。
+- 不执行 high-risk tool。
+- 不写 stage_runs/assets/reviews/audit_events。
+- 不改 Workflow/Review/Agent/MCP 控制面状态机。
+- 不新增 Phase 2.x。
 
-要求：TDD；新增安全 gate 测试、secret non-persistence 测试、network allowlist 测试、timeout/abort 测试、worker ledger/outbox closed-loop 测试；更新审计文档；全量验证；独立提交并推送。
+要求：
+1. TDD 先行，先写失败测试并确认 RED。
+2. 新增 MCP runtime safety domain / contract：
+   - sandbox policy required before real MCP；
+   - process spawn disabled by default；
+   - timeout kills/cancels invocation；
+   - abort signal propagates；
+   - high-risk tool returns blocked/awaiting_confirmation，不执行；
+   - stdout/stderr snapshot redaction。
+3. 新增 fake/local MCP runtime harness，仅测试使用，不连真实 server。
+4. Worker/runtime factory 只在显式配置下可选择 MCP safety runtime，默认仍 mock/blocked。
+5. 不新增 DB migration，结果仍只进入 execution_results/outbox。
+6. 更新 Sprint-7 审计文档与 roadmap。
+7. 运行相关回归、API 全量、shared/web、typecheck、lint、git diff --check。
+8. 独立 commit 并 push origin main。
 ```

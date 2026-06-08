@@ -44,7 +44,7 @@ beforeAll(async () => {
         bodySnapshot: {
           id: "prod-gate-boundary-response",
           model: "gpt-test",
-          choices: [{ index: 0, message: { role: "assistant", content: "credential-ok" }, finish_reason: "stop" }],
+          choices: [{ index: 0, message: { role: "assistant", content: "contract-ok" }, finish_reason: "stop" }],
           usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
           created: 1,
           provider_metadata: { provider_request_id: "prod-gate-boundary" },
@@ -128,6 +128,16 @@ describe("Sprint-6 Agent Real Runtime credential boundary", () => {
         providerRequestId: "prod-gate-boundary",
         httpStatusCode: 200,
         providerDurationMs: 1,
+        providerResponseContract: {
+          schemaVersion: 1,
+          provider: "openai_compatible",
+          model: "gpt-test",
+          providerResponseId: "prod-gate-boundary-response",
+          providerRequestId: "prod-gate-boundary",
+          finishReason: "stop",
+          output: { text: "contract-ok" },
+          tokenUsage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
+        },
         productionTransportGate: {
           ready: true,
           checks: {

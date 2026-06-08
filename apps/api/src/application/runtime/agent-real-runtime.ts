@@ -24,6 +24,7 @@ import {
 import { buildDefaultAgentRealProviderConfig } from "./agent-real-provider-config-preflight.js";
 import { buildAgentRealProductionTransportGateSnapshot } from "./agent-real-production-transport-gate.js";
 import {
+  buildMalformedOpenAICompatibleResponseEnvelope,
   normalizeOpenAICompatibleRawResponse,
   type OpenAICompatibleRawResponse,
 } from "./openai-compatible-schema.js";
@@ -107,7 +108,45 @@ export class AgentRealRuntime implements IAgentRuntime {
         signal: context.abortSignal,
       });
       const durationMs = Math.max(0, Date.now() - started);
-      const normalized = normalizeOpenAICompatibleRawResponse(raw.bodySnapshot as unknown as OpenAICompatibleRawResponse);
+      let normalized: ReturnType<typeof normalizeOpenAICompatibleRawResponse>;
+      try {
+        normalized = normalizeOpenAICompatibleRawResponse(raw.bodySnapshot as unknown as OpenAICompatibleRawResponse);
+      } catch (e) {
+        if (e instanceof ValidationError) {
+          return {
+            jobId: request.jobId,
+            status: "failed",
+            output: {},
+            error: e.message,
+            errorType: "validation_error",
+            retryable: false,
+            durationMs,
+            metadata: {
+              adapterMode: "real",
+              providerKind: "openai_compatible",
+              providerRequestId: raw.providerRequestId,
+              httpStatusCode: raw.statusCode,
+              providerDurationMs: raw.durationMs,
+              providerResponseContract: buildMalformedOpenAICompatibleResponseEnvelope({
+                httpStatusCode: raw.statusCode,
+                providerRequestId: raw.providerRequestId,
+              }),
+              httpBoundary: {
+                httpClientKind: "injected",
+                networkUsed: false,
+                secret_material_injected: false,
+              },
+              networkUsed: false,
+              processSpawned: false,
+              secret_material_read: false,
+              secret_material_returned: false,
+              realTransportInjected: this.httpClient.constructor.name !== "RealAgentProviderHttpClient",
+              ...(requestSnapshot ? { request: requestSnapshot } : {}),
+            },
+          };
+        }
+        throw e;
+      }
       return {
         jobId: request.jobId,
         status: "success",
@@ -126,6 +165,7 @@ export class AgentRealRuntime implements IAgentRuntime {
           providerRequestId: raw.providerRequestId ?? normalized.rawMetadata.providerRequestId,
           httpStatusCode: raw.statusCode,
           providerDurationMs: raw.durationMs,
+          providerResponseContract: normalized.envelope,
           httpBoundary: {
             httpClientKind: "injected",
             networkUsed: false,

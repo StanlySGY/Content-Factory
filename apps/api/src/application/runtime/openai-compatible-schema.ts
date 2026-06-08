@@ -37,6 +37,7 @@ export interface OpenAICompatibleRawError {
 export interface NormalizedOpenAICompatibleSuccess {
   status: "success";
   output: { text: string };
+  envelope: OpenAICompatibleSuccessEnvelope;
   rawMetadata: {
     provider: "openai_compatible";
     providerRequestId?: string;
@@ -53,6 +54,50 @@ export interface NormalizedOpenAICompatibleError {
   runtimeErrorType: RuntimeErrorType;
   message: string;
   providerRequestId?: string;
+  retryable: boolean;
+  envelope: OpenAICompatibleErrorEnvelope;
+}
+
+export interface OpenAICompatibleSuccessEnvelope {
+  schemaVersion: 1;
+  provider: "openai_compatible";
+  model: string;
+  providerResponseId: string;
+  providerRequestId?: string;
+  finishReason: string | null;
+  output: { text: string };
+  tokenUsage: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
+}
+
+export interface OpenAICompatibleErrorEnvelope {
+  schemaVersion: 1;
+  provider: "openai_compatible";
+  httpStatusCode: number;
+  providerErrorCode: string;
+  providerErrorType: AgentProviderErrorType;
+  runtimeErrorType: RuntimeErrorType;
+  retryable: boolean;
+  providerRequestId?: string;
+}
+
+export function buildMalformedOpenAICompatibleResponseEnvelope(input: {
+  httpStatusCode: number;
+  providerRequestId?: string;
+}): OpenAICompatibleErrorEnvelope {
+  return {
+    schemaVersion: 1,
+    provider: "openai_compatible",
+    httpStatusCode: input.httpStatusCode,
+    providerErrorCode: "malformed_response",
+    providerErrorType: "validation_error",
+    runtimeErrorType: "validation_error",
+    retryable: false,
+    providerRequestId: input.providerRequestId,
+  };
 }
 
 function isPlainObject(v: unknown): v is Record<string, unknown> {
@@ -122,17 +167,30 @@ export function normalizeOpenAICompatibleRawResponse(
   validateOpenAICompatibleRawResponse(raw);
   const firstChoice = raw.choices[0];
   if (!firstChoice) throw new ValidationError("openai compatible response choices must not be empty");
+  const tokenUsage = {
+    promptTokens: raw.usage.prompt_tokens,
+    completionTokens: raw.usage.completion_tokens,
+    totalTokens: raw.usage.total_tokens,
+  };
+  const output = { text: firstChoice.message.content };
+  const providerRequestId = raw.provider_metadata?.provider_request_id as string | undefined;
   return {
     status: "success",
-    output: { text: firstChoice.message.content },
+    output,
+    envelope: {
+      schemaVersion: 1,
+      provider: "openai_compatible",
+      model: raw.model,
+      providerResponseId: raw.id,
+      providerRequestId,
+      finishReason: firstChoice.finish_reason ?? null,
+      output,
+      tokenUsage,
+    },
     rawMetadata: {
       provider: "openai_compatible",
-      providerRequestId: raw.provider_metadata?.provider_request_id as string | undefined,
-      tokenUsage: {
-        promptTokens: raw.usage.prompt_tokens,
-        completionTokens: raw.usage.completion_tokens,
-        totalTokens: raw.usage.total_tokens,
-      },
+      providerRequestId,
+      tokenUsage,
     },
   };
 }
@@ -148,10 +206,25 @@ export function normalizeOpenAICompatibleRawError(
     raw.status_code >= 400 && raw.status_code < 500 ? "validation_error" :
     raw.status_code >= 500 ? "external_unavailable" :
     "unknown";
+  const retryable = providerErrorType === "rate_limited" ||
+    providerErrorType === "timeout" ||
+    providerErrorType === "external_unavailable" ||
+    providerErrorType === "unknown";
   return {
     providerErrorType,
     runtimeErrorType: providerErrorType,
     message: raw.message,
     providerRequestId: raw.provider_request_id,
+    retryable,
+    envelope: {
+      schemaVersion: 1,
+      provider: "openai_compatible",
+      httpStatusCode: raw.status_code,
+      providerErrorCode: raw.code,
+      providerErrorType,
+      runtimeErrorType: providerErrorType,
+      retryable,
+      providerRequestId: raw.provider_request_id,
+    },
   };
 }

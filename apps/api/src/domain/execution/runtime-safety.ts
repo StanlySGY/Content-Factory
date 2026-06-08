@@ -93,6 +93,12 @@ function isSecretKey(key: string): boolean {
     "credential_resolver_present",
     "tokenusage",
     "token_usage",
+    "prompttokens",
+    "prompt_tokens",
+    "completiontokens",
+    "completion_tokens",
+    "totaltokens",
+    "total_tokens",
   ].includes(normalized))
     return false;
   return SECRET_KEY_MARKERS.some((marker) => normalized.includes(marker));
