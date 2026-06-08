@@ -31,6 +31,17 @@
 
 ## 3. 路线 A：Agent Real Runtime MVP
 
+### 当前进度
+
+| 项目 | 状态 |
+|---|---|
+| Sprint-6 Agent Real Runtime MVP 应用级闭环 | 已完成 |
+| 默认 `agent:real` fail-closed | 保持 |
+| 显式测试装配 closed-loop | 已完成 |
+| 输出限制在 `execution_results` / `outbox` | 已验证 |
+| Sprint-4 Control Plane 写入 | 未打开 |
+| 审计文档 | `docs/reviews/sprint-6-agent-real-runtime-mvp-audit.md` |
+
 ### 目标
 
 让 `agent:real` 在显式 feature flag、runtime mode、network allowlist、secret resolver 测试实现均满足时，完成一次最小真实/准真实 provider 调用闭环，并把结果写入 `execution_results` 与 outbox。
@@ -228,4 +239,3 @@
 
 要求：TDD；新增安全 gate 测试、secret non-persistence 测试、network allowlist 测试、timeout/abort 测试、worker ledger/outbox closed-loop 测试；更新审计文档；全量验证；独立提交并推送。
 ```
-

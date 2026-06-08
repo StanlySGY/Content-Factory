@@ -14,7 +14,7 @@ import { defaultExecutionOpsRuntimeRegistry, ExecutionOpsService } from "./appli
 import { ExecutionResultService } from "./application/execution-result.service.js";
 import { ExecutionWritebackService } from "./application/execution-writeback.service.js";
 import { ExecutionWorker } from "./application/execution-worker.js";
-import { MockRuntimeAdapterFactory } from "./application/runtime/adapter-factory.js";
+import { MockRuntimeAdapterFactory, type RuntimeAdapterFactory } from "./application/runtime/adapter-factory.js";
 import { McpRuntimeMockService } from "./application/mcp-runtime-mock.service.js";
 import { McpServerService } from "./application/mcp-server.service.js";
 import { McpToolService } from "./application/mcp-tool.service.js";
@@ -49,6 +49,7 @@ export interface BuiltApp {
 
 export interface BuildOptions {
   logger?: boolean;
+  runtimeAdapterFactory?: RuntimeAdapterFactory;
 }
 
 /** 装配应用（分层组装 + 依赖注入）；返回 app 供 server 监听或测试 inject */
@@ -79,7 +80,8 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
   validateRuntimeSafetyPolicy(runtimeSafetyPolicy);
   const executionWorker = new ExecutionWorker(
     db,
-    new MockRuntimeAdapterFactory({ ...runtimeSafetyPolicy, adapterMode: env.executionRuntimeAdapterMode }),
+    opts.runtimeAdapterFactory ??
+      new MockRuntimeAdapterFactory({ ...runtimeSafetyPolicy, adapterMode: env.executionRuntimeAdapterMode }),
     env.executionWorkerIntervalMs,
     env.executionWorkerLockTimeoutMs,
     env.executionRuntimeTimeoutMs,
