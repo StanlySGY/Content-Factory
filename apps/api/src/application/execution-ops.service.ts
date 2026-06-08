@@ -6,6 +6,10 @@ import {
   type ExecutionWritebackGuardReadiness,
 } from "../domain/execution/writeback-guard.js";
 import {
+  buildExecutionWritebackTransactionPlanReadiness,
+  type ExecutionWritebackTransactionPlanReadiness,
+} from "../domain/execution/writeback-transaction-plan.js";
+import {
   buildRuntimeExecutionContext,
   type RuntimeCredentialRef,
   type RuntimeSafetyPolicy,
@@ -413,6 +417,10 @@ export class ExecutionOpsService {
 
   getWritebackGuardReadiness(): ExecutionWritebackGuardReadiness {
     return buildExecutionWritebackGuardReadiness();
+  }
+
+  getWritebackTransactionPlanReadiness(): ExecutionWritebackTransactionPlanReadiness {
+    return buildExecutionWritebackTransactionPlanReadiness();
   }
 
   async dryRunRuntimeAdapter(input: {

@@ -964,6 +964,65 @@ export type ExecutionWritebackGuardReadinessResponse = Static<
   typeof ExecutionWritebackGuardReadinessResponseSchema
 >;
 
+export const ExecutionWritebackTransactionStepSchema = Type.Object(
+  {
+    key: StringEnum([
+      "load_control_plane_subject",
+      "validate_state_transition",
+      "update_control_plane_subject",
+      "append_audit_event",
+      "mark_writeback_applied",
+    ] as const),
+    enabled: Type.Boolean(),
+    executed: Type.Boolean(),
+    required: Type.Boolean(),
+  },
+  { additionalProperties: false },
+);
+
+export const ExecutionWritebackTransactionPlanSchema = Type.Object(
+  {
+    writeback_id: Uuid(),
+    execution_result_id: Uuid(),
+    execution_job_id: Uuid(),
+    subject_type: Type.String(),
+    subject_id: Type.String(),
+    mode: StringEnum(["disabled_plan"] as const),
+    enabled: Type.Boolean(),
+    executable: Type.Boolean(),
+    transaction_required: Type.Boolean(),
+    audit_coupling_required: Type.Boolean(),
+    control_plane_write_planned: Type.Boolean(),
+    supported_subject: Type.Boolean(),
+    decision: StringEnum(["blocked"] as const),
+    steps: Type.Array(ExecutionWritebackTransactionStepSchema),
+    missing_requirements: Type.Array(Type.String()),
+    next_phase_requirements: Type.Array(Type.String()),
+  },
+  { additionalProperties: false },
+);
+export type ExecutionWritebackTransactionPlanDTO = Static<typeof ExecutionWritebackTransactionPlanSchema>;
+
+export const ExecutionWritebackTransactionPlanReadinessResponseSchema = Type.Object(
+  {
+    mode: StringEnum(["disabled_plan"] as const),
+    enabled: Type.Boolean(),
+    executable: Type.Boolean(),
+    transaction_required: Type.Boolean(),
+    audit_coupling_required: Type.Boolean(),
+    control_plane_write_planned: Type.Boolean(),
+    supported_subject_types: Type.Array(StringEnum(["workflow_stage_run"] as const)),
+    real_transaction_executor_registered: Type.Boolean(),
+    required_steps: Type.Array(ExecutionWritebackTransactionStepSchema.properties.key),
+    missing_requirements: Type.Array(Type.String()),
+    next_phase_requirements: Type.Array(Type.String()),
+  },
+  { additionalProperties: false },
+);
+export type ExecutionWritebackTransactionPlanReadinessResponse = Static<
+  typeof ExecutionWritebackTransactionPlanReadinessResponseSchema
+>;
+
 // ---- Execution Ops (S5 Phase 1.10；运维健康观测 + 恢复控制，仅 execution plane) ----
 export const ExecutionSystemHealthSchema = Type.Object(
   {

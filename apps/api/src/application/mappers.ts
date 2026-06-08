@@ -15,6 +15,8 @@ import type {
   ExecutionWritebackDTO,
   ExecutionWritebackGuardDTO,
   ExecutionWritebackGuardReadinessResponse,
+  ExecutionWritebackTransactionPlanDTO,
+  ExecutionWritebackTransactionPlanReadinessResponse,
   ExecutionResultSummaryDTO,
   ExecutionSystemHealthDTO,
   McpServerDTO,
@@ -60,6 +62,10 @@ import type {
 } from "../infrastructure/db/schema.js";
 import type { ExecutionResultSummary } from "../domain/execution/result.js";
 import type { ExecutionWritebackGuard, ExecutionWritebackGuardReadiness } from "../domain/execution/writeback-guard.js";
+import type {
+  ExecutionWritebackTransactionPlan,
+  ExecutionWritebackTransactionPlanReadiness,
+} from "../domain/execution/writeback-transaction-plan.js";
 import type { RuntimeSafetyPolicy } from "../domain/execution/runtime-safety.js";
 import type { RuntimeResponse } from "../domain/execution/runtime-contract.js";
 import type { RuntimeAdapterDescriptor, RuntimeAdapterMode } from "./runtime/adapter-registry.js";
@@ -487,6 +493,47 @@ export function toExecutionWritebackGuardReadinessDTO(
     real_writeback_registered: r.realWritebackRegistered,
     control_plane_write_enabled: r.controlPlaneWriteEnabled,
     audit_write_enabled: r.auditWriteEnabled,
+    missing_requirements: r.missingRequirements,
+    next_phase_requirements: r.nextPhaseRequirements,
+  };
+}
+
+export function toExecutionWritebackTransactionPlanDTO(
+  p: ExecutionWritebackTransactionPlan,
+): ExecutionWritebackTransactionPlanDTO {
+  return {
+    writeback_id: p.writebackId,
+    execution_result_id: p.executionResultId,
+    execution_job_id: p.executionJobId,
+    subject_type: p.subjectType,
+    subject_id: p.subjectId,
+    mode: p.mode,
+    enabled: p.enabled,
+    executable: p.executable,
+    transaction_required: p.transactionRequired,
+    audit_coupling_required: p.auditCouplingRequired,
+    control_plane_write_planned: p.controlPlaneWritePlanned,
+    supported_subject: p.supportedSubject,
+    decision: p.decision,
+    steps: p.steps,
+    missing_requirements: p.missingRequirements,
+    next_phase_requirements: p.nextPhaseRequirements,
+  };
+}
+
+export function toExecutionWritebackTransactionPlanReadinessDTO(
+  r: ExecutionWritebackTransactionPlanReadiness,
+): ExecutionWritebackTransactionPlanReadinessResponse {
+  return {
+    mode: r.mode,
+    enabled: r.enabled,
+    executable: r.executable,
+    transaction_required: r.transactionRequired,
+    audit_coupling_required: r.auditCouplingRequired,
+    control_plane_write_planned: r.controlPlaneWritePlanned,
+    supported_subject_types: r.supportedSubjectTypes,
+    real_transaction_executor_registered: r.realTransactionExecutorRegistered,
+    required_steps: r.requiredSteps,
     missing_requirements: r.missingRequirements,
     next_phase_requirements: r.nextPhaseRequirements,
   };
