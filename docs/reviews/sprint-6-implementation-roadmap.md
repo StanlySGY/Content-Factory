@@ -147,6 +147,22 @@
 
 ## 5. 路线 C：MCP Runtime Safety MVP
 
+### 当前进度
+
+| 项目 | 状态 |
+|---|---|
+| Sprint-7 MCP Runtime Safety MVP | 已完成 |
+| MCP real transport 默认 blocked | 保持 |
+| fake/local harness | 已完成 |
+| process spawn disabled by default | 已验证 |
+| sandbox policy required | 已验证 |
+| timeout / abort contract | 已验证 |
+| high-risk confirmation contract | 已验证 |
+| stdout/stderr snapshot redaction | 已验证 |
+| 输出限制在 `execution_results` / `outbox` | 已验证 |
+| MCP Control Plane 写入 | 未打开 |
+| 审计文档 | `docs/reviews/sprint-7-mcp-runtime-safety-audit.md` |
+
 ### 目标
 
 先实现 MCP runtime 的安全执行边界，再考虑真实 transport。重点是 process sandbox、resource limit、cancel propagation 和 high-risk tool confirmation。
@@ -237,36 +253,36 @@
 ## 7. 推荐下一步提示词
 
 Sprint-6 Agent Real Runtime 已完成 MVP、Credential Boundary、Production Transport Gate 与 Provider Response Contract Hardening。
+Sprint-7 MCP Runtime Safety MVP 已完成 fake/local harness、sandbox、timeout/cancel、high-risk confirmation 与 snapshot redaction。
 
-不再继续新增 Phase 2.x；下一步进入有限 Sprint 路线，建议从 **Sprint-7 MCP Runtime Safety MVP** 开始：
+不再继续新增 Phase 2.x；下一步进入有限 Sprint 路线，建议从 **Sprint-8 Publisher Runtime MVP** 开始：
 
 ```text
-实现 Sprint-7 MCP Runtime Safety MVP。
+实现 Sprint-8 Publisher Runtime MVP。
 
-目标：在不启动生产 MCP server、不默认允许 process spawn、不读取 secret、不写 Sprint-4 Control Plane 的前提下，
-为 MCP real runtime 建立安全执行边界：sandbox policy、timeout/cancel contract、high-risk tool blocked/awaiting confirmation contract、stdout/stderr snapshot redaction。
+目标：在不调用真实外部发布平台、不读取生产 secret、不写 Sprint-4 Workflow/Review/Agent/MCP 状态机的前提下，
+为 Publisher runtime 建立发布前安全模型：preview、approval gate、credential boundary、idempotent request contract、rollback/unpublish plan snapshot。
 
 边界：
-- 不调用真实外部 MCP server。
-- 不默认开启 process spawn。
-- 不执行 high-risk tool。
+- 不调用真实外部平台。
+- 不执行真实发布。
+- 不读取生产 secret。
 - 不写 stage_runs/assets/reviews/audit_events。
-- 不改 Workflow/Review/Agent/MCP 控制面状态机。
+- 不改 Workflow/Review/Agent/MCP 状态机。
 - 不新增 Phase 2.x。
 
 要求：
 1. TDD 先行，先写失败测试并确认 RED。
-2. 新增 MCP runtime safety domain / contract：
-   - sandbox policy required before real MCP；
-   - process spawn disabled by default；
-   - timeout kills/cancels invocation；
-   - abort signal propagates；
-   - high-risk tool returns blocked/awaiting_confirmation，不执行；
-   - stdout/stderr snapshot redaction。
-3. 新增 fake/local MCP runtime harness，仅测试使用，不连真实 server。
-4. Worker/runtime factory 只在显式配置下可选择 MCP safety runtime，默认仍 mock/blocked。
-5. 不新增 DB migration，结果仍只进入 execution_results/outbox。
-6. 更新 Sprint-7 审计文档与 roadmap。
+2. 新增 Publisher runtime safety domain / contract：
+   - preview required before publish；
+   - approval required before external publish；
+   - credentialRef 仅作为引用，不落库 secret material；
+   - duplicate publish idempotency key 稳定；
+   - rollback/unpublish plan 只写 snapshot，不真实执行。
+3. 新增 fake/local Publisher harness，仅测试使用，不连真实平台。
+4. Worker/runtime factory 只在显式配置下可选择 Publisher safety runtime，默认仍 mock/blocked。
+5. 不新增真实发布 DB 表；结果仍只进入 execution_results/outbox。
+6. 更新 Sprint-8 审计文档与 roadmap。
 7. 运行相关回归、API 全量、shared/web、typecheck、lint、git diff --check。
 8. 独立 commit 并 push origin main。
 ```

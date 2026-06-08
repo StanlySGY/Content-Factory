@@ -3,6 +3,7 @@ import { ValidationError } from "../../src/domain/errors.js";
 import {
   RuntimeAdapterRegistry,
   assertAdapterAllowedBySafetyPolicy,
+  createDefaultRuntimeAdapterRegistry,
   type RuntimeAdapterDescriptor,
 } from "../../src/application/runtime/adapter-registry.js";
 import type { RuntimeSafetyPolicy } from "../../src/domain/execution/runtime-safety.js";
@@ -65,6 +66,27 @@ describe("RuntimeAdapterRegistry", () => {
     expect(real.status).toBe("blocked");
     expect(() =>
       assertAdapterAllowedBySafetyPolicy(real, policy({ mode: "real_enabled", allowRealExecution: true })),
+    ).toThrow(ValidationError);
+  });
+
+  it("keeps the default MCP real safety runtime blocked until an explicit harness is registered", () => {
+    const registry = createDefaultRuntimeAdapterRegistry();
+
+    const mcpReal = registry.getAdapterDescriptor("mcp", "real");
+
+    expect(mcpReal).toMatchObject({
+      type: "mcp",
+      mode: "real",
+      status: "blocked",
+      allowProcessSpawn: true,
+      blockedReason: "mcp safety runtime requires explicit local harness registration",
+    });
+    expect(mcpReal.capabilities).toContain("mcp_safety_boundary");
+    expect(() =>
+      assertAdapterAllowedBySafetyPolicy(
+        mcpReal,
+        policy({ mode: "real_enabled", allowRealExecution: true, allowProcessSpawn: true }),
+      ),
     ).toThrow(ValidationError);
   });
 });

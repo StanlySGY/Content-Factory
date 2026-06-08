@@ -117,13 +117,17 @@ export function createDefaultRuntimeAdapterRegistry(): RuntimeAdapterRegistry {
             type,
             mode: "real",
             name: `${type}-real-runtime`,
-            version: "0.0.0",
-            capabilities: [],
+            version: type === "mcp" ? "7.0.0" : "0.0.0",
+            capabilities: type === "mcp"
+              ? ["mcp_safety_boundary", "fake_local_harness", "high_risk_confirmation", "snapshot_redaction"]
+              : [],
             requiresCredentialRef: true,
             allowNetwork: true,
             allowProcessSpawn: type === "mcp",
             status: "blocked",
-            blockedReason: "no real adapter registered",
+            blockedReason: type === "mcp"
+              ? "mcp safety runtime requires explicit local harness registration"
+              : "no real adapter registered",
           },
     );
   }
