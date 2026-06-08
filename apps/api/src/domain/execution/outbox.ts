@@ -13,6 +13,9 @@ export interface OutboxEvent {
   processedAt: Date | null;
   error: string | null;
   retryCount: number;
+  claimedAt: Date | null;
+  claimedOwner: string | null;
+  claimExpiresAt: Date | null;
   createdAt: Date;
 }
 
@@ -40,15 +43,34 @@ export function isOutboxProcessed(event: Pick<OutboxEvent, "processedAt">): bool
   return event.processedAt !== null;
 }
 
-/** 处理成功补丁：置 processed_at（保留 error 以留存历史） */
-export function markOutboxProcessed(now: Date = new Date()): { processedAt: Date } {
-  return { processedAt: now };
+/** 处理成功补丁：置 processed_at（保留 error 以留存历史），清空 relay lease */
+export function markOutboxProcessed(now: Date = new Date()): {
+  processedAt: Date;
+  claimedAt: null;
+  claimedOwner: null;
+  claimExpiresAt: null;
+} {
+  return { processedAt: now, claimedAt: null, claimedOwner: null, claimExpiresAt: null };
 }
 
 /** 处理失败补丁：retry_count+1、写 error、processed_at 保持 null（待下次 relay 重试） */
 export function markOutboxFailed(
   event: Pick<OutboxEvent, "retryCount">,
   error: string,
-): { retryCount: number; error: string; processedAt: null } {
-  return { retryCount: event.retryCount + 1, error, processedAt: null };
+): {
+  retryCount: number;
+  error: string;
+  processedAt: null;
+  claimedAt: null;
+  claimedOwner: null;
+  claimExpiresAt: null;
+} {
+  return {
+    retryCount: event.retryCount + 1,
+    error,
+    processedAt: null,
+    claimedAt: null,
+    claimedOwner: null,
+    claimExpiresAt: null,
+  };
 }

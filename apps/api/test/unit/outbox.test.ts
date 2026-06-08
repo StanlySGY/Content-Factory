@@ -39,11 +39,19 @@ describe("Outbox domain", () => {
   });
 
   it("computes processed and failed transitions deterministically", () => {
-    expect(markOutboxProcessed(at)).toEqual({ processedAt: at });
+    expect(markOutboxProcessed(at)).toEqual({
+      processedAt: at,
+      claimedAt: null,
+      claimedOwner: null,
+      claimExpiresAt: null,
+    });
     expect(markOutboxFailed({ retryCount: 2 }, "boom")).toEqual({
       retryCount: 3,
       error: "boom",
       processedAt: null,
+      claimedAt: null,
+      claimedOwner: null,
+      claimExpiresAt: null,
     });
   });
 });

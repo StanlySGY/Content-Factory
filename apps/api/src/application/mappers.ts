@@ -411,6 +411,9 @@ export function toOutboxEventDTO(r: OutboxEventRow): OutboxEventDTO {
     processed_at: r.processedAt ? r.processedAt.toISOString() : null,
     error: r.error,
     retry_count: r.retryCount,
+    claimed_at: r.claimedAt ? r.claimedAt.toISOString() : null,
+    claimed_owner: r.claimedOwner,
+    claim_expires_at: r.claimExpiresAt ? r.claimExpiresAt.toISOString() : null,
     created_at: r.createdAt.toISOString(),
   };
 }

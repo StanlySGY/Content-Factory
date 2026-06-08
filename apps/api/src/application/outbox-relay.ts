@@ -33,13 +33,15 @@ export class OutboxRelay {
     private readonly db: Db,
     handlers: OutboxHandler[] = defaultOutboxHandlers(),
     private readonly intervalMs = 5000,
+    private readonly owner = "outbox-relay",
+    private readonly leaseMs = 30000,
   ) {
     this.handlers = new Map(handlers.map((h) => [h.eventType, h]));
   }
 
   /** 领取并投递下一个未处理事件（轮询入口）。无可领取返回 null。*/
   async tick(): Promise<OutboxEventRow | null> {
-    const event = await outboxRepo.claimNextOutboxEvent(this.db);
+    const event = await outboxRepo.claimNextOutboxEvent(this.db, { owner: this.owner, leaseMs: this.leaseMs });
     return event ? this.dispatch(event) : null;
   }
 

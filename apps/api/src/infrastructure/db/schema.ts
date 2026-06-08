@@ -287,6 +287,9 @@ export const outboxEvents = pgTable("outbox_events", {
   processedAt: timestamp("processed_at", { withTimezone: true }),
   error: text("error"),
   retryCount: integer("retry_count").notNull().default(0),
+  claimedAt: timestamp("claimed_at", { withTimezone: true }),
+  claimedOwner: varchar("claimed_owner", { length: 120 }),
+  claimExpiresAt: timestamp("claim_expires_at", { withTimezone: true }),
 });
 
 // Sprint-5 执行结果账本（Phase 1.9；只追加，每次 runtime attempt 一条；仅 FK execution_jobs，不 join 业务表）

@@ -1,4 +1,4 @@
-import { and, asc, count, eq, isNotNull, isNull, type SQL } from "drizzle-orm";
+import { and, asc, count, eq, isNotNull, isNull, lte, or, type SQL } from "drizzle-orm";
 import { markOutboxFailed, markOutboxProcessed } from "../../domain/execution/outbox.js";
 import type { Db } from "../db/client.js";
 import { outboxEvents, type OutboxEventRow } from "../db/schema.js";
@@ -64,17 +64,45 @@ export async function getOutboxEvent(db: Db, id: string): Promise<OutboxEventRow
   return row ?? null;
 }
 
-/** 领取下一个未处理事件（FOR UPDATE SKIP LOCKED，created_at 升序）。无可领取返回 null。*/
-export async function claimNextOutboxEvent(db: Db): Promise<OutboxEventRow | null> {
+export interface OutboxClaimOptions {
+  owner?: string;
+  leaseMs?: number;
+}
+
+const DEFAULT_CLAIM_OWNER = "outbox-relay";
+const DEFAULT_LEASE_MS = 30000;
+
+function claimable(now: Date): SQL | undefined {
+  return and(
+    isNull(outboxEvents.processedAt),
+    or(isNull(outboxEvents.claimExpiresAt), lte(outboxEvents.claimExpiresAt, now)),
+  );
+}
+
+/** 领取下一个未处理且无有效租约的事件；写入持久 lease，支持 relay crash 后到期重领。*/
+export async function claimNextOutboxEvent(
+  db: Db,
+  options: OutboxClaimOptions = {},
+): Promise<OutboxEventRow | null> {
+  const now = new Date();
+  const leaseMs = options.leaseMs ?? DEFAULT_LEASE_MS;
+  const owner = options.owner ?? DEFAULT_CLAIM_OWNER;
+  const expiresAt = new Date(now.getTime() + leaseMs);
   return db.transaction(async (tx) => {
     const [event] = await tx
       .select()
       .from(outboxEvents)
-      .where(isNull(outboxEvents.processedAt))
+      .where(claimable(now))
       .orderBy(asc(outboxEvents.createdAt))
       .limit(1)
       .for("update", { skipLocked: true });
-    return event ?? null;
+    if (!event) return null;
+    const [claimed] = await tx
+      .update(outboxEvents)
+      .set({ claimedAt: now, claimedOwner: owner, claimExpiresAt: expiresAt })
+      .where(eq(outboxEvents.id, event.id))
+      .returning();
+    return claimed ?? null;
   });
 }
 

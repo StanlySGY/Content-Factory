@@ -1,19 +1,28 @@
 import { randomUUID } from "node:crypto";
 import type { FastifyInstance } from "fastify";
+import { eq } from "drizzle-orm";
+import type pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { buildApp, type BuiltApp } from "../../src/app.js";
 import { loadEnv } from "../../src/config/env.js";
+import { createDb, createPool, type Db } from "../../src/infrastructure/db/client.js";
+import { outboxEvents } from "../../src/infrastructure/db/schema.js";
 
 let built: BuiltApp;
 let app: FastifyInstance;
+let pool: pg.Pool;
+let db: Db;
 
 beforeAll(async () => {
-  built = await buildApp(loadEnv(), { logger: false });
+  const env = loadEnv();
+  built = await buildApp(env, { logger: false });
   app = built.app;
+  db = createDb((pool = createPool(env.databaseUrl)));
   await app.ready();
 });
 
 afterAll(async () => {
+  await pool.end();
   await built.close();
 });
 
@@ -80,5 +89,37 @@ describe("Outbox observability API", () => {
     expect((await app.inject({ method: "POST", url: `/api/execution/outbox-events/${eventId}/process` })).statusCode).toBe(409);
     // 不存在 → 404
     expect((await app.inject({ method: "POST", url: `/api/execution/outbox-events/${randomUUID()}/process` })).statusCode).toBe(404);
+  });
+
+  it("exposes outbox relay lease fields and clears them after processing", async () => {
+    const jobId = await createJob();
+    const events = await app.inject({ method: "GET", url: `/api/execution/jobs/${jobId}/events` });
+    const eventId = (events.json() as Array<{ id: string }>)[0]!.id;
+
+    await db
+      .update(outboxEvents)
+      .set({
+        claimedAt: new Date("2026-01-01T00:00:00.000Z"),
+        claimedOwner: "relay-observer",
+        claimExpiresAt: new Date("2026-01-01T00:00:30.000Z"),
+      })
+      .where(eq(outboxEvents.id, eventId));
+
+    const leased = await app.inject({ method: "GET", url: `/api/execution/outbox-events/${eventId}` });
+    expect(leased.statusCode).toBe(200);
+    expect(leased.json()).toMatchObject({
+      id: eventId,
+      claimed_owner: "relay-observer",
+    });
+    expect(typeof leased.json().claimed_at).toBe("string");
+    expect(typeof leased.json().claim_expires_at).toBe("string");
+
+    const processed = await app.inject({ method: "POST", url: `/api/execution/outbox-events/${eventId}/process` });
+    expect(processed.statusCode).toBe(200);
+    expect(processed.json().event).toMatchObject({
+      claimed_at: null,
+      claimed_owner: null,
+      claim_expires_at: null,
+    });
   });
 });

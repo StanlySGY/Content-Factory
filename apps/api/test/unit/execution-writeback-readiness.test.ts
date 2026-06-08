@@ -27,6 +27,9 @@ const input = {
     processedAt: null,
     error: null,
     retryCount: 0,
+    claimedAt: null,
+    claimedOwner: null,
+    claimExpiresAt: null,
   },
   result: {
     id: resultId,
