@@ -7,6 +7,7 @@ import {
   validateAgentProviderHttpRequest,
   validateAgentProviderHttpResponse,
 } from "./agent-provider-http-boundary.js";
+import type { IRuntimeCredentialResolver } from "./credential-resolver.js";
 
 export interface AgentProviderHttpNetworkPolicy {
   realHttpEnabled: boolean;
@@ -73,6 +74,10 @@ function errorFromStatus(response: AgentProviderHttpResponse): AgentProviderHttp
   });
 }
 
+function authFailed(message: string): AgentProviderHttpError {
+  return httpError({ type: "auth_failed", retryable: false, statusCode: 403, message });
+}
+
 function resolveEndpoint(urlRef: string, policy: AgentProviderHttpNetworkPolicy): string {
   const endpoint = policy.endpointMap[urlRef];
   if (!endpoint)
@@ -92,6 +97,7 @@ export class RealAgentProviderHttpClient implements IAgentProviderHttpClient {
   constructor(
     private readonly policy: AgentProviderHttpNetworkPolicy,
     private readonly transport: IAgentProviderHttpTransport = new DisabledAgentProviderHttpTransport(),
+    private readonly credentialResolver: IRuntimeCredentialResolver | null = null,
   ) {}
 
   async send(
@@ -124,11 +130,13 @@ export class RealAgentProviderHttpClient implements IAgentProviderHttpClient {
       removeParentAbortListener = () => context.signal.removeEventListener("abort", onAbort);
     });
 
+    const maybeHeaders = this.resolveTransportHeaders(request);
+    const headers = maybeHeaders instanceof Promise ? await maybeHeaders : maybeHeaders;
     const response = await Promise.race([
       this.transport.send({
         url,
         method: request.method,
-        headers: { ...request.headersRef },
+        headers,
         body: request.body,
         timeoutMs,
         signal: controller.signal,
@@ -144,5 +152,28 @@ export class RealAgentProviderHttpClient implements IAgentProviderHttpClient {
     const statusError = errorFromStatus(response);
     if (statusError) throw statusError;
     return response;
+  }
+
+  private resolveTransportHeaders(
+    request: AgentProviderHttpRequest,
+  ): Record<string, string> | Promise<Record<string, string>> {
+    const authRef = request.headersRef.authorization_ref ?? request.headersRef.Authorization;
+    if (!this.credentialResolver || !authRef) return { ...request.headersRef };
+    return this.credentialResolver.resolve({
+      provider: "openai_compatible",
+      keyRef: authRef,
+      scope: "project",
+    }).then((resolved) => {
+      if (
+        resolved.provider !== "openai_compatible" ||
+        resolved.keyRef !== authRef ||
+        resolved.scope !== "project" ||
+        resolved.resolved !== true ||
+        typeof resolved.material !== "string" ||
+        resolved.material.trim().length === 0
+      )
+        throw authFailed("runtime credential resolution failed");
+      return { Authorization: `Bearer ${resolved.material}` };
+    });
   }
 }

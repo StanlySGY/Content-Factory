@@ -83,6 +83,74 @@ describe("RealAgentProviderHttpClient skeleton", () => {
     expect(seenHeaders.authorization_ref).toBe("secret://llm/openai-compatible");
   });
 
+  it("injects resolved credential material only into the transport boundary", async () => {
+    let seenHeaders: Record<string, string> = {};
+    const transport: IAgentProviderHttpTransport = {
+      async send(input) {
+        seenHeaders = input.headers;
+        return {
+          statusCode: 200,
+          headersSnapshot: {},
+          bodySnapshot: { ok: true },
+          providerRequestId: "credential-injected",
+          durationMs: 1,
+        };
+      },
+    };
+
+    const res = await new RealAgentProviderHttpClient(policy(), transport, {
+      async resolve(ref) {
+        expect(ref).toEqual({
+          provider: "openai_compatible",
+          keyRef: "secret://llm/openai-compatible",
+          scope: "project",
+        });
+        return {
+          provider: "openai_compatible",
+          scope: "project",
+          keyRef: "secret://llm/openai-compatible",
+          resolved: true,
+          material: "sk-test-transport-only",
+          metadata: { source: "unit-test" },
+        };
+      },
+    }).send(request({ headersRef: { authorization_ref: "secret://llm/openai-compatible" } }), {
+      signal: new AbortController().signal,
+      timeoutMs: 30000,
+    });
+
+    expect(res.providerRequestId).toBe("credential-injected");
+    expect(seenHeaders).toEqual({ Authorization: "Bearer sk-test-transport-only" });
+    expect(JSON.stringify(res)).not.toContain("sk-test-transport-only");
+  });
+
+  it("rejects mismatched credential resolution before calling transport", async () => {
+    let called = false;
+    const transport: IAgentProviderHttpTransport = {
+      async send() {
+        called = true;
+        throw new Error("should not call transport");
+      },
+    };
+
+    await expect(new RealAgentProviderHttpClient(policy(), transport, {
+      async resolve() {
+        return {
+          provider: "other",
+          scope: "project",
+          keyRef: "secret://llm/openai-compatible",
+          resolved: true,
+          material: "sk-test-transport-only",
+          metadata: {},
+        };
+      },
+    }).send(request({ headersRef: { authorization_ref: "secret://llm/openai-compatible" } }), {
+      signal: new AbortController().signal,
+      timeoutMs: 30000,
+    })).rejects.toMatchObject({ type: "auth_failed", retryable: false });
+    expect(called).toBe(false);
+  });
+
   it("maps transport HTTP status failures to boundary errors", async () => {
     const cases = [
       [429, "rate_limited", true],

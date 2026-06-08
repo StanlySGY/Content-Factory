@@ -36,11 +36,13 @@
 | 项目 | 状态 |
 |---|---|
 | Sprint-6 Agent Real Runtime MVP 应用级闭环 | 已完成 |
+| Sprint-6 Agent Real Runtime Provider Credential MVP | 已完成 |
 | 默认 `agent:real` fail-closed | 保持 |
 | 显式测试装配 closed-loop | 已完成 |
+| transport-boundary credential injection | 已验证 |
 | 输出限制在 `execution_results` / `outbox` | 已验证 |
 | Sprint-4 Control Plane 写入 | 未打开 |
-| 审计文档 | `docs/reviews/sprint-6-agent-real-runtime-mvp-audit.md` |
+| 审计文档 | `docs/reviews/sprint-6-agent-real-runtime-mvp-audit.md`；`docs/reviews/sprint-6-agent-real-runtime-credential-audit.md` |
 
 ### 目标
 

@@ -51,7 +51,8 @@ export interface ResolvedRuntimeCredential {
   provider: string;
   scope: RuntimeCredentialRef["scope"];
   keyRef: string;
-  resolved: false;
+  resolved: boolean;
+  material?: string;
   metadata: Record<string, unknown>;
 }
 
