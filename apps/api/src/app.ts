@@ -13,6 +13,7 @@ import { ExecutionBridgeService } from "./application/execution-bridge.service.j
 import { ExecutionOpsService } from "./application/execution-ops.service.js";
 import { ExecutionResultService } from "./application/execution-result.service.js";
 import { ExecutionWorker } from "./application/execution-worker.js";
+import { MockRuntimeAdapterFactory } from "./application/runtime/adapter-factory.js";
 import { McpRuntimeMockService } from "./application/mcp-runtime-mock.service.js";
 import { McpServerService } from "./application/mcp-server.service.js";
 import { McpToolService } from "./application/mcp-tool.service.js";
@@ -23,6 +24,7 @@ import { TaskService } from "./application/task.service.js";
 import { WorkflowDefinitionService } from "./application/workflow-definition.service.js";
 import { WorkflowRunService } from "./application/workflow-run.service.js";
 import type { Env } from "./config/env.js";
+import { validateRuntimeSafetyPolicy, type RuntimeSafetyPolicy } from "./domain/execution/runtime-safety.js";
 import { createDb, createPool } from "./infrastructure/db/client.js";
 import { registerErrorHandler } from "./interfaces/http/errors.js";
 import { assetRoutes } from "./interfaces/http/routes/assets.js";
@@ -63,12 +65,24 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
   const dashboardService = new DashboardService(db);
   const editorQueryService = new EditorQueryService(db);
   const executionJobService = new ExecutionJobService(db);
+  const runtimeSafetyPolicy: RuntimeSafetyPolicy = {
+    mode: env.executionRuntimeMode,
+    allowRealExecution: env.executionAllowRealRuntime,
+    timeoutMs: env.executionRuntimeTimeoutMs,
+    maxTimeoutMs: env.executionRuntimeMaxTimeoutMs,
+    allowNetwork: env.executionAllowNetwork,
+    allowProcessSpawn: env.executionAllowProcessSpawn,
+    requireCredentialRef: env.executionRequireCredentialRef,
+    redactSnapshots: env.executionRedactSnapshots,
+  };
+  validateRuntimeSafetyPolicy(runtimeSafetyPolicy);
   const executionWorker = new ExecutionWorker(
     db,
-    undefined,
+    new MockRuntimeAdapterFactory(runtimeSafetyPolicy),
     env.executionWorkerIntervalMs,
     env.executionWorkerLockTimeoutMs,
     env.executionRuntimeTimeoutMs,
+    runtimeSafetyPolicy,
   );
   const outboxService = new OutboxService(db);
   const outboxRelay = new OutboxRelay(db, undefined, env.outboxRelayIntervalMs);
@@ -81,6 +95,7 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
     relayIntervalMs: env.outboxRelayIntervalMs,
     runtimeTimeoutMs: env.executionRuntimeTimeoutMs,
     lockTimeoutMs: env.executionWorkerLockTimeoutMs,
+    runtimeSafetyPolicy,
   });
   const agentProfileService = new AgentProfileService(db);
   const agentRuntimeService = new AgentRuntimeMockService(db);

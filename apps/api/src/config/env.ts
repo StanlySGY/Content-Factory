@@ -15,6 +15,13 @@ export interface Env {
   executionWorkerIntervalMs: number;
   executionWorkerLockTimeoutMs: number;
   executionRuntimeTimeoutMs: number;
+  executionRuntimeMode: "mock" | "real_disabled" | "real_enabled";
+  executionAllowRealRuntime: boolean;
+  executionAllowNetwork: boolean;
+  executionAllowProcessSpawn: boolean;
+  executionRequireCredentialRef: boolean;
+  executionRedactSnapshots: boolean;
+  executionRuntimeMaxTimeoutMs: number;
   outboxRelayEnabled: boolean;
   outboxRelayIntervalMs: number;
 }
@@ -24,6 +31,17 @@ function required(name: string, value: string | undefined): string {
     throw new Error(`missing required env var: ${name}`);
   }
   return value;
+}
+
+function bool(value: string | undefined, fallback: boolean): boolean {
+  if (value === undefined) return fallback;
+  return value === "true";
+}
+
+function runtimeMode(value: string | undefined): Env["executionRuntimeMode"] {
+  if (value === undefined || value === "") return "mock";
+  if (value === "mock" || value === "real_disabled" || value === "real_enabled") return value;
+  throw new Error(`invalid EXECUTION_RUNTIME_MODE: ${value}`);
 }
 
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
@@ -40,7 +58,14 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     executionWorkerIntervalMs: Number(source.EXECUTION_WORKER_INTERVAL_MS ?? 5000),
     executionWorkerLockTimeoutMs: Number(source.EXECUTION_WORKER_LOCK_TIMEOUT_MS ?? 30000),
     executionRuntimeTimeoutMs: Number(source.EXECUTION_RUNTIME_TIMEOUT_MS ?? 30000),
-    outboxRelayEnabled: source.OUTBOX_RELAY_ENABLED === "true",
+    executionRuntimeMode: runtimeMode(source.EXECUTION_RUNTIME_MODE),
+    executionAllowRealRuntime: bool(source.EXECUTION_ALLOW_REAL_RUNTIME, false),
+    executionAllowNetwork: bool(source.EXECUTION_ALLOW_NETWORK, false),
+    executionAllowProcessSpawn: bool(source.EXECUTION_ALLOW_PROCESS_SPAWN, false),
+    executionRequireCredentialRef: bool(source.EXECUTION_REQUIRE_CREDENTIAL_REF, true),
+    executionRedactSnapshots: bool(source.EXECUTION_REDACT_SNAPSHOTS, true),
+    executionRuntimeMaxTimeoutMs: Number(source.EXECUTION_RUNTIME_MAX_TIMEOUT_MS ?? 300000),
+    outboxRelayEnabled: bool(source.OUTBOX_RELAY_ENABLED, false),
     outboxRelayIntervalMs: Number(source.OUTBOX_RELAY_INTERVAL_MS ?? 5000),
   };
 }

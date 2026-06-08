@@ -7,9 +7,10 @@ import {
   ProcessOutboxBatchResponseSchema,
   RecoverStaleJobsBodySchema,
   RecoverStaleJobsResponseSchema,
+  RuntimeSafetyPolicySchema,
 } from "@cf/shared";
 import type { ExecutionOpsService } from "../../../application/execution-ops.service.js";
-import { toExecutionJobDTO, toExecutionSystemHealthDTO } from "../../../application/mappers.js";
+import { toExecutionJobDTO, toExecutionSystemHealthDTO, toRuntimeSafetyPolicyDTO } from "../../../application/mappers.js";
 
 export interface ExecutionOpsRoutesOptions {
   executionOpsService: ExecutionOpsService;
@@ -27,6 +28,12 @@ export const executionOpsRoutes: FastifyPluginAsyncTypebox<ExecutionOpsRoutesOpt
     "/api/execution/ops/health",
     { schema: { response: { 200: ExecutionSystemHealthSchema } } },
     async () => toExecutionSystemHealthDTO(await executionOpsService.getHealth()),
+  );
+
+  app.get(
+    "/api/execution/ops/runtime-safety",
+    { schema: { response: { 200: RuntimeSafetyPolicySchema } } },
+    async () => toRuntimeSafetyPolicyDTO(executionOpsService.getRuntimeSafety()),
   );
 
   app.post(

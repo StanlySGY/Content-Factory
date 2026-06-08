@@ -1,4 +1,12 @@
 import type { ExecutionJobType } from "@cf/shared";
+import { ValidationError } from "../../domain/errors.js";
+import {
+  assertRealExecutionAllowed,
+  DEFAULT_RUNTIME_SAFETY_POLICY,
+  validateRuntimeSafetyPolicy,
+  type RuntimeExecutionContext,
+  type RuntimeSafetyPolicy,
+} from "../../domain/execution/runtime-safety.js";
 import {
   AgentMockRuntime,
   MCPMockRuntime,
@@ -11,17 +19,29 @@ import type { IAgentRuntime, IMCPRuntime, IPublisherRuntime } from "./ports.js";
 export type AnyRuntime = IAgentRuntime | IMCPRuntime | IPublisherRuntime;
 
 export interface RuntimeAdapterFactory {
-  getRuntime(type: ExecutionJobType): AnyRuntime;
+  getRuntime(type: ExecutionJobType, context?: RuntimeExecutionContext): AnyRuntime;
 }
 
 export class MockRuntimeAdapterFactory implements RuntimeAdapterFactory {
+  private readonly policy: RuntimeSafetyPolicy;
+
   private readonly runtimes: Record<ExecutionJobType, AnyRuntime> = {
     agent: new AgentMockRuntime(),
     mcp: new MCPMockRuntime(),
     publisher: new PublisherMockRuntime(),
   };
 
-  getRuntime(type: ExecutionJobType): AnyRuntime {
+  constructor(policy: Partial<RuntimeSafetyPolicy> = {}) {
+    this.policy = { ...DEFAULT_RUNTIME_SAFETY_POLICY, ...policy };
+    validateRuntimeSafetyPolicy(this.policy);
+  }
+
+  getRuntime(type: ExecutionJobType, context?: RuntimeExecutionContext): AnyRuntime {
+    const policy = context?.policy ?? this.policy;
+    if (policy.mode !== "mock") {
+      assertRealExecutionAllowed(policy);
+      throw new ValidationError("no real runtime adapter registered");
+    }
     return this.runtimes[type];
   }
 }

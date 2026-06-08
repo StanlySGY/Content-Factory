@@ -19,6 +19,7 @@ import {
   EXECUTION_JOB_TYPES,
   EXECUTION_RESULT_STATUSES,
   EXECUTION_SUBJECT_TYPES,
+  RUNTIME_MODES,
   RUNTIME_ERROR_TYPES,
   WORKFLOW_RUN_STATUSES,
 } from "./enums.js";
@@ -850,6 +851,7 @@ export type RequestStageExecutionBody = Static<typeof RequestStageExecutionSchem
 // ---- Execution Result Ledger (S5 Phase 1.9；只追加，runtime attempt 结果账本) ----
 const ExecutionResultStatusSchema = StringEnum(EXECUTION_RESULT_STATUSES);
 const RuntimeErrorTypeSchema = StringEnum(RUNTIME_ERROR_TYPES);
+const RuntimeModeSchema = StringEnum(RUNTIME_MODES);
 
 export const ExecutionResultSchema = Type.Object(
   {
@@ -935,3 +937,18 @@ export const ManualRetryJobResponseSchema = Type.Object(
   { additionalProperties: false },
 );
 export type ManualRetryJobResponse = Static<typeof ManualRetryJobResponseSchema>;
+
+export const RuntimeSafetyPolicySchema = Type.Object(
+  {
+    mode: RuntimeModeSchema,
+    allow_real_runtime: Type.Boolean(),
+    allow_network: Type.Boolean(),
+    allow_process_spawn: Type.Boolean(),
+    require_credential_ref: Type.Boolean(),
+    redact_snapshots: Type.Boolean(),
+    runtime_timeout_ms: Type.Integer(),
+    runtime_max_timeout_ms: Type.Integer(),
+  },
+  { additionalProperties: false },
+);
+export type RuntimeSafetyPolicyDTO = Static<typeof RuntimeSafetyPolicySchema>;

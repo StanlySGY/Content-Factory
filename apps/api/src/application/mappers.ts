@@ -15,6 +15,7 @@ import type {
   OutboxEventDTO,
   PendingReviewDTO,
   ReviewRecordDTO,
+  RuntimeSafetyPolicyDTO,
   StageRunDTO,
   ToolInvocationDTO,
   WorkQueueItemDTO,
@@ -42,6 +43,7 @@ import type {
   WorkflowRunRow,
 } from "../infrastructure/db/schema.js";
 import type { ExecutionResultSummary } from "../domain/execution/result.js";
+import type { RuntimeSafetyPolicy } from "../domain/execution/runtime-safety.js";
 import type { ExecutionSystemHealth } from "./execution-ops.service.js";
 
 const iso = (d: Date | null): string | null => (d ? d.toISOString() : null);
@@ -381,5 +383,18 @@ export function toExecutionSystemHealthDTO(h: ExecutionSystemHealth): ExecutionS
     unprocessed_outbox_events: h.unprocessedOutboxEvents,
     failed_outbox_events: h.failedOutboxEvents,
     latest_result_at: h.latestResultAt ? h.latestResultAt.toISOString() : null,
+  };
+}
+
+export function toRuntimeSafetyPolicyDTO(p: RuntimeSafetyPolicy): RuntimeSafetyPolicyDTO {
+  return {
+    mode: p.mode,
+    allow_real_runtime: p.allowRealExecution,
+    allow_network: p.allowNetwork,
+    allow_process_spawn: p.allowProcessSpawn,
+    require_credential_ref: p.requireCredentialRef,
+    redact_snapshots: p.redactSnapshots,
+    runtime_timeout_ms: p.timeoutMs,
+    runtime_max_timeout_ms: p.maxTimeoutMs,
   };
 }

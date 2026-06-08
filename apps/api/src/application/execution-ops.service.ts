@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { EXECUTION_OUTBOX_EVENTS } from "@cf/shared";
 import { ConflictError, NotFoundError } from "../domain/errors.js";
+import type { RuntimeSafetyPolicy } from "../domain/execution/runtime-safety.js";
 import type { Db } from "../infrastructure/db/client.js";
 import type { ExecutionJobRow } from "../infrastructure/db/schema.js";
 import * as jobRepo from "../infrastructure/repositories/execution-job.repository.js";
@@ -31,6 +32,7 @@ export interface ExecutionOpsConfig {
   relayIntervalMs: number;
   runtimeTimeoutMs: number;
   lockTimeoutMs: number;
+  runtimeSafetyPolicy: RuntimeSafetyPolicy;
 }
 
 // ExecutionOpsService：execution layer 安全运维入口（health / stale 恢复 / outbox 批处理 / manual retry）。
@@ -59,6 +61,10 @@ export class ExecutionOpsService {
       failedOutboxEvents: await outboxRepo.countFailedEvents(this.db),
       latestResultAt: await resultRepo.getLatestResultAt(this.db),
     };
+  }
+
+  getRuntimeSafety(): RuntimeSafetyPolicy {
+    return this.config.runtimeSafetyPolicy;
   }
 
   /** 恢复 stale running 作业（复用 recoverStaleRunningJobs），并写一条 ops 汇总 outbox 事件。*/

@@ -226,6 +226,10 @@ export const RUNTIME_ERROR_TYPES = [
 ] as const;
 export type RuntimeErrorType = (typeof RUNTIME_ERROR_TYPES)[number];
 
+/** Runtime 安全模式（Phase 2.0；真实执行默认被 kill switch 关闭）*/
+export const RUNTIME_MODES = ["mock", "real_disabled", "real_enabled"] as const;
+export type RuntimeMode = (typeof RUNTIME_MODES)[number];
+
 /** 执行桥接 subject 类型（Phase 1.8 Control Plane Bridge；控制平面经此显式请求 execution job，不入表、不 join）*/
 export const EXECUTION_SUBJECT_TYPES = [
   "workflow_stage_run",

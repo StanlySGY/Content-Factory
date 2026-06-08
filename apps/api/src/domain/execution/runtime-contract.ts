@@ -6,6 +6,7 @@ import {
 } from "@cf/shared";
 import { ValidationError } from "../errors.js";
 import type { ExecutionResult } from "./job.js";
+import { mapProviderErrorToRuntimeError } from "./runtime-safety.js";
 
 // Runtime Contract（Phase 1.7）：控制平面 ↔ Runtime 的稳定边界。仅定义契约，不接真实 runtime。
 // 为 Phase 2 Real Adapter 提供：输入/输出 envelope、错误分类、retryable 语义、timeout 契约。
@@ -91,9 +92,7 @@ export function normalizeRuntimeError(error: unknown): {
   retryable: boolean;
   message: string;
 } {
-  const message = error instanceof Error ? error.message : String(error);
-  const errorType: RuntimeErrorType = "unknown";
-  return { errorType, retryable: isRetryableRuntimeError(errorType), message };
+  return mapProviderErrorToRuntimeError(error);
 }
 
 /** 构造 failed RuntimeResponse，retryable 由 errorType 推导 */

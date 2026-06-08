@@ -4,6 +4,7 @@ import {
   type RuntimeRequest,
   type RuntimeResponse,
 } from "../../domain/execution/runtime-contract.js";
+import type { RuntimeExecutionContext } from "../../domain/execution/runtime-safety.js";
 import type { IAgentRuntime, IMCPRuntime, IPublisherRuntime } from "./ports.js";
 
 // Mock Runtime 适配器：100% 本地模拟，无网络 / LLM / MCP / 外部调用。
@@ -14,6 +15,7 @@ interface MockPayload {
   mockErrorType?: RuntimeErrorType;
   mockRetryable?: boolean;
   mockDelayMs?: number;
+  responseSecret?: string;
 }
 
 function mockResponse(request: RuntimeRequest, kind: string): RuntimeResponse {
@@ -39,7 +41,7 @@ function mockResponse(request: RuntimeRequest, kind: string): RuntimeResponse {
     return {
       jobId: request.jobId,
       status: "success",
-      output: { kind, result: "mock" },
+      output: { kind, result: "mock", ...(p.responseSecret ? { responseSecret: p.responseSecret } : {}) },
       error: null,
       errorType: null,
       retryable: false,
@@ -80,17 +82,17 @@ function mockResponse(request: RuntimeRequest, kind: string): RuntimeResponse {
 }
 
 export class AgentMockRuntime implements IAgentRuntime {
-  async execute(request: RuntimeRequest): Promise<RuntimeResponse> {
+  async execute(request: RuntimeRequest, _context?: RuntimeExecutionContext): Promise<RuntimeResponse> {
     return mockResponse(request, "agent");
   }
 }
 export class MCPMockRuntime implements IMCPRuntime {
-  async execute(request: RuntimeRequest): Promise<RuntimeResponse> {
+  async execute(request: RuntimeRequest, _context?: RuntimeExecutionContext): Promise<RuntimeResponse> {
     return mockResponse(request, "mcp");
   }
 }
 export class PublisherMockRuntime implements IPublisherRuntime {
-  async execute(request: RuntimeRequest): Promise<RuntimeResponse> {
+  async execute(request: RuntimeRequest, _context?: RuntimeExecutionContext): Promise<RuntimeResponse> {
     return mockResponse(request, "publisher");
   }
 }

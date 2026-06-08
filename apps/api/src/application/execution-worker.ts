@@ -17,6 +17,13 @@ import {
   type RuntimeRequest,
   type RuntimeResponse,
 } from "../domain/execution/runtime-contract.js";
+import {
+  buildRuntimeExecutionContext,
+  DEFAULT_RUNTIME_SAFETY_POLICY,
+  redactRuntimeSnapshot,
+  validateRuntimeSafetyPolicy,
+  type RuntimeSafetyPolicy,
+} from "../domain/execution/runtime-safety.js";
 import type { Db } from "../infrastructure/db/client.js";
 import type { ExecutionJobRow } from "../infrastructure/db/schema.js";
 import * as jobRepo from "../infrastructure/repositories/execution-job.repository.js";
@@ -44,6 +51,7 @@ function runtimeSnapshot(res: RuntimeResponse): Record<string, unknown> {
 //   非重试失败（blocked/validation/permission 等）直接 failed；可重试失败仍按 max_attempts/next_run_at 策略。
 export class ExecutionWorker {
   private timer: NodeJS.Timeout | null = null;
+  private readonly safetyPolicy: RuntimeSafetyPolicy;
 
   constructor(
     private readonly db: Db,
@@ -51,7 +59,15 @@ export class ExecutionWorker {
     private readonly intervalMs = 5000,
     private readonly lockTimeoutMs = 30000,
     private readonly runtimeTimeoutMs = 30000,
-  ) {}
+    safetyPolicy: Partial<RuntimeSafetyPolicy> = {},
+  ) {
+    this.safetyPolicy = {
+      ...DEFAULT_RUNTIME_SAFETY_POLICY,
+      timeoutMs: runtimeTimeoutMs,
+      ...safetyPolicy,
+    };
+    validateRuntimeSafetyPolicy(this.safetyPolicy);
+  }
 
   /** 领取并处理下一个到期作业（轮询入口）。无可领取返回 null。*/
   async tick(): Promise<ExecutionJobRow | null> {
@@ -118,7 +134,14 @@ export class ExecutionWorker {
       return { request: snapshot, response: failedRuntimeResponse(job.id, "validation_error", (e as Error).message) };
     }
     try {
-      const response = await this.factory.getRuntime(request.jobType).execute(request);
+      const context = buildRuntimeExecutionContext({
+        jobId: request.jobId,
+        jobType: request.jobType,
+        timeoutMs: request.timeoutMs,
+        policy: this.safetyPolicy,
+        metadata: request.metadata,
+      });
+      const response = await this.factory.getRuntime(request.jobType, context).execute(request, context);
       validateRuntimeResponse(response); // 契约防御
       return { request, response };
     } catch (e) {
@@ -133,9 +156,16 @@ export class ExecutionWorker {
     const subjectMeta = subject ? { subject } : {};
     const { request, response } = await this.invoke(job, input, subject);
     const result = toExecutionResult(response);
-    const snapshot = runtimeSnapshot(response);
+    const snapshot = this.safeSnapshot(runtimeSnapshot(response));
+    const outboxOutput = this.safeSnapshot(result.output);
+    const outboxSubjectMeta = this.safeSnapshot(subjectMeta);
     // 结果账本记录：与 job 状态变化同事务写入；插入失败则整体回滚（结果不得仅存于 outbox）
-    const record = buildExecutionResultRecord(job, request, response, subject as Record<string, unknown> | null);
+    const record = buildExecutionResultRecord(
+      job,
+      this.safeSnapshot(request),
+      this.safeSnapshot(response),
+      this.safeSnapshot(subject as Record<string, unknown> | null),
+    );
 
     if (result.status === "success") {
       transitionExecutionJobStatus("running", "success");
@@ -150,7 +180,7 @@ export class ExecutionWorker {
           aggregate_type: "execution_job",
           aggregate_id: job.id,
           event_type: EXECUTION_OUTBOX_EVENTS.success,
-          payload: { output: result.output, runtime: snapshot, result_id: ledger.id, attempt_no: job.attemptCount, ...subjectMeta },
+          payload: { output: outboxOutput, runtime: snapshot, result_id: ledger.id, attempt_no: job.attemptCount, ...outboxSubjectMeta },
         });
         return updated;
       });
@@ -172,7 +202,7 @@ export class ExecutionWorker {
           aggregate_type: "execution_job",
           aggregate_id: job.id,
           event_type: EXECUTION_OUTBOX_EVENTS.failed,
-          payload: { error, error_type: result.errorType ?? null, attempt: job.attemptCount, runtime: snapshot, result_id: ledger.id, attempt_no: job.attemptCount, ...subjectMeta },
+          payload: { error, error_type: result.errorType ?? null, attempt: job.attemptCount, runtime: snapshot, result_id: ledger.id, attempt_no: job.attemptCount, ...outboxSubjectMeta },
         });
         return updated;
       });
@@ -194,10 +224,14 @@ export class ExecutionWorker {
         aggregate_type: "execution_job",
         aggregate_id: job.id,
         event_type: outcome.event,
-        payload: { error: outcome.lastError, error_type: result.errorType ?? null, attempt: job.attemptCount, runtime: snapshot, result_id: ledger.id, attempt_no: job.attemptCount, ...subjectMeta },
+        payload: { error: outcome.lastError, error_type: result.errorType ?? null, attempt: job.attemptCount, runtime: snapshot, result_id: ledger.id, attempt_no: job.attemptCount, ...outboxSubjectMeta },
       });
       return updated;
     });
+  }
+
+  private safeSnapshot<T>(value: T): T {
+    return this.safetyPolicy.redactSnapshots ? redactRuntimeSnapshot(value) : value;
   }
 
   start(): void {

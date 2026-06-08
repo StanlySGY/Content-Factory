@@ -1,14 +1,14 @@
 # Sprint-5 Phase 2 — Real Adapter Entry Checklist
 
 > 接入真实 Agent / MCP / LLM / Publisher 前的准入清单。标注每项：**[已满足] Phase 1.x 已就位 / [缺失] 待补 / [必须] 接真实外部系统前硬性前置**。
-> 基线：Phase 1.x 冻结（`fc001fb`→`32fd423`，见 release-gate 文档）。
+> 基线：Phase 1.x 冻结（`fc001fb`→`32fd423`，见 release-gate 文档）；Phase 2.0 Runtime Safety Foundation 已补安全准入基础。
 
 ## 1. 真实 Agent Runtime 准入
 
 - [缺失][必须] `IAgentRuntime` 的真实实现（LLM 调用 + tool-calling），替换 `AgentMockRuntime`。
 - [已满足] Runtime Contract（RuntimeRequest/Response envelope、错误分类、retryable、durationMs）已冻结，Real Adapter 直接产出真实 RuntimeResponse。
 - [已满足] 结果落点（execution_results 账本）与 outbox 关联（result_id）已就位。
-- [缺失][必须] LLM 错误 → RuntimeErrorType 的真实映射表（限流/超时/鉴权/内容策略）。
+- [已满足] Provider-like error → RuntimeErrorType 的基础映射（429/timeout/403/connection/4xx/unknown）已就位；真实 provider 可在此基础上细化内容策略。
 - [缺失] 多轮会话 / agent_messages 模型（若需要）。
 
 ## 2. 真实 MCP Runtime 准入
@@ -16,7 +16,8 @@
 - [缺失][必须] `IMCPRuntime` 真实实现：stdio / HTTP / SSE / WS transport + 工具分发，替换 `MCPMockRuntime`。
 - [已满足] Adapter Factory 路由（getRuntime(type)）作为替换点。
 - [缺失][必须] MCP `risk_level` 驱动的隔离/确认策略接入（见 §7）。
-- [缺失] transport 连接生命周期管理、超时/取消。
+- [已满足] RuntimeExecutionContext + AbortController 基础已就位。
+- [缺失] transport 连接生命周期管理、真实取消传播。
 
 ## 3. Publisher Runtime 准入
 
@@ -27,20 +28,24 @@
 
 ## 4. Runtime Isolation 前置
 
-- [缺失][必须] 真实超时**中断**（AbortController / 进程取消）——Phase 1.7 仅 Mock 模拟超时，无真实中断。
+- [已满足] RuntimeExecutionContext 已携带 AbortSignal，真实 adapter 有统一 timeout/cancel 入口。
+- [缺失][必须] 真实超时**中断落地**（HTTP abort / MCP transport cancel / 进程取消）——Phase 2.0 仅提供上下文基础。
 - [缺失][必须] 资源限额（CPU/内存/时长/并发）。
 - [缺失][必须] 沙箱 / 进程隔离（外部进程 MCP、不可信工具）。
 
 ## 5. Secret / Credential Policy 前置
 
-- [缺失][必须] 凭证经引用注入（ADR-010），**不入库、不入日志、不入 result/request 快照**。
+- [已满足] `RuntimeCredentialRef` 已要求凭证以 `secret://` / `vault://` / `env://` 引用表达，并拒绝 inline secret-like 值。
+- [已满足] result/request/response/outbox runtime 快照已做 secret-like key 深度脱敏。
+- [缺失][必须] 凭证引用解析与注入实现（ADR-010），真实 secret store 仍未接入。
 - [缺失][必须] 凭证按 `sensitivity_level` 作用域化（context_packs 已建模传播控制，ContextBuilder 为强制点）。
-- [已满足] request_snapshot 当前仅含 Mock payload；接真实前须确保 secret 不落快照（审计点）。
+- [已满足] request_snapshot / response_snapshot / outbox payload 当前经 `redactRuntimeSnapshot()` 脱敏后落库。
 
 ## 6. Timeout / Retry / Rate Limit 策略
 
 - [已满足] 确定性退避重试 + max_attempts + next_run_at；retryable 语义。
-- [缺失][必须] 真实 rate limit 处理（rate_limited → 退避，区分供应商配额）。
+- [已满足] 429 已映射为 `rate_limited`，沿用 retryable/backoff 语义。
+- [缺失][必须] 真实供应商配额策略（provider quota、租户限额、429 退避参数定标）。
 - [缺失] 退避参数针对真实 runtime 压测定标（当前 1s–60s 为骨架默认）。
 
 ## 7. Manual Approval / High-risk Tool Confirmation
@@ -51,7 +56,8 @@
 ## 8. Sandbox / Process Isolation
 
 - [缺失][必须] 外部进程 MCP 的进程隔离与崩溃遏制。
-- [缺失] 网络出口策略（allowlist）。
+- [已满足] `EXECUTION_ALLOW_NETWORK=false` / `EXECUTION_ALLOW_PROCESS_SPAWN=false` 默认关闭，作为真实 adapter 前置 kill switch。
+- [缺失] 网络出口策略（allowlist）与进程沙箱实际执行环境。
 
 ## 9. Observability / Result Ledger 使用规范
 
@@ -62,7 +68,7 @@
 ## 10. Rollback / Kill Switch
 
 - [已满足] feature flag（EXECUTION_WORKER_ENABLED / OUTBOX_RELAY_ENABLED）默认关闭。
-- [缺失][必须] Real/Mock Adapter 经 Factory 可即时切换（降级回 Mock）的 kill switch。
+- [已满足] `EXECUTION_RUNTIME_MODE=mock|real_disabled|real_enabled` + `EXECUTION_ALLOW_REAL_RUNTIME=false` 已接入 Factory/Worker；默认 Mock，real_disabled 安全失败，real_enabled 仍需显式总开关。
 - [已满足] 无 DB 迁移的阶段可代码回滚；Real Adapter 接入须保证可快速停摆。
 
 ## 11. 结果回写（execution → Control Plane）
@@ -82,5 +88,6 @@
 ## 已满足 vs 缺失 汇总
 
 - **已由 Phase 1.x 满足**：Runtime Contract、Adapter Factory 替换点、结果账本 + 观测、退避重试/超时契约/stale 恢复、feature flag、ops 控制面 + runbook、控制平面隔离边界。
-- **接真实外部系统前必须完成**：Runtime 隔离（真实超时中断/资源限额/沙箱）、secret/credential policy、真实错误映射、high-risk 确认闸门、kill switch、relay 真实回写 + 并发领取保护。
+- **Phase 2.0 已补齐**：runtime mode/kill switch、credential ref 校验、snapshot 脱敏、AbortSignal 上下文、provider-like error mapping、runtime-safety ops endpoint。
+- **接真实外部系统前仍必须完成**：真实超时中断落地、资源限额/沙箱、secret store 解析注入、provider 配额策略、high-risk 确认闸门、relay 真实回写 + 并发领取保护。
 - **仍缺失（非 Real Adapter 阻塞，但需规划）**：Publisher + publish_records、审批态建模、账本归档、成本/指标维度。
