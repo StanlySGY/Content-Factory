@@ -1,7 +1,8 @@
-# Execution Ops Runbook（Sprint-5 Phase 1.10）
+# Execution Ops Runbook（Sprint-10）
 
-> execution layer（异步执行平面）运维手册。**仅作用于 execution plane 表**（execution_jobs / outbox_events / execution_results）；
-> 不改 Sprint-4 Control Plane（Workflow/Review/Agent/MCP/Asset），不读/不改 audit_events。当前执行仍为 Mock Runtime。
+> execution layer（异步执行平面）运维手册。
+> 默认运行仍 fail-closed：worker / relay 均由 env 开关控制，默认 relay 使用 no-op handlers，不自动回写控制面。
+> Sprint-9 已提供显式 `workflow_stage_run` writeback handler；只有显式装配该 handler 时，terminal execution event 才会经同事务 audit 保护回写 `stage_runs`。
 
 所有端点前缀 `/api/execution`。错误遵循统一结构（`{ error: { code, message, retryable }, request_id }`）。
 
@@ -54,10 +55,12 @@ POST /api/execution/ops/process-outbox-batch
 { "limit": 50 }   // 可选，默认 10，最大 100
 ```
 
-行为：批量 claim → no-op handler → markProcessed/markFailed（仅 outbox_events 自身），写 `execution_ops.process_outbox_batch`。
+默认行为：批量 claim → no-op handler → markProcessed/markFailed（仅 outbox_events 自身），写 `execution_ops.process_outbox_batch`。
 返回 `{ processed, failed, event_ids }`。重复调用直至 `unprocessed_outbox_events` 归零。
 
 > `failed > 0`：说明有事件投递失败（当前 no-op 几乎不会失败；未注册 event_type 会 markFailed）。查 `failed_outbox_events` 与事件 `error`。
+
+> 注意：Sprint-9 的真实 `workflow_stage_run` writeback handler 当前不在默认 app relay 中注册。生产启用前必须完成部署级开关、回滚预案、监控告警确认，并显式装配 handler；否则不要把 no-op backlog 清理操作误认为控制面回写。
 
 ---
 
@@ -102,7 +105,37 @@ GET /api/execution/jobs/:id/events     # outbox 事件轨迹
 
 ---
 
-## 7. 常见故障与排查路径
+## 7. Workflow stage writeback（显式装配）
+
+Sprint-9 支持的唯一真实回写路径：
+
+```text
+execution_job.success -> workflow_stage_run running -> waiting_review
+execution_job.failed  -> workflow_stage_run running -> failed
+```
+
+硬边界：
+
+| 项 | 规则 |
+| --- | --- |
+| 支持 subject | 仅 `workflow_stage_run` |
+| 当前状态 | 必须是 `running`，否则 ledger 标记 `skipped` |
+| 状态机 | 必须经 ADR-006 `stageRunMachine.assertTransition` |
+| 事务 | `stage_runs` 更新、`audit_events` append、`execution_writebacks` applied/skipped 同事务 |
+| 幂等 | 同一 terminal outbox event 只对应一条 `execution_writebacks` |
+| 默认注册 | 默认不注册真实 handler |
+
+验证证据：
+
+```text
+pnpm --dir apps/api exec vitest run test/integration/sprint9-workflow-stage-writeback.test.ts
+```
+
+该测试覆盖 success/failed 回写、非 running 跳过、重复处理幂等、audit 失败回滚、不支持 subject 跳过。
+
+---
+
+## 8. 常见故障与排查路径
 
 | 征兆 | 可能原因 | 排查/处置 |
 | --- | --- | --- |
@@ -112,13 +145,17 @@ GET /api/execution/jobs/:id/events     # outbox 事件轨迹
 | `failed_outbox_events > 0` | 事件无 handler / handler 抛错 | 查事件 `error`；确认 event_type 已注册 no-op handler |
 | `failed_jobs` 增多 | runtime 持续失败（mock 或将来真实） | 看 result `error_type`；瞬时类可 `retry`，确定性类修因 |
 | 某 job 卡 running 但不 stale | 仍在 lock_timeout 窗口内 | 等待或调小 lock timeout 后 recover |
+| terminal event 未回写 stage | 默认 no-op relay 未注册真实 handler | 确认是否为显式 Sprint-9 handler 装配场景 |
+| writeback ledger `skipped` | subject 非 running / 不支持 subject / stage 不存在 | 读取 `execution_writebacks.error`，不要直接改 stage |
+| audit 失败导致无 stage 更新 | audit FK/RLS/hash chain 写入失败 | 修复 audit 写入条件后重试 terminal event；不得绕过 audit |
 
 ---
 
-## 8. 非目标 / 边界
+## 9. 非目标 / 边界
 
-- 不做真实 Agent/MCP/LLM/Publisher、不读真实 API Key、不实现 MCP transport、不新增 Real Adapter。
+- 不做真实外部 LLM 调用、不读生产 API Key、不连接生产 MCP server、不真实发布。
 - 不引入 Redis/MQ/BullMQ（纯 DB 轮询）。
 - 不改 Workflow/Review/Agent/MCP 状态机、不做 UI。
-- ops 不自动把 execution result 写回 stage_runs/assets/reviews（回写是 Phase 2 经 relay 真实 handler 的显式设计）。
+- ops 默认不自动把 execution result 写回 stage_runs/assets/reviews。
+- `workflow_stage_run` writeback 是显式装配能力，不支持 assets/reviews/publisher targets。
 - 不删除/修改 execution_results 历史、不替代 audit_events / audit hash chain。

@@ -288,7 +288,7 @@
 | Sprint-7 MCP Runtime Safety MVP | 已完成 | MCP sandbox / timeout / high-risk confirmation |
 | Sprint-8 Publisher Runtime Safety MVP | 已完成 | Publisher preview / approval / rollback plan snapshot |
 | Sprint-9 Workflow Stage Writeback MVP | 已完成 | `workflow_stage_run` 单 subject 真实回写闭环 |
-| Sprint-10 Production Readiness | 下一步且最后一步 | 全量审计、验证、runbook、风险清单、功能冻结 |
+| Sprint-10 Production Readiness | 已完成 | 全量审计、runbook、风险清单、功能冻结 |
 
 停止规则：
 
@@ -298,21 +298,16 @@
 
 ---
 
-## 8. 推荐下一步提示词
+## 8. 最终冻结说明
 
 Sprint-6 Agent Real Runtime 已完成 MVP、Credential Boundary、Production Transport Gate 与 Provider Response Contract Hardening。
 Sprint-7 MCP Runtime Safety MVP 已完成 fake/local harness、sandbox、timeout/cancel、high-risk confirmation 与 snapshot redaction。
 Sprint-8 Publisher Runtime Safety MVP 已完成 fake/local harness、preview、approval gate、credential boundary、idempotent request id 与 rollback plan snapshot。
 Sprint-9 Workflow Stage Writeback MVP 已完成 `workflow_stage_run` 单 subject 真实回写闭环。
+Sprint-10 Production Readiness 已完成最终审计与 runbook 更新。
 
-不再继续新增 Phase 2.x；下一步进入最终收尾 **Sprint-10 Production Readiness / Final Audit / Delivery Freeze**：
+功能路线冻结如下：
 
-```text
-实现 Sprint-10 Production Readiness / Final Audit / Delivery Freeze。
-
-目标：对 Sprint-5 至 Sprint-9 的 execution layer、runtime safety、outbox relay、writeback ledger、workflow_stage_run 回写闭环做最终生产就绪审计，并冻结功能范围。
-
-边界：
 - 不新增功能。
 - 不新增 Phase 2.x。
 - 不新增 Sprint-11。
@@ -320,30 +315,16 @@ Sprint-9 Workflow Stage Writeback MVP 已完成 `workflow_stage_run` 单 subject
 - 不修改 Sprint-4 Control Plane 业务状态机。
 - 不引入 Redis / MQ / 外部平台调用。
 
-要求：
-1. 汇总 Sprint-5 Phase 1 到 Sprint-9 的当前能力矩阵。
-2. 审计所有 execution plane 默认开关，确认 fail-closed。
-3. 审计 DB migration、grant、append-only、RLS、audit hash chain 边界。
-4. 审计 runtime adapter registry：agent/mcp/publisher real 默认 blocked，测试 harness 显式注入。
-5. 审计 outbox relay 与 workflow writeback handler：默认不自动回写，显式 handler 具备事务/幂等测试。
-6. 更新最终 runbook：如何启动 worker/relay、如何手动 process outbox、如何 recover stale jobs、如何手动 retry failed job。
-7. 新增 docs/reviews/sprint-10-production-readiness-audit.md。
-8. 更新 docs/reviews/sprint-6-implementation-roadmap.md，标记 Sprint-10 完成后功能冻结。
-9. 运行全量质量门禁：
-   - pnpm --dir apps/api exec vitest run
-   - pnpm --dir packages/shared exec vitest run
-   - pnpm --dir apps/web exec vitest run
-   - pnpm -r typecheck
-   - pnpm lint
-   - git diff --check
-10. 若发现阻断级问题，只做 bugfix / test fix / doc fix，不新增功能。
-11. 独立 commit 并 push origin main。
+后续只允许：
 
-输出：
-- Sprint-10 commit hash
-- origin/main hash
-- 验证命令和结果
-- 完整任务剩余项表格；若无功能剩余，明确写“功能路线已冻结，只剩后续产品化扩 scope”
-- 未提交/未跟踪无关文件列表
-- 明确声明没有 force push、没有提交无关 sprint-2 文档、未 amend / squash 既有提交
+- bugfix；
+- 测试修复；
+- 文档补齐；
+- 安全修正；
+- 项目 owner 明确批准的新产品化 scope。
+
+最终审计文档：
+
+```text
+docs/reviews/sprint-10-production-readiness-audit.md
 ```
