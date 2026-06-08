@@ -1173,6 +1173,55 @@ export const AgentRealHttpAdapterReadinessResponseSchema = Type.Object(
 );
 export type AgentRealHttpAdapterReadinessResponse = Static<typeof AgentRealHttpAdapterReadinessResponseSchema>;
 
+export const AgentRealAdapterRegistrationGuardResponseSchema = Type.Object(
+  {
+    mode: StringEnum(["agent_real_adapter_registration_guard"] as const),
+    registration_ready: Type.Boolean(),
+    real_adapter_registered: Type.Boolean(),
+    real_adapter_worker_enabled: Type.Boolean(),
+    descriptor_status: StringEnum(["blocked"] as const),
+    blocked_real_adapter_reason: Type.String(),
+    required_adapter_type: StringEnum(["agent"] as const),
+    required_adapter_mode: StringEnum(["real"] as const),
+    config_gates: Type.Object(
+      {
+        runtime_mode: RuntimeModeSchema,
+        allow_real_runtime: Type.Boolean(),
+        active_adapter_mode: RuntimeAdapterModeSchema,
+        allow_network: Type.Boolean(),
+        allow_process_spawn: Type.Boolean(),
+        require_credential_ref: Type.Boolean(),
+        redact_snapshots: Type.Boolean(),
+      },
+      { additionalProperties: false },
+    ),
+    readiness_gates: Type.Object(
+      {
+        network_allowlist_ready: Type.Boolean(),
+        secret_store_ready: Type.Boolean(),
+        secret_injection_ready: Type.Boolean(),
+        real_transport_ready: Type.Boolean(),
+        timeout_abort_ready: Type.Boolean(),
+        quota_preflight_ready: Type.Boolean(),
+        cost_preflight_ready: Type.Boolean(),
+      },
+      { additionalProperties: false },
+    ),
+    missing_requirements: Type.Array(Type.String()),
+    fail_closed_error: Type.Object(
+      {
+        message: Type.String(),
+        retryable: Type.Boolean(),
+      },
+      { additionalProperties: false },
+    ),
+  },
+  { additionalProperties: false },
+);
+export type AgentRealAdapterRegistrationGuardResponse = Static<
+  typeof AgentRealAdapterRegistrationGuardResponseSchema
+>;
+
 export const ProviderQuotaCostPreflightReadinessResponseSchema = Type.Object(
   {
     mode: StringEnum(["provider_quota_cost_preflight"] as const),

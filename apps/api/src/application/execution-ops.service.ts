@@ -33,6 +33,10 @@ import {
   DEFAULT_PROVIDER_QUOTA_WINDOW_MS,
   type ProviderQuotaCostPreflightReadiness,
 } from "./runtime/provider-quota-cost-preflight.js";
+import {
+  buildAgentRealAdapterRegistrationGuard,
+  type AgentRealAdapterRegistrationGuard,
+} from "./runtime/agent-real-adapter-registration-guard.js";
 import type { OutboxRelay } from "./outbox-relay.js";
 
 // 运维健康只读聚合（camelCase；mapper → snake_case DTO）。仅聚合 execution plane 表，不 join 业务表/不读 audit。
@@ -324,6 +328,16 @@ export class ExecutionOpsService {
       timeoutErrorType: "timeout",
       abortErrorType: "aborted",
     };
+  }
+
+  getAgentRealAdapterRegistrationGuard(): AgentRealAdapterRegistrationGuard {
+    return buildAgentRealAdapterRegistrationGuard({
+      activeAdapterMode: this.config.runtimeAdapterMode,
+      runtimeSafetyPolicy: this.config.runtimeSafetyPolicy,
+      networkAllowlist: this.config.networkAllowlist,
+      secretStoreEnabled: this.config.secretStoreEnabled,
+      secretInjectionEnabled: this.config.secretInjectionEnabled,
+    });
   }
 
   getProviderQuotaCostPreflightReadiness(): ProviderQuotaCostPreflightReadiness {

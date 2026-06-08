@@ -1,5 +1,6 @@
 import type {
   AgentProfileDTO,
+  AgentRealAdapterRegistrationGuardResponse,
   AgentRealHttpAdapterReadinessResponse,
   AgentSessionDTO,
   AssetVersionDTO,
@@ -64,6 +65,7 @@ import type {
   SecretResolverReadiness,
 } from "./execution-ops.service.js";
 import type { ProviderQuotaCostPreflightReadiness } from "./runtime/provider-quota-cost-preflight.js";
+import type { AgentRealAdapterRegistrationGuard } from "./runtime/agent-real-adapter-registration-guard.js";
 
 const iso = (d: Date | null): string | null => (d ? d.toISOString() : null);
 
@@ -598,6 +600,44 @@ export function toAgentRealHttpAdapterReadinessDTO(
     transport_signal_forwarded: s.transportSignalForwarded,
     timeout_error_type: s.timeoutErrorType,
     abort_error_type: s.abortErrorType,
+  };
+}
+
+export function toAgentRealAdapterRegistrationGuardDTO(
+  s: AgentRealAdapterRegistrationGuard,
+): AgentRealAdapterRegistrationGuardResponse {
+  return {
+    mode: s.mode,
+    registration_ready: s.registrationReady,
+    real_adapter_registered: s.realAdapterRegistered,
+    real_adapter_worker_enabled: s.realAdapterWorkerEnabled,
+    descriptor_status: s.descriptorStatus,
+    blocked_real_adapter_reason: s.blockedRealAdapterReason,
+    required_adapter_type: s.requiredAdapterType,
+    required_adapter_mode: s.requiredAdapterMode,
+    config_gates: {
+      runtime_mode: s.configGates.runtimeMode,
+      allow_real_runtime: s.configGates.allowRealRuntime,
+      active_adapter_mode: s.configGates.activeAdapterMode,
+      allow_network: s.configGates.allowNetwork,
+      allow_process_spawn: s.configGates.allowProcessSpawn,
+      require_credential_ref: s.configGates.requireCredentialRef,
+      redact_snapshots: s.configGates.redactSnapshots,
+    },
+    readiness_gates: {
+      network_allowlist_ready: s.readinessGates.networkAllowlistReady,
+      secret_store_ready: s.readinessGates.secretStoreReady,
+      secret_injection_ready: s.readinessGates.secretInjectionReady,
+      real_transport_ready: s.readinessGates.realTransportReady,
+      timeout_abort_ready: s.readinessGates.timeoutAbortReady,
+      quota_preflight_ready: s.readinessGates.quotaPreflightReady,
+      cost_preflight_ready: s.readinessGates.costPreflightReady,
+    },
+    missing_requirements: s.missingRequirements,
+    fail_closed_error: {
+      message: s.failClosedError.message,
+      retryable: s.failClosedError.retryable,
+    },
   };
 }
 

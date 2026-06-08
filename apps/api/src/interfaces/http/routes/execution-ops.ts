@@ -1,5 +1,6 @@
 import type { FastifyPluginAsyncTypebox } from "@fastify/type-provider-typebox";
 import {
+  AgentRealAdapterRegistrationGuardResponseSchema,
   AgentRealHttpAdapterReadinessResponseSchema,
   ExecutionSystemHealthSchema,
   IdParamSchema,
@@ -24,6 +25,7 @@ import {
 } from "@cf/shared";
 import type { ExecutionOpsService } from "../../../application/execution-ops.service.js";
 import {
+  toAgentRealAdapterRegistrationGuardDTO,
   toAgentRealHttpAdapterReadinessDTO,
   toExecutionJobDTO,
   toExecutionSystemHealthDTO,
@@ -89,6 +91,12 @@ export const executionOpsRoutes: FastifyPluginAsyncTypebox<ExecutionOpsRoutesOpt
     "/api/execution/ops/agent-real-http-adapter",
     { schema: { response: { 200: AgentRealHttpAdapterReadinessResponseSchema } } },
     async () => toAgentRealHttpAdapterReadinessDTO(executionOpsService.getAgentRealHttpAdapterReadiness()),
+  );
+
+  app.get(
+    "/api/execution/ops/agent-real-adapter-registration-guard",
+    { schema: { response: { 200: AgentRealAdapterRegistrationGuardResponseSchema } } },
+    async () => toAgentRealAdapterRegistrationGuardDTO(executionOpsService.getAgentRealAdapterRegistrationGuard()),
   );
 
   app.get(
