@@ -18,6 +18,7 @@ import type {
   ExecutionWritebackDryRunDTO,
   ExecutionWritebackDryRunReadinessResponse,
   ExecutionWritebackExecutorFeatureFlagReadinessResponse,
+  ExecutionWritebackExecutorRegistrationReadinessResponse,
   ExecutionWritebackExecutorPreflightMatrixResponse,
   ExecutionWritebackGuardDTO,
   ExecutionWritebackGuardReadinessResponse,
@@ -78,6 +79,7 @@ import type {
 } from "../domain/execution/writeback-apply-guard.js";
 import type { ExecutionWritebackDryRun, ExecutionWritebackDryRunReadiness } from "../domain/execution/writeback-dry-run.js";
 import type { ExecutionWritebackExecutorFeatureFlagReadiness } from "../domain/execution/writeback-executor-feature-flag.js";
+import type { ExecutionWritebackExecutorRegistrationReadiness } from "../domain/execution/writeback-executor-registration.js";
 import type { ExecutionWritebackExecutorPreflightMatrix } from "../domain/execution/writeback-executor-preflight-matrix.js";
 import type { ExecutionWritebackGuard, ExecutionWritebackGuardReadiness } from "../domain/execution/writeback-guard.js";
 import type {
@@ -849,6 +851,44 @@ export function toExecutionWritebackExecutorFeatureFlagReadinessDTO(
     subject_type: r.subjectType,
     preflight_matrix_required: r.preflightMatrixRequired,
     preflight_matrix_ready: r.preflightMatrixReady,
+    missing_requirements: r.missingRequirements,
+    next_phase_requirements: r.nextPhaseRequirements,
+  };
+}
+
+export function toExecutionWritebackExecutorRegistrationReadinessDTO(
+  r: ExecutionWritebackExecutorRegistrationReadiness,
+): ExecutionWritebackExecutorRegistrationReadinessResponse {
+  return {
+    mode: r.mode,
+    subject_type: r.subjectType,
+    executor_kind: r.executorKind,
+    registry_kind: r.registryKind,
+    registered: r.registered,
+    executable: r.executable,
+    registration_allowed: r.registrationAllowed,
+    feature_flag_required: r.featureFlagRequired,
+    feature_flag_configured_enabled: r.featureFlagConfiguredEnabled,
+    feature_flag_effective: r.featureFlagEffective,
+    preflight_matrix_required: r.preflightMatrixRequired,
+    preflight_matrix_ready: r.preflightMatrixReady,
+    transaction_port_required: r.transactionPortRequired,
+    transaction_port_registered: r.transactionPortRegistered,
+    state_transition_policy_required: r.stateTransitionPolicyRequired,
+    state_transition_policy_registered: r.stateTransitionPolicyRegistered,
+    subject_snapshot_required: r.subjectSnapshotRequired,
+    subject_snapshot_reader_registered: r.subjectSnapshotReaderRegistered,
+    control_plane_read_allowed: r.controlPlaneReadAllowed,
+    control_plane_write_allowed: r.controlPlaneWriteAllowed,
+    audit_write_allowed: r.auditWriteAllowed,
+    descriptor: {
+      subject_type: r.descriptor.subjectType,
+      executor_kind: r.descriptor.executorKind,
+      status: r.descriptor.status,
+      executable: r.descriptor.executable,
+      version: r.descriptor.version,
+      missing_requirements: r.descriptor.missingRequirements,
+    },
     missing_requirements: r.missingRequirements,
     next_phase_requirements: r.nextPhaseRequirements,
   };

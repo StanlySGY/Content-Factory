@@ -34,6 +34,10 @@ import {
   type ExecutionWritebackExecutorFeatureFlagReadiness,
 } from "../domain/execution/writeback-executor-feature-flag.js";
 import {
+  buildExecutionWritebackExecutorRegistrationReadiness,
+  type ExecutionWritebackExecutorRegistrationReadiness,
+} from "../domain/execution/writeback-executor-registration.js";
+import {
   buildExecutionWritebackTransactionPrototypeReadiness,
   type ExecutionWritebackTransactionPrototypeReadiness,
 } from "../domain/execution/writeback-transaction-prototype.js";
@@ -487,6 +491,12 @@ export class ExecutionOpsService {
   getWritebackExecutorFeatureFlagReadiness(): ExecutionWritebackExecutorFeatureFlagReadiness {
     return buildExecutionWritebackExecutorFeatureFlagReadiness({
       configuredEnabled: this.config.writebackExecutorEnabled,
+    });
+  }
+
+  getWritebackExecutorRegistrationReadiness(): ExecutionWritebackExecutorRegistrationReadiness {
+    return buildExecutionWritebackExecutorRegistrationReadiness({
+      writebackExecutorConfiguredEnabled: this.config.writebackExecutorEnabled,
     });
   }
 

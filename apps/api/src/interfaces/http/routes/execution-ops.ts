@@ -8,6 +8,7 @@ import {
   ExecutionWritebackApplyGuardReadinessResponseSchema,
   ExecutionWritebackDryRunReadinessResponseSchema,
   ExecutionWritebackExecutorFeatureFlagReadinessResponseSchema,
+  ExecutionWritebackExecutorRegistrationReadinessResponseSchema,
   ExecutionWritebackExecutorPreflightMatrixResponseSchema,
   ExecutionWritebackGuardReadinessResponseSchema,
   ExecutionWritebackStateTransitionPolicyReadinessResponseSchema,
@@ -46,6 +47,7 @@ import {
   toExecutionWritebackApplyGuardReadinessDTO,
   toExecutionWritebackDryRunReadinessDTO,
   toExecutionWritebackExecutorFeatureFlagReadinessDTO,
+  toExecutionWritebackExecutorRegistrationReadinessDTO,
   toExecutionWritebackExecutorPreflightMatrixDTO,
   toExecutionWritebackGuardReadinessDTO,
   toExecutionWritebackStateTransitionPolicyReadinessDTO,
@@ -229,6 +231,15 @@ export const executionOpsRoutes: FastifyPluginAsyncTypebox<ExecutionOpsRoutesOpt
     async () =>
       toExecutionWritebackExecutorFeatureFlagReadinessDTO(
         executionOpsService.getWritebackExecutorFeatureFlagReadiness(),
+      ),
+  );
+
+  app.get(
+    "/api/execution/ops/writeback-executor-registration-readiness",
+    { schema: { response: { 200: ExecutionWritebackExecutorRegistrationReadinessResponseSchema } } },
+    async () =>
+      toExecutionWritebackExecutorRegistrationReadinessDTO(
+        executionOpsService.getWritebackExecutorRegistrationReadiness(),
       ),
   );
 
