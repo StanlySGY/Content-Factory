@@ -13,6 +13,8 @@ import type {
   ExecutionJobDTO,
   ExecutionResultDTO,
   ExecutionWritebackDTO,
+  ExecutionWritebackApplyGuardDTO,
+  ExecutionWritebackApplyGuardReadinessResponse,
   ExecutionWritebackDryRunDTO,
   ExecutionWritebackDryRunReadinessResponse,
   ExecutionWritebackGuardDTO,
@@ -63,6 +65,10 @@ import type {
   WorkflowRunRow,
 } from "../infrastructure/db/schema.js";
 import type { ExecutionResultSummary } from "../domain/execution/result.js";
+import type {
+  ExecutionWritebackApplyGuard,
+  ExecutionWritebackApplyGuardReadiness,
+} from "../domain/execution/writeback-apply-guard.js";
 import type { ExecutionWritebackDryRun, ExecutionWritebackDryRunReadiness } from "../domain/execution/writeback-dry-run.js";
 import type { ExecutionWritebackGuard, ExecutionWritebackGuardReadiness } from "../domain/execution/writeback-guard.js";
 import type {
@@ -582,6 +588,54 @@ export function toExecutionWritebackDryRunReadinessDTO(
     control_plane_write_enabled: r.controlPlaneWriteEnabled,
     audit_write_enabled: r.auditWriteEnabled,
     required_steps: r.requiredSteps,
+    missing_requirements: r.missingRequirements,
+    next_phase_requirements: r.nextPhaseRequirements,
+  };
+}
+
+export function toExecutionWritebackApplyGuardDTO(g: ExecutionWritebackApplyGuard): ExecutionWritebackApplyGuardDTO {
+  return {
+    writeback_id: g.writebackId,
+    execution_result_id: g.executionResultId,
+    execution_job_id: g.executionJobId,
+    subject_type: g.subjectType,
+    subject_id: g.subjectId,
+    writeback_status: g.writebackStatus,
+    mode: g.mode,
+    enabled: g.enabled,
+    executable: g.executable,
+    decision: g.decision,
+    real_executor_allowed: g.realExecutorAllowed,
+    feature_flag_enabled: g.featureFlagEnabled,
+    ledger_status_allowed: g.ledgerStatusAllowed,
+    subject_supported: g.subjectSupported,
+    transaction_plan_ready: g.transactionPlanReady,
+    dry_run_passed: g.dryRunPassed,
+    audit_coupling_ready: g.auditCouplingReady,
+    control_plane_write_allowed: g.controlPlaneWriteAllowed,
+    required_checks: g.requiredChecks.map((c) => ({
+      key: c.key,
+      status: c.status,
+      passed: c.passed,
+      missing_requirements: c.missingRequirements,
+    })),
+    missing_requirements: g.missingRequirements,
+    next_phase_requirements: g.nextPhaseRequirements,
+  };
+}
+
+export function toExecutionWritebackApplyGuardReadinessDTO(
+  r: ExecutionWritebackApplyGuardReadiness,
+): ExecutionWritebackApplyGuardReadinessResponse {
+  return {
+    mode: r.mode,
+    enabled: r.enabled,
+    executable: r.executable,
+    decision: r.decision,
+    real_executor_registered: r.realExecutorRegistered,
+    real_executor_allowed: r.realExecutorAllowed,
+    control_plane_write_allowed: r.controlPlaneWriteAllowed,
+    required_checks: r.requiredChecks,
     missing_requirements: r.missingRequirements,
     next_phase_requirements: r.nextPhaseRequirements,
   };

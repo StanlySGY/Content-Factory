@@ -1,5 +1,9 @@
 import { NotFoundError, ValidationError } from "../domain/errors.js";
 import {
+  buildExecutionWritebackApplyGuard,
+  type ExecutionWritebackApplyGuard,
+} from "../domain/execution/writeback-apply-guard.js";
+import {
   buildDisabledControlPlaneWritebackAdapter,
   buildExecutionWritebackDryRun,
   type ExecutionWritebackDryRun,
@@ -44,6 +48,16 @@ export class ExecutionWritebackService {
       plan: await this.getTransactionPlan(id),
       adapter: buildDisabledControlPlaneWritebackAdapter(),
     });
+  }
+
+  async getApplyGuard(id: string): Promise<ExecutionWritebackApplyGuard> {
+    const guard = await this.getGuard(id);
+    const plan = buildExecutionWritebackTransactionPlanFromGuard(guard);
+    const dryRun = buildExecutionWritebackDryRun({
+      plan,
+      adapter: buildDisabledControlPlaneWritebackAdapter(),
+    });
+    return buildExecutionWritebackApplyGuard({ guard, plan, dryRun });
   }
 
   listByResult(resultId: string): Promise<ExecutionWritebackRow[]> {

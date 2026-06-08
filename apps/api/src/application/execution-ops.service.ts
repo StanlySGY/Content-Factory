@@ -2,6 +2,10 @@ import { randomUUID } from "node:crypto";
 import { EXECUTION_OUTBOX_EVENTS } from "@cf/shared";
 import { ConflictError, NotFoundError, ValidationError } from "../domain/errors.js";
 import {
+  buildExecutionWritebackApplyGuardReadiness,
+  type ExecutionWritebackApplyGuardReadiness,
+} from "../domain/execution/writeback-apply-guard.js";
+import {
   buildExecutionWritebackGuardReadiness,
   type ExecutionWritebackGuardReadiness,
 } from "../domain/execution/writeback-guard.js";
@@ -429,6 +433,10 @@ export class ExecutionOpsService {
 
   getWritebackDryRunReadiness(): ExecutionWritebackDryRunReadiness {
     return buildExecutionWritebackDryRunReadiness();
+  }
+
+  getWritebackApplyGuardReadiness(): ExecutionWritebackApplyGuardReadiness {
+    return buildExecutionWritebackApplyGuardReadiness();
   }
 
   async dryRunRuntimeAdapter(input: {

@@ -7,6 +7,7 @@ import {
   ExecutionResultSchema,
   ExecutionResultsResponseSchema,
   ExecutionResultSummarySchema,
+  ExecutionWritebackApplyGuardSchema,
   ExecutionWritebackDryRunSchema,
   ExecutionWritebackGuardSchema,
   ExecutionWritebackTransactionPlanSchema,
@@ -32,6 +33,7 @@ import {
   toExecutionJobDTO,
   toExecutionResultDTO,
   toExecutionResultSummaryDTO,
+  toExecutionWritebackApplyGuardDTO,
   toExecutionWritebackDryRunDTO,
   toExecutionWritebackGuardDTO,
   toExecutionWritebackTransactionPlanDTO,
@@ -167,6 +169,13 @@ export const executionRoutes: FastifyPluginAsyncTypebox<ExecutionRoutesOptions> 
     "/api/execution/writebacks/:id/dry-run",
     { schema: { params: IdParamSchema, response: { 200: ExecutionWritebackDryRunSchema } } },
     async (request) => toExecutionWritebackDryRunDTO(await executionWritebackService.dryRun(request.params.id)),
+  );
+
+  // 真实回写 executor 前最终闸门：disabled apply guard，只读，不读/写控制面。
+  app.get(
+    "/api/execution/writebacks/:id/apply-guard",
+    { schema: { params: IdParamSchema, response: { 200: ExecutionWritebackApplyGuardSchema } } },
+    async (request) => toExecutionWritebackApplyGuardDTO(await executionWritebackService.getApplyGuard(request.params.id)),
   );
 
   app.get(

@@ -1077,6 +1077,70 @@ export type ExecutionWritebackDryRunReadinessResponse = Static<
   typeof ExecutionWritebackDryRunReadinessResponseSchema
 >;
 
+export const ExecutionWritebackApplyGuardCheckSchema = Type.Object(
+  {
+    key: StringEnum([
+      "writeback_ledger_status",
+      "subject_support",
+      "transaction_plan",
+      "dry_run",
+      "audit_coupling",
+      "feature_flag",
+    ] as const),
+    status: StringEnum(["blocked"] as const),
+    passed: Type.Boolean(),
+    missing_requirements: Type.Array(Type.String()),
+  },
+  { additionalProperties: false },
+);
+
+export const ExecutionWritebackApplyGuardSchema = Type.Object(
+  {
+    writeback_id: Uuid(),
+    execution_result_id: Uuid(),
+    execution_job_id: Uuid(),
+    subject_type: Type.String(),
+    subject_id: Type.String(),
+    writeback_status: Type.String(),
+    mode: StringEnum(["disabled_apply_guard"] as const),
+    enabled: Type.Boolean(),
+    executable: Type.Boolean(),
+    decision: StringEnum(["blocked"] as const),
+    real_executor_allowed: Type.Boolean(),
+    feature_flag_enabled: Type.Boolean(),
+    ledger_status_allowed: Type.Boolean(),
+    subject_supported: Type.Boolean(),
+    transaction_plan_ready: Type.Boolean(),
+    dry_run_passed: Type.Boolean(),
+    audit_coupling_ready: Type.Boolean(),
+    control_plane_write_allowed: Type.Boolean(),
+    required_checks: Type.Array(ExecutionWritebackApplyGuardCheckSchema),
+    missing_requirements: Type.Array(Type.String()),
+    next_phase_requirements: Type.Array(Type.String()),
+  },
+  { additionalProperties: false },
+);
+export type ExecutionWritebackApplyGuardDTO = Static<typeof ExecutionWritebackApplyGuardSchema>;
+
+export const ExecutionWritebackApplyGuardReadinessResponseSchema = Type.Object(
+  {
+    mode: StringEnum(["disabled_apply_guard"] as const),
+    enabled: Type.Boolean(),
+    executable: Type.Boolean(),
+    decision: StringEnum(["blocked"] as const),
+    real_executor_registered: Type.Boolean(),
+    real_executor_allowed: Type.Boolean(),
+    control_plane_write_allowed: Type.Boolean(),
+    required_checks: Type.Array(ExecutionWritebackApplyGuardCheckSchema.properties.key),
+    missing_requirements: Type.Array(Type.String()),
+    next_phase_requirements: Type.Array(Type.String()),
+  },
+  { additionalProperties: false },
+);
+export type ExecutionWritebackApplyGuardReadinessResponse = Static<
+  typeof ExecutionWritebackApplyGuardReadinessResponseSchema
+>;
+
 // ---- Execution Ops (S5 Phase 1.10；运维健康观测 + 恢复控制，仅 execution plane) ----
 export const ExecutionSystemHealthSchema = Type.Object(
   {

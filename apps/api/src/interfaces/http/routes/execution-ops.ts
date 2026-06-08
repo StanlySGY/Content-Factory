@@ -5,6 +5,7 @@ import {
   AgentRealProviderConfigPreflightResponseSchema,
   AgentRealProviderTransportDisabledHarnessResponseSchema,
   ExecutionSystemHealthSchema,
+  ExecutionWritebackApplyGuardReadinessResponseSchema,
   ExecutionWritebackDryRunReadinessResponseSchema,
   ExecutionWritebackGuardReadinessResponseSchema,
   ExecutionWritebackTransactionPlanReadinessResponseSchema,
@@ -36,6 +37,7 @@ import {
   toAgentRealProviderTransportDisabledHarnessDTO,
   toExecutionJobDTO,
   toExecutionSystemHealthDTO,
+  toExecutionWritebackApplyGuardReadinessDTO,
   toExecutionWritebackDryRunReadinessDTO,
   toExecutionWritebackGuardReadinessDTO,
   toExecutionWritebackTransactionPlanReadinessDTO,
@@ -156,6 +158,12 @@ export const executionOpsRoutes: FastifyPluginAsyncTypebox<ExecutionOpsRoutesOpt
     "/api/execution/ops/writeback-dry-run-readiness",
     { schema: { response: { 200: ExecutionWritebackDryRunReadinessResponseSchema } } },
     async () => toExecutionWritebackDryRunReadinessDTO(executionOpsService.getWritebackDryRunReadiness()),
+  );
+
+  app.get(
+    "/api/execution/ops/writeback-apply-guard-readiness",
+    { schema: { response: { 200: ExecutionWritebackApplyGuardReadinessResponseSchema } } },
+    async () => toExecutionWritebackApplyGuardReadinessDTO(executionOpsService.getWritebackApplyGuardReadiness()),
   );
 
   app.post(
