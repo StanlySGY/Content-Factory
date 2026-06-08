@@ -1261,6 +1261,38 @@ export type ProviderQuotaCostPreflightReadinessResponse = Static<
   typeof ProviderQuotaCostPreflightReadinessResponseSchema
 >;
 
+export const AgentRealProviderConfigPreflightResponseSchema = Type.Object(
+  {
+    mode: StringEnum(["agent_real_provider_config_preflight"] as const),
+    config_ready: Type.Boolean(),
+    provider_kind: StringEnum(["openai_compatible"] as const),
+    model: Type.String(),
+    endpoint_ref: Type.String(),
+    endpoint_resolved: Type.Boolean(),
+    endpoint_network_checked: Type.Boolean(),
+    credential_ref_ready: Type.Boolean(),
+    secret_material_read: Type.Boolean(),
+    secret_material_returned: Type.Boolean(),
+    timeout_ms: Type.Integer(),
+    timeout_within_policy: Type.Boolean(),
+    quota_profile_ready: Type.Boolean(),
+    distributed_quota_ready: Type.Boolean(),
+    cost_profile_ready: Type.Boolean(),
+    cost_source: StringEnum(["not_calculated"] as const),
+    real_provider_billing_enabled: Type.Boolean(),
+    real_adapter_worker_enabled: Type.Boolean(),
+    active_adapter_mode: RuntimeAdapterModeSchema,
+    runtime_mode: RuntimeModeSchema,
+    allow_network: Type.Boolean(),
+    blocked_real_adapter_reason: Type.String(),
+    redacted_config: JsonRecord(),
+  },
+  { additionalProperties: false },
+);
+export type AgentRealProviderConfigPreflightResponse = Static<
+  typeof AgentRealProviderConfigPreflightResponseSchema
+>;
+
 export const SecretInjectionPreflightReadinessResponseSchema = Type.Object(
   {
     mode: StringEnum(["secret_injection_preflight"] as const),

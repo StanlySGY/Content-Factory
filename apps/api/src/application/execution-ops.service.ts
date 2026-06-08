@@ -37,6 +37,11 @@ import {
   buildAgentRealAdapterRegistrationGuard,
   type AgentRealAdapterRegistrationGuard,
 } from "./runtime/agent-real-adapter-registration-guard.js";
+import {
+  buildAgentRealProviderConfigPreflight,
+  buildDefaultAgentRealProviderConfig,
+  type AgentRealProviderConfigPreflight,
+} from "./runtime/agent-real-provider-config-preflight.js";
 import type { OutboxRelay } from "./outbox-relay.js";
 
 // 运维健康只读聚合（camelCase；mapper → snake_case DTO）。仅聚合 execution plane 表，不 join 业务表/不读 audit。
@@ -342,6 +347,14 @@ export class ExecutionOpsService {
 
   getProviderQuotaCostPreflightReadiness(): ProviderQuotaCostPreflightReadiness {
     return buildProviderQuotaCostPreflightReadiness({
+      activeAdapterMode: this.config.runtimeAdapterMode,
+      runtimeSafetyPolicy: this.config.runtimeSafetyPolicy,
+    });
+  }
+
+  getAgentRealProviderConfigPreflight(): AgentRealProviderConfigPreflight {
+    return buildAgentRealProviderConfigPreflight({
+      config: buildDefaultAgentRealProviderConfig(this.config.runtimeSafetyPolicy.timeoutMs),
       activeAdapterMode: this.config.runtimeAdapterMode,
       runtimeSafetyPolicy: this.config.runtimeSafetyPolicy,
     });

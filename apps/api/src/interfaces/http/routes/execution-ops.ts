@@ -2,6 +2,7 @@ import type { FastifyPluginAsyncTypebox } from "@fastify/type-provider-typebox";
 import {
   AgentRealAdapterRegistrationGuardResponseSchema,
   AgentRealHttpAdapterReadinessResponseSchema,
+  AgentRealProviderConfigPreflightResponseSchema,
   ExecutionSystemHealthSchema,
   IdParamSchema,
   ManualRetryJobResponseSchema,
@@ -27,6 +28,7 @@ import type { ExecutionOpsService } from "../../../application/execution-ops.ser
 import {
   toAgentRealAdapterRegistrationGuardDTO,
   toAgentRealHttpAdapterReadinessDTO,
+  toAgentRealProviderConfigPreflightDTO,
   toExecutionJobDTO,
   toExecutionSystemHealthDTO,
   toRuntimeAdapterDryRunResponseDTO,
@@ -104,6 +106,12 @@ export const executionOpsRoutes: FastifyPluginAsyncTypebox<ExecutionOpsRoutesOpt
     { schema: { response: { 200: ProviderQuotaCostPreflightReadinessResponseSchema } } },
     async () =>
       toProviderQuotaCostPreflightReadinessDTO(executionOpsService.getProviderQuotaCostPreflightReadiness()),
+  );
+
+  app.get(
+    "/api/execution/ops/agent-real-provider-config-preflight",
+    { schema: { response: { 200: AgentRealProviderConfigPreflightResponseSchema } } },
+    async () => toAgentRealProviderConfigPreflightDTO(executionOpsService.getAgentRealProviderConfigPreflight()),
   );
 
   app.get(

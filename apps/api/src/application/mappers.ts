@@ -2,6 +2,7 @@ import type {
   AgentProfileDTO,
   AgentRealAdapterRegistrationGuardResponse,
   AgentRealHttpAdapterReadinessResponse,
+  AgentRealProviderConfigPreflightResponse,
   AgentSessionDTO,
   AssetVersionDTO,
   ContentAssetDTO,
@@ -66,6 +67,7 @@ import type {
 } from "./execution-ops.service.js";
 import type { ProviderQuotaCostPreflightReadiness } from "./runtime/provider-quota-cost-preflight.js";
 import type { AgentRealAdapterRegistrationGuard } from "./runtime/agent-real-adapter-registration-guard.js";
+import type { AgentRealProviderConfigPreflight } from "./runtime/agent-real-provider-config-preflight.js";
 
 const iso = (d: Date | null): string | null => (d ? d.toISOString() : null);
 
@@ -79,7 +81,9 @@ function snakeRuntimeValue(value: unknown): unknown {
       key === "fakeProvider" ? "fake_provider" :
       key === "providerPreflight" ? "provider_preflight" :
       key === "inputAccepted" ? "input_accepted" :
+      key === "credentialRef" ? "credential_ref" :
       key === "keyRef" ? "key_ref" :
+      key === "endpointRef" ? "endpoint_ref" :
       key === "blockedReason" ? "blocked_reason" :
       key === "requiresCredentialRef" ? "requires_credential_ref" :
       key === "allowNetwork" ? "allow_network" :
@@ -91,6 +95,10 @@ function snakeRuntimeValue(value: unknown): unknown {
       key === "providerErrorType" ? "provider_error_type" :
       key === "providerKind" ? "provider_kind" :
       key === "providerRequestId" ? "provider_request_id" :
+      key === "quotaProfile" ? "quota_profile" :
+      key === "maxRequestsPerWindow" ? "max_requests_per_window" :
+      key === "windowMs" ? "window_ms" :
+      key === "costProfile" ? "cost_profile" :
       key === "tokenUsage" ? "token_usage" :
       key === "promptTokens" ? "prompt_tokens" :
       key === "completionTokens" ? "completion_tokens" :
@@ -672,6 +680,36 @@ export function toProviderQuotaCostPreflightReadinessDTO(
     allow_network: s.allowNetwork,
     active_adapter_mode: s.activeAdapterMode,
     runtime_mode: s.runtimeMode,
+  };
+}
+
+export function toAgentRealProviderConfigPreflightDTO(
+  s: AgentRealProviderConfigPreflight,
+): AgentRealProviderConfigPreflightResponse {
+  return {
+    mode: s.mode,
+    config_ready: s.configReady,
+    provider_kind: s.providerKind,
+    model: s.model,
+    endpoint_ref: s.endpointRef,
+    endpoint_resolved: s.endpointResolved,
+    endpoint_network_checked: s.endpointNetworkChecked,
+    credential_ref_ready: s.credentialRefReady,
+    secret_material_read: s.secretMaterialRead,
+    secret_material_returned: s.secretMaterialReturned,
+    timeout_ms: s.timeoutMs,
+    timeout_within_policy: s.timeoutWithinPolicy,
+    quota_profile_ready: s.quotaProfileReady,
+    distributed_quota_ready: s.distributedQuotaReady,
+    cost_profile_ready: s.costProfileReady,
+    cost_source: s.costSource,
+    real_provider_billing_enabled: s.realProviderBillingEnabled,
+    real_adapter_worker_enabled: s.realAdapterWorkerEnabled,
+    active_adapter_mode: s.activeAdapterMode,
+    runtime_mode: s.runtimeMode,
+    allow_network: s.allowNetwork,
+    blocked_real_adapter_reason: s.blockedRealAdapterReason,
+    redacted_config: snakeRuntimeValue(s.redactedConfig) as Record<string, unknown>,
   };
 }
 
