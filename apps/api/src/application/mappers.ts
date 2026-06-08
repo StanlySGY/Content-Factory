@@ -60,12 +60,18 @@ function snakeRuntimeValue(value: unknown): unknown {
   for (const [key, v] of Object.entries(value)) {
     const snakeKey =
       key === "dryRun" ? "dry_run" :
+      key === "fakeProvider" ? "fake_provider" :
       key === "inputAccepted" ? "input_accepted" :
       key === "keyRef" ? "key_ref" :
       key === "blockedReason" ? "blocked_reason" :
       key === "requiresCredentialRef" ? "requires_credential_ref" :
       key === "allowNetwork" ? "allow_network" :
       key === "allowProcessSpawn" ? "allow_process_spawn" :
+      key === "adapterMode" ? "adapter_mode" :
+      key === "credentialResolved" ? "credential_resolved" :
+      key === "networkUsed" ? "network_used" :
+      key === "processSpawned" ? "process_spawned" :
+      key === "providerErrorType" ? "provider_error_type" :
       key;
     out[snakeKey] = snakeRuntimeValue(v);
   }

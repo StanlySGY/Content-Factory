@@ -1019,3 +1019,15 @@ export const RuntimeAdapterDryRunResponseSchema = Type.Object(
   { additionalProperties: false },
 );
 export type RuntimeAdapterDryRunResponse = Static<typeof RuntimeAdapterDryRunResponseSchema>;
+
+export const RuntimeAdapterFakeProviderTestBodySchema = Type.Object(
+  {
+    payload: JsonRecord(),
+    credential_ref: Type.Optional(RuntimeCredentialRefSchema),
+  },
+  { additionalProperties: false },
+);
+export type RuntimeAdapterFakeProviderTestBody = Static<typeof RuntimeAdapterFakeProviderTestBodySchema>;
+
+export const RuntimeAdapterFakeProviderTestResponseSchema = RuntimeAdapterDryRunResponseSchema;
+export type RuntimeAdapterFakeProviderTestResponse = Static<typeof RuntimeAdapterFakeProviderTestResponseSchema>;

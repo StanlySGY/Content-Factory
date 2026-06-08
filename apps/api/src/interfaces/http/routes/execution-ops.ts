@@ -8,7 +8,9 @@ import {
   RecoverStaleJobsBodySchema,
   RecoverStaleJobsResponseSchema,
   RuntimeAdapterDryRunBodySchema,
+  RuntimeAdapterFakeProviderTestBodySchema,
   RuntimeAdapterDryRunResponseSchema,
+  RuntimeAdapterFakeProviderTestResponseSchema,
   RuntimeAdaptersResponseSchema,
   RuntimeSafetyPolicySchema,
 } from "@cf/shared";
@@ -58,6 +60,29 @@ export const executionOpsRoutes: FastifyPluginAsyncTypebox<ExecutionOpsRoutesOpt
       toRuntimeAdapterDryRunResponseDTO(
         await executionOpsService.dryRunRuntimeAdapter({
           type: request.body.type,
+          payload: request.body.payload,
+          credentialRef: request.body.credential_ref
+            ? {
+                provider: request.body.credential_ref.provider,
+                keyRef: request.body.credential_ref.key_ref,
+                scope: request.body.credential_ref.scope,
+              }
+            : undefined,
+        }),
+      ),
+  );
+
+  app.post(
+    "/api/execution/ops/runtime-adapters/fake-provider-test",
+    {
+      schema: {
+        body: RuntimeAdapterFakeProviderTestBodySchema,
+        response: { 200: RuntimeAdapterFakeProviderTestResponseSchema },
+      },
+    },
+    async (request) =>
+      toRuntimeAdapterDryRunResponseDTO(
+        await executionOpsService.fakeProviderTest({
           payload: request.body.payload,
           credentialRef: request.body.credential_ref
             ? {

@@ -2,7 +2,7 @@ import type { ExecutionJobType } from "@cf/shared";
 import { ValidationError } from "../../domain/errors.js";
 import type { RuntimeSafetyPolicy } from "../../domain/execution/runtime-safety.js";
 
-export const RUNTIME_ADAPTER_MODES = ["mock", "dry_run", "real"] as const;
+export const RUNTIME_ADAPTER_MODES = ["mock", "dry_run", "fake_provider", "real"] as const;
 export type RuntimeAdapterMode = (typeof RUNTIME_ADAPTER_MODES)[number];
 
 export type RuntimeAdapterStatus = "available" | "disabled" | "blocked";
@@ -82,6 +82,18 @@ export function createDefaultRuntimeAdapterRegistry(): RuntimeAdapterRegistry {
       allowNetwork: false,
       allowProcessSpawn: false,
       status: "available",
+    });
+    registry.registerAdapter({
+      type,
+      mode: "fake_provider",
+      name: type === "agent" ? "agent-fake-provider-runtime" : `${type}-fake-provider-runtime`,
+      version: "2.2.0",
+      capabilities: type === "agent" ? ["fake_provider_execute", "validate_credential_ref"] : [],
+      requiresCredentialRef: true,
+      allowNetwork: false,
+      allowProcessSpawn: false,
+      status: type === "agent" ? "available" : "blocked",
+      ...(type === "agent" ? {} : { blockedReason: "fake provider only supports agent" }),
     });
     registry.registerAdapter({
       type,

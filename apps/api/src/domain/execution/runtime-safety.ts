@@ -196,6 +196,7 @@ export function mapProviderErrorToRuntimeError(error: unknown): {
   else if (status === 429) errorType = "rate_limited";
   else if (status === 401 || status === 403 || /permission|forbidden|real execution/i.test(message))
     errorType = "permission_denied";
+  else if (name === "ValidationError") errorType = "validation_error";
   else if (code === "ECONNREFUSED" || code === "ENOTFOUND" || code === "ECONNRESET")
     errorType = "external_unavailable";
   else if (status !== null && status >= 400 && status < 500) errorType = "validation_error";

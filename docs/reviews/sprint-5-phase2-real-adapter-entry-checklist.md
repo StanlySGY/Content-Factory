@@ -1,7 +1,7 @@
 # Sprint-5 Phase 2 — Real Adapter Entry Checklist
 
 > 接入真实 Agent / MCP / LLM / Publisher 前的准入清单。标注每项：**[已满足] Phase 1.x 已就位 / [缺失] 待补 / [必须] 接真实外部系统前硬性前置**。
-> 基线：Phase 1.x 冻结（`fc001fb`→`32fd423`，见 release-gate 文档）；Phase 2.0 Runtime Safety Foundation 与 Phase 2.1 Dry-run Readiness Harness 已补安全准入基础。
+> 基线：Phase 1.x 冻结（`fc001fb`→`32fd423`，见 release-gate 文档）；Phase 2.0 Runtime Safety Foundation、Phase 2.1 Dry-run Readiness Harness 与 Phase 2.2 Agent Fake Provider Harness 已补安全准入基础。
 
 ## 1. 真实 Agent Runtime 准入
 
@@ -9,6 +9,7 @@
 - [已满足] Runtime Contract（RuntimeRequest/Response envelope、错误分类、retryable、durationMs）已冻结，Real Adapter 直接产出真实 RuntimeResponse。
 - [已满足] 结果落点（execution_results 账本）与 outbox 关联（result_id）已就位。
 - [已满足] Agent dry-run runtime readiness validation 已就位（不调用 LLM、不发网络、不读取 secret）。
+- [已满足] Agent provider-shaped contract + fake provider harness 已就位，可验证 provider response、错误映射、脱敏与 worker ledger/outbox 路径。
 - [已满足] Provider-like error → RuntimeErrorType 的基础映射（429/timeout/403/connection/4xx/unknown）已就位；真实 provider 可在此基础上细化内容策略。
 - [缺失] 多轮会话 / agent_messages 模型（若需要）。
 
@@ -16,7 +17,7 @@
 
 - [缺失][必须] `IMCPRuntime` 真实实现：stdio / HTTP / SSE / WS transport + 工具分发，替换 `MCPMockRuntime`。
 - [已满足] Adapter Factory 路由（getRuntime(type)）作为替换点。
-- [已满足] Runtime Adapter Registry 已登记 `mock/dry_run/real` descriptor；real descriptor 当前 blocked。
+- [已满足] Runtime Adapter Registry 已登记 `mock/dry_run/fake_provider/real` descriptor；real descriptor 当前 blocked，MCP/Publisher fake_provider 当前 blocked。
 - [已满足] MCP dry-run runtime readiness validation 已就位（不实现 transport、不发网络、不 spawn process）。
 - [缺失][必须] MCP `risk_level` 驱动的隔离/确认策略接入（见 §7）。
 - [已满足] RuntimeExecutionContext + AbortController 基础已就位。
@@ -75,7 +76,7 @@
 
 - [已满足] feature flag（EXECUTION_WORKER_ENABLED / OUTBOX_RELAY_ENABLED）默认关闭。
 - [已满足] `EXECUTION_RUNTIME_MODE=mock|real_disabled|real_enabled` + `EXECUTION_ALLOW_REAL_RUNTIME=false` 已接入 Factory/Worker；默认 Mock，real_disabled 安全失败，real_enabled 仍需显式总开关。
-- [已满足] `EXECUTION_RUNTIME_ADAPTER_MODE=mock|dry_run|real` 已接入；`real` 当前始终失败为 `no real adapter registered`。
+- [已满足] `EXECUTION_RUNTIME_ADAPTER_MODE=mock|dry_run|fake_provider|real` 已接入；`fake_provider` 仅 agent 可用，`real` 当前始终失败为 `no real adapter registered`。
 - [已满足] 无 DB 迁移的阶段可代码回滚；Real Adapter 接入须保证可快速停摆。
 
 ## 11. 结果回写（execution → Control Plane）
@@ -86,9 +87,10 @@
 
 ## 12. 最小 Phase 2 Spike 建议
 
-1. **Agent Real Adapter spike（最小闭环）**：单一 LLM provider 的 `IAgentRuntime` 实现 + 隔离层（超时中断 + 凭证作用域化）+ 错误映射；经 Bridge 创建 job → worker 真实执行 → 结果落账本。**不回写控制平面**（先证执行，再证回写）。
-2. **Relay 回写 spike**：实现一个真实 handler，按 result_id/subject 幂等回写**单一** stage_run 状态（经状态机），含并发领取保护。
-3. 两个 spike 独立验证后再合流；Publisher 单独立项，不混入。
+1. **Agent Provider Safety Preflight**：在 Phase 2.2 fake provider contract 基础上补真实 secret resolver 边界、HTTP timeout abort、provider response normalization、quota/rate-limit 策略。仍不调用真实 LLM。
+2. **Agent Real Adapter spike（最小闭环）**：单一 LLM provider 的 `IAgentRuntime` 实现 + 隔离层（超时中断 + 凭证作用域化）+ 错误映射；经 Bridge 创建 job → worker 真实执行 → 结果落账本。**不回写控制平面**（先证执行，再证回写）。
+3. **Relay 回写 spike**：实现一个真实 handler，按 result_id/subject 幂等回写**单一** stage_run 状态（经状态机），含并发领取保护。
+4. 各 spike 独立验证后再合流；Publisher 单独立项，不混入。
 
 ---
 
@@ -97,5 +99,6 @@
 - **已由 Phase 1.x 满足**：Runtime Contract、Adapter Factory 替换点、结果账本 + 观测、退避重试/超时契约/stale 恢复、feature flag、ops 控制面 + runbook、控制平面隔离边界。
 - **Phase 2.0 已补齐**：runtime mode/kill switch、credential ref 校验、snapshot 脱敏、AbortSignal 上下文、provider-like error mapping、runtime-safety ops endpoint。
 - **Phase 2.1 已补齐**：adapter registry readiness、credential resolver port、dry-run runtime validation、runtime adapter ops endpoint、worker dry-run ledger/outbox path。
+- **Phase 2.2 已补齐**：Agent provider contract、fake provider harness、`fake_provider` adapter mode、fake-provider-test ops API、worker agent fake provider ledger/outbox path、MCP/Publisher fake_provider 安全阻断。
 - **接真实外部系统前仍必须完成**：真实超时中断落地、资源限额/沙箱、secret store 解析注入、provider 配额策略、high-risk 确认闸门、relay 真实回写 + 并发领取保护。
 - **仍缺失（非 Real Adapter 阻塞，但需规划）**：Publisher + publish_records、审批态建模、账本归档、成本/指标维度。

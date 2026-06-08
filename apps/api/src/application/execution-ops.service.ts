@@ -19,6 +19,7 @@ import {
   type RuntimeAdapterMode,
   type RuntimeAdapterRegistry,
 } from "./runtime/adapter-registry.js";
+import { AgentProviderRuntime } from "./runtime/agent-provider-runtime.js";
 import { AgentDryRunRuntime, MCPDryRunRuntime, PublisherDryRunRuntime } from "./runtime/dry-run-runtimes.js";
 import type { OutboxRelay } from "./outbox-relay.js";
 
@@ -125,6 +126,34 @@ export class ExecutionOpsService {
       input.type === "mcp" ? new MCPDryRunRuntime() :
       new PublisherDryRunRuntime();
     return runtime.execute(request, context);
+  }
+
+  async fakeProviderTest(input: {
+    payload: Record<string, unknown>;
+    credentialRef?: RuntimeCredentialRef;
+  }): Promise<RuntimeResponse> {
+    if (this.config.runtimeAdapterMode === "real") throw new ValidationError("no real adapter registered");
+    const descriptor = this.config.runtimeAdapterRegistry.getAdapterDescriptor("agent", "fake_provider");
+    assertAdapterAllowedBySafetyPolicy(descriptor, this.config.runtimeSafetyPolicy);
+    const request: RuntimeRequest = {
+      jobId: "ops-fake-provider-test",
+      jobType: "agent",
+      payload: input.payload,
+      attemptCount: 0,
+      idempotencyKey: "ops-fake-provider-test",
+      timeoutMs: this.config.runtimeSafetyPolicy.timeoutMs,
+      metadata: {},
+    };
+    validateRuntimeRequest(request);
+    const context = buildRuntimeExecutionContext({
+      jobId: request.jobId,
+      jobType: request.jobType,
+      timeoutMs: request.timeoutMs,
+      policy: this.config.runtimeSafetyPolicy,
+      credentialRef: input.credentialRef ?? null,
+      metadata: {},
+    });
+    return new AgentProviderRuntime().execute(request, context);
   }
 
   /** 恢复 stale running 作业（复用 recoverStaleRunningJobs），并写一条 ops 汇总 outbox 事件。*/

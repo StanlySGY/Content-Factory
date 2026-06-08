@@ -12,6 +12,7 @@ import {
   MCPDryRunRuntime,
   PublisherDryRunRuntime,
 } from "./dry-run-runtimes.js";
+import { AgentProviderRuntime } from "./agent-provider-runtime.js";
 import type { RuntimeAdapterMode } from "./adapter-registry.js";
 import {
   AgentMockRuntime,
@@ -48,6 +49,8 @@ export class MockRuntimeAdapterFactory implements RuntimeAdapterFactory {
     publisher: new PublisherDryRunRuntime(),
   };
 
+  private readonly agentProviderRuntime = new AgentProviderRuntime();
+
   constructor(policy: RuntimeAdapterFactoryOptions = {}) {
     const { adapterMode = "mock", ...safetyPolicy } = policy;
     this.adapterMode = adapterMode;
@@ -58,6 +61,12 @@ export class MockRuntimeAdapterFactory implements RuntimeAdapterFactory {
   getRuntime(type: ExecutionJobType, context?: RuntimeExecutionContext): AnyRuntime {
     const policy = context?.policy ?? this.policy;
     if (this.adapterMode === "real") throw new ValidationError("no real adapter registered");
+    if (this.adapterMode === "fake_provider") {
+      if (policy.mode !== "real_enabled" || !policy.allowRealExecution)
+        throw new ValidationError("fake provider adapter requires real_enabled mode and allowRealExecution=true");
+      if (type !== "agent") throw new ValidationError("fake provider only supports agent");
+      return this.agentProviderRuntime;
+    }
     if (this.adapterMode === "dry_run") {
       if (policy.mode !== "real_enabled" || !policy.allowRealExecution)
         throw new ValidationError("dry-run adapter requires real_enabled mode and allowRealExecution=true");
