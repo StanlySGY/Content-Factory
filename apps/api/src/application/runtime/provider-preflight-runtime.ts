@@ -27,6 +27,11 @@ import {
   assertSecretResolutionAllowed,
   buildSecretResolutionReadinessSnapshot,
 } from "./secret-resolution-policy.js";
+import {
+  MockRuntimeSecretResolver,
+  type IRuntimeSecretResolver,
+  type RuntimeSecretRef,
+} from "./credential-resolver.js";
 
 const DEFAULT_MODEL = "gpt-test";
 
@@ -43,7 +48,10 @@ function metadataFromPayload(payload: Record<string, unknown>): Record<string, u
 }
 
 export class AgentProviderPreflightRuntime implements IAgentRuntime {
-  constructor(private readonly client = new FakeOpenAICompatibleClient()) {}
+  constructor(
+    private readonly client = new FakeOpenAICompatibleClient(),
+    private readonly secretResolver: IRuntimeSecretResolver = new MockRuntimeSecretResolver(),
+  ) {}
 
   async execute(request: RuntimeRequest, context?: RuntimeExecutionContext): Promise<RuntimeResponse> {
     const started = Date.now();
@@ -62,6 +70,20 @@ export class AgentProviderPreflightRuntime implements IAgentRuntime {
 
       assertSecretResolutionAllowed(DEFAULT_SECRET_RESOLUTION_POLICY);
       const secretResolution = buildSecretResolutionReadinessSnapshot(DEFAULT_SECRET_RESOLUTION_POLICY);
+      const subject = request.metadata.subject;
+      const secretRef: RuntimeSecretRef = {
+        ...context.credentialRef,
+        purpose: "agent_runtime",
+        ...(subject && typeof subject === "object" && !Array.isArray(subject) ? { subject: subject as Record<string, unknown> } : {}),
+      };
+      const secretResolutionRecord = await this.secretResolver.resolve(secretRef, {
+        jobId: request.jobId,
+        jobType: request.jobType,
+        adapterMode: "provider_preflight",
+        runtimeMode: context.mode,
+        auditMetadata: request.metadata,
+      });
+      const secretResolverAudit = secretResolutionRecord.auditMetadata;
       const rawRequest: OpenAICompatibleRawRequest = {
         model: str(request.payload.model, DEFAULT_MODEL),
         messages: [{ role: "user", content: str(request.payload.prompt, "hello") }],
@@ -91,6 +113,7 @@ export class AgentProviderPreflightRuntime implements IAgentRuntime {
             networkUsed: false,
             processSpawned: false,
             secretResolution,
+            secretResolverAudit,
           },
         };
       }
@@ -123,6 +146,7 @@ export class AgentProviderPreflightRuntime implements IAgentRuntime {
           networkUsed: false,
           processSpawned: false,
           secretResolution,
+          secretResolverAudit,
           costEstimate: metrics.costEstimate,
           tokenUsage: metrics.tokenUsage,
         },

@@ -19,6 +19,7 @@ import type {
   RuntimeAdapterDryRunResponse,
   RuntimeAdaptersResponse,
   ProviderSafetyResponse,
+  SecretResolverReadinessResponse,
   RuntimeSafetyPolicyDTO,
   StageRunDTO,
   ToolInvocationDTO,
@@ -50,7 +51,7 @@ import type { ExecutionResultSummary } from "../domain/execution/result.js";
 import type { RuntimeSafetyPolicy } from "../domain/execution/runtime-safety.js";
 import type { RuntimeResponse } from "../domain/execution/runtime-contract.js";
 import type { RuntimeAdapterDescriptor, RuntimeAdapterMode } from "./runtime/adapter-registry.js";
-import type { ExecutionSystemHealth, ProviderSafetySummary } from "./execution-ops.service.js";
+import type { ExecutionSystemHealth, ProviderSafetySummary, SecretResolverReadiness } from "./execution-ops.service.js";
 
 const iso = (d: Date | null): string | null => (d ? d.toISOString() : null);
 
@@ -82,6 +83,11 @@ function snakeRuntimeValue(value: unknown): unknown {
       key === "totalTokens" ? "total_tokens" :
       key === "costEstimate" ? "cost_estimate" :
       key === "secretResolution" ? "secret_resolution" :
+      key === "secretResolverAudit" ? "secret_resolver_audit" :
+      key === "materialAvailable" ? "material_available" :
+      key === "materialPreview" ? "material_preview" :
+      key === "resolverKind" ? "resolver_kind" :
+      key === "auditMetadata" ? "audit_metadata" :
       key;
     out[snakeKey] = snakeRuntimeValue(v);
   }
@@ -519,5 +525,22 @@ export function toProviderSafetyResponseDTO(s: ProviderSafetySummary): ProviderS
       cost_source: s.metricsEnvelope.costSource,
       token_usage_ready: s.metricsEnvelope.tokenUsageReady,
     },
+  };
+}
+
+export function toSecretResolverReadinessDTO(s: SecretResolverReadiness): SecretResolverReadinessResponse {
+  return {
+    mode: s.mode,
+    resolver_kind: s.resolverKind,
+    available: s.available,
+    resolves_secret_material: s.resolvesSecretMaterial,
+    returns_secret_material: s.returnsSecretMaterial,
+    allowed_ref_schemes: s.allowedRefSchemes,
+    plain_env_read_allowed: s.plainEnvReadAllowed,
+    network_used: s.networkUsed,
+    process_spawned: s.processSpawned,
+    supported_purposes: s.supportedPurposes,
+    active_adapter_mode: s.activeAdapterMode,
+    runtime_mode: s.runtimeMode,
   };
 }

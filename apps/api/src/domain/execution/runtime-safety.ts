@@ -76,7 +76,14 @@ function isRetryable(errorType: RuntimeErrorType): boolean {
 
 function isSecretKey(key: string): boolean {
   const normalized = key.replace(/[-\s]/g, "_").toLowerCase();
+  if (["key_ref", "keyref", "secretresolution", "secret_resolution", "secretresolveraudit", "secret_resolver_audit", "tokenusage", "token_usage"].includes(normalized))
+    return false;
   return SECRET_KEY_MARKERS.some((marker) => normalized.includes(marker));
+}
+
+function isSecretValue(value: string): boolean {
+  if (/^(secret|vault|env):\/\//.test(value)) return false;
+  return /^(sk-|Bearer\s+)/i.test(value) || /secret|api[_-]?key|password|authorization|credential|token/i.test(value);
 }
 
 export function resolveRuntimeMode(input: { mode?: unknown }): RuntimeMode {
@@ -171,6 +178,7 @@ export function buildRuntimeExecutionContext(input: {
 export function redactRuntimeSnapshot<T>(snapshot: T): T {
   if (Array.isArray(snapshot))
     return snapshot.map((item) => redactRuntimeSnapshot(item)) as T;
+  if (typeof snapshot === "string") return (isSecretValue(snapshot) ? "[REDACTED]" : snapshot) as T;
   if (!isPlainObject(snapshot)) return snapshot;
 
   const redacted: Record<string, unknown> = {};

@@ -53,6 +53,45 @@ describe("Provider preflight worker", () => {
     expect((await db.select({ value: count() }).from(stageRuns))[0]!.value).toBe(stageRunCountBefore);
   });
 
+  it("redacts nested secret-like payload values from result and outbox snapshots", async () => {
+    const [job] = await db.insert(executionJobs).values({
+      type: "agent",
+      status: "pending",
+      payload: {
+        prompt: "hello",
+        fakeOutputText: "ok",
+        credential_ref: credentialRef,
+        nested: {
+          token: "nested-token",
+          safe_value_with_secret_text: "secret-value",
+          list: [
+            { api_key: "nested-api-key" },
+            { password: "nested-password" },
+            { authorization: "Bearer nested" },
+            { note: "sk-live-nested" },
+          ],
+        },
+      },
+      idempotencyKey: `provider-preflight-redaction-${randomUUID()}`,
+      maxAttempts: 1,
+    }).returning();
+
+    await worker().tickJob(job!.id);
+    const [result] = await resultRepo.listResultsByJob(db, job!.id);
+    const events = await db.select().from(outboxEvents).where(eq(outboxEvents.aggregateId, job!.id));
+    const snapshots = JSON.stringify({
+      request: result!.requestSnapshot,
+      response: result!.responseSnapshot,
+      outbox: events,
+    });
+
+    for (const secret of ["nested-token", "secret-value", "nested-api-key", "nested-password", "Bearer nested", "sk-live-nested"]) {
+      expect(snapshots).not.toContain(secret);
+    }
+    expect(snapshots).toContain("[REDACTED]");
+    expect(snapshots).toContain("secret_material_returned");
+  });
+
   it("mcp job fails safely", async () => {
     const [job] = await db.insert(executionJobs).values({
       type: "mcp",

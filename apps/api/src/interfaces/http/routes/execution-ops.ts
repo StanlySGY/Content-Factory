@@ -16,6 +16,7 @@ import {
   RuntimeAdapterProviderPreflightTestResponseSchema,
   RuntimeAdaptersResponseSchema,
   RuntimeSafetyPolicySchema,
+  SecretResolverReadinessResponseSchema,
 } from "@cf/shared";
 import type { ExecutionOpsService } from "../../../application/execution-ops.service.js";
 import {
@@ -24,6 +25,7 @@ import {
   toRuntimeAdapterDryRunResponseDTO,
   toRuntimeAdaptersResponseDTO,
   toProviderSafetyResponseDTO,
+  toSecretResolverReadinessDTO,
   toRuntimeSafetyPolicyDTO,
 } from "../../../application/mappers.js";
 
@@ -61,6 +63,12 @@ export const executionOpsRoutes: FastifyPluginAsyncTypebox<ExecutionOpsRoutesOpt
     "/api/execution/ops/provider-safety",
     { schema: { response: { 200: ProviderSafetyResponseSchema } } },
     async () => toProviderSafetyResponseDTO(executionOpsService.getProviderSafety()),
+  );
+
+  app.get(
+    "/api/execution/ops/secret-resolver-readiness",
+    { schema: { response: { 200: SecretResolverReadinessResponseSchema } } },
+    async () => toSecretResolverReadinessDTO(executionOpsService.getSecretResolverReadiness()),
   );
 
   app.post(

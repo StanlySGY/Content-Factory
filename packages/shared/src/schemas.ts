@@ -1111,3 +1111,22 @@ export const ProviderSafetyResponseSchema = Type.Object(
   { additionalProperties: false },
 );
 export type ProviderSafetyResponse = Static<typeof ProviderSafetyResponseSchema>;
+
+export const SecretResolverReadinessResponseSchema = Type.Object(
+  {
+    mode: StringEnum(["mock_only"] as const),
+    resolver_kind: StringEnum(["mock"] as const),
+    available: Type.Boolean(),
+    resolves_secret_material: Type.Boolean(),
+    returns_secret_material: Type.Boolean(),
+    allowed_ref_schemes: Type.Array(Type.String()),
+    plain_env_read_allowed: Type.Boolean(),
+    network_used: Type.Boolean(),
+    process_spawned: Type.Boolean(),
+    supported_purposes: Type.Array(StringEnum(["agent_runtime", "mcp_runtime", "publisher_runtime"] as const)),
+    active_adapter_mode: RuntimeAdapterModeSchema,
+    runtime_mode: RuntimeModeSchema,
+  },
+  { additionalProperties: false },
+);
+export type SecretResolverReadinessResponse = Static<typeof SecretResolverReadinessResponseSchema>;

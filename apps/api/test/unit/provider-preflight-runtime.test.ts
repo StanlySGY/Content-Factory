@@ -43,9 +43,17 @@ describe("AgentProviderPreflightRuntime", () => {
       networkUsed: false,
       processSpawned: false,
       secretResolution: { secret_material_present: false },
+      secretResolverAudit: {
+        resolver_kind: "mock",
+        secret_material_present: false,
+        secret_material_returned: false,
+        plain_env_read: false,
+        requested_purpose: "agent_runtime",
+      },
       costEstimate: { source: "not_calculated" },
     });
     expect(res.metadata.tokenUsage).toMatchObject({ totalTokens: 3 });
+    expect(JSON.stringify(res)).not.toContain("sk-");
   });
 
   it("maps raw 429, timeout and permission errors", async () => {
@@ -60,6 +68,13 @@ describe("AgentProviderPreflightRuntime", () => {
       const res = await runtime.execute(request({ fakeProviderStatus: status }), context());
       expect(res.errorType).toBe(errorType);
       expect(res.retryable).toBe(retryable);
+      expect(res.metadata).toMatchObject({
+        secretResolverAudit: {
+          secret_material_present: false,
+          secret_material_returned: false,
+        },
+      });
+      expect(JSON.stringify(res)).not.toContain("sk-");
     }
   });
 });

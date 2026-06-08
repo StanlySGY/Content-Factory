@@ -26,6 +26,7 @@ import {
   DEFAULT_SECRET_RESOLUTION_POLICY,
   buildSecretResolutionReadinessSnapshot,
 } from "./runtime/secret-resolution-policy.js";
+import { RUNTIME_SECRET_PURPOSES, type RuntimeSecretPurpose } from "./runtime/credential-resolver.js";
 import type { OutboxRelay } from "./outbox-relay.js";
 
 // 运维健康只读聚合（camelCase；mapper → snake_case DTO）。仅聚合 execution plane 表，不 join 业务表/不读 audit。
@@ -96,6 +97,21 @@ export interface ProviderSafetySummary {
     costSource: "not_calculated";
     tokenUsageReady: boolean;
   };
+}
+
+export interface SecretResolverReadiness {
+  mode: "mock_only";
+  resolverKind: "mock";
+  available: boolean;
+  resolvesSecretMaterial: false;
+  returnsSecretMaterial: false;
+  allowedRefSchemes: string[];
+  plainEnvReadAllowed: false;
+  networkUsed: false;
+  processSpawned: false;
+  supportedPurposes: RuntimeSecretPurpose[];
+  activeAdapterMode: RuntimeAdapterMode;
+  runtimeMode: RuntimeSafetyPolicy["mode"];
 }
 
 // ExecutionOpsService：execution layer 安全运维入口（health / stale 恢复 / outbox 批处理 / manual retry）。
@@ -185,6 +201,24 @@ export class ExecutionOpsService {
         costSource: "not_calculated",
         tokenUsageReady: true,
       },
+    };
+  }
+
+  getSecretResolverReadiness(): SecretResolverReadiness {
+    const snapshot = buildSecretResolutionReadinessSnapshot(DEFAULT_SECRET_RESOLUTION_POLICY);
+    return {
+      mode: snapshot.mode,
+      resolverKind: "mock",
+      available: true,
+      resolvesSecretMaterial: false,
+      returnsSecretMaterial: false,
+      allowedRefSchemes: snapshot.allowed_schemes,
+      plainEnvReadAllowed: false,
+      networkUsed: false,
+      processSpawned: false,
+      supportedPurposes: [...RUNTIME_SECRET_PURPOSES],
+      activeAdapterMode: this.config.runtimeAdapterMode,
+      runtimeMode: this.config.runtimeSafetyPolicy.mode,
     };
   }
 
