@@ -69,6 +69,7 @@ export function buildAgentRealProviderTransportRequest(input: {
     body: {
       model: config.model,
       messages: validateMessages(input.messages),
+      metadata: config.metadata,
     },
     timeoutMs: config.timeoutMs,
     requestId: input.requestId,

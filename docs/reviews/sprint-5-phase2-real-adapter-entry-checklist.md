@@ -1,11 +1,12 @@
 # Sprint-5 Phase 2 — Real Adapter Entry Checklist
 
 > 接入真实 Agent / MCP / LLM / Publisher 前的准入清单。标注每项：**[已满足] Phase 1.x 已就位 / [缺失] 待补 / [必须] 接真实外部系统前硬性前置**。
-> 基线：Phase 1.x 冻结（`fc001fb`→`32fd423`，见 release-gate 文档）；Phase 2.0 Runtime Safety Foundation、Phase 2.1 Dry-run Readiness Harness、Phase 2.2 Agent Fake Provider Harness、Phase 2.3 Agent Provider Safety Preflight、Phase 2.4 Agent Real Adapter Preflight Spike、Phase 2.5 Runtime Secret Resolver Boundary、Phase 2.6 Agent Provider HTTP Boundary、Phase 2.7 Agent Real HTTP Adapter Skeleton、Phase 2.8 Runtime Secret Store Injection Preflight、Phase 2.9 Agent Real HTTP Timeout/Abort Harness、Phase 2.10 Provider Quota + Cost Metrics Preflight、Phase 2.11 Agent Real Adapter Registration Guard、Phase 2.12 Agent Real Adapter Disabled Fixture、Phase 2.13 Agent Real Provider Config Preflight 与 Phase 2.14 Agent Real Provider Transport Disabled Harness 已补安全准入基础。
+> 基线：Phase 1.x 冻结（`fc001fb`→`32fd423`，见 release-gate 文档）；Phase 2.0 Runtime Safety Foundation、Phase 2.1 Dry-run Readiness Harness、Phase 2.2 Agent Fake Provider Harness、Phase 2.3 Agent Provider Safety Preflight、Phase 2.4 Agent Real Adapter Preflight Spike、Phase 2.5 Runtime Secret Resolver Boundary、Phase 2.6 Agent Provider HTTP Boundary、Phase 2.7 Agent Real HTTP Adapter Skeleton、Phase 2.8 Runtime Secret Store Injection Preflight、Phase 2.9 Agent Real HTTP Timeout/Abort Harness、Phase 2.10 Provider Quota + Cost Metrics Preflight、Phase 2.11 Agent Real Adapter Registration Guard、Phase 2.12 Agent Real Adapter Disabled Fixture、Phase 2.13 Agent Real Provider Config Preflight、Phase 2.14 Agent Real Provider Transport Disabled Harness 与 Phase 2.15 Agent Real Adapter Minimum Closed-loop Spike 已补安全准入基础。
 
 ## 1. 真实 Agent Runtime 准入
 
-- [缺失][必须] `IAgentRuntime` 的真实实现（LLM 调用 + tool-calling），替换 `AgentMockRuntime`。
+- [已满足] `IAgentRuntime` 的真实 adapter skeleton 已就位：`AgentRealRuntime` 可在显式注入 fake/local HTTP client 且安全 gate 全开时产出 RuntimeResponse；默认仍 fail-closed。
+- [缺失][必须] 生产级真实 `IAgentRuntime`（真实 LLM 调用 + tool-calling + secret material 注入 + provider transport），替换 `AgentMockRuntime`。
 - [已满足] Runtime Contract（RuntimeRequest/Response envelope、错误分类、retryable、durationMs）已冻结，Real Adapter 直接产出真实 RuntimeResponse。
 - [已满足] 结果落点（execution_results 账本）与 outbox 关联（result_id）已就位。
 - [已满足] Agent dry-run runtime readiness validation 已就位（不调用 LLM、不发网络、不读取 secret）。
@@ -21,6 +22,7 @@
 - [已满足] Agent real adapter disabled fixture 已就位：`agent:real` descriptor 展示 `agent-real-disabled-fixture@2.12.0`，但 `status=blocked`、`executable=false`，Factory/Registry 仍 fail-closed。
 - [已满足] Agent real provider config preflight 已就位：冻结 `openai_compatible` provider config、endpoint_ref、credential_ref、timeout、quota/cost profile 与脱敏输出；不解析 endpoint、不读 secret、不发网络。
 - [已满足] Agent real provider transport disabled harness 已就位：冻结 provider config → HTTP request shape，验证 disabled transport `connection_failed` fail-closed；不发真实网络、不读取 secret、不启用 worker real adapter。
+- [已满足] Agent real adapter minimum closed-loop 已就位：显式注入 `AgentRealRuntime` + fake/local HTTP client 时，worker 可写 `execution_results` 与 outbox；未注入时 `agent:real` 仍由 disabled fixture fail-closed。
 - [缺失] 多轮会话 / agent_messages 模型（若需要）。
 
 ## 2. 真实 MCP Runtime 准入
@@ -48,6 +50,7 @@
 - [已满足] Agent fake HTTP boundary 已显式接收 AbortSignal 并模拟 timeout/abort/429/403/400/500 错误映射。
 - [已满足] Agent real HTTP client 已在 client 层实现 timeout/abort harness，并把内部 `AbortSignal` 传给 `IAgentProviderHttpTransport`；默认 disabled transport 不发网络。
 - [已满足] Agent real provider transport disabled harness 已验证 provider request shape / timeout / Authorization ref 脱敏 / disabled transport fail-closed；默认 transport 仍不可执行。
+- [已满足] Agent real adapter skeleton 已验证 RuntimeExecutionContext gate、credentialRef gate、injected local HTTP client 与 worker closed-loop；真实 transport 仍不可默认执行。
 - [缺失][必须] MCP transport cancel / 外部进程取消落地；Agent HTTP 已满足 skeleton 级中断边界，但真实 provider transport 仍需后续实现。
 - [缺失][必须] 资源限额（CPU/内存/时长/并发）。
 - [缺失][必须] 沙箱 / 进程隔离（外部进程 MCP、不可信工具）。
@@ -64,6 +67,7 @@
 - [已满足] Secret material non-return guarantee 已由 `assertNoSecretMaterialReturned()` 与 provider_preflight metadata 测试覆盖。
 - [已满足] result/request/response/outbox runtime 快照已做 secret-like key 深度脱敏。
 - [已满足] snapshot redaction regression 已覆盖 nested object / array 与 secret-like string value（`sk-...` / `Bearer ...` 等）。
+- [已满足] `secret_material_read` / `secret_material_returned` 安全布尔元数据已加入 redaction allowlist，避免把安全证明字段误脱敏为 `[REDACTED]`；真实 secret-like key/value 脱敏仍保留。
 - [已满足] Runtime secret injection preflight 已就位：`ExternalPlaceholderRuntimeSecretResolver`、transport-local header plan、`*_ref` 可持久化快照、`GET /secret-injection-preflight` readiness；真实 secret store 仍未接入。
 - [缺失][必须] 凭证引用解析与真实 material 注入实现（ADR-010），真实 secret store 仍未接入。
 - [缺失][必须] 凭证按 `sensitivity_level` 作用域化（context_packs 已建模传播控制，ContextBuilder 为强制点）。
@@ -107,6 +111,7 @@
 - [已满足] ops runtime adapter endpoint 已展示 `agent:real` disabled fixture 元数据；guard endpoint 已展示 `disabled_fixture_ready=true` / `disabled_fixture_executable=false`。
 - [已满足] ops agent real provider config preflight endpoint：`GET /agent-real-provider-config-preflight` 已就位，只读展示 provider config readiness、credential ref、endpoint ref、quota/cost profile 与脱敏快照，不写 execution tables。
 - [已满足] ops agent real provider transport disabled harness endpoint：`GET /agent-real-provider-transport-disabled-harness` 已就位，只读展示 provider HTTP request shape、disabled transport fail-closed 与脱敏 request，不写 execution tables。
+- [已满足] Agent real adapter minimum closed-loop 已验证 real-mode RuntimeResponse 快照进入 execution_results，并携带 provider kind、request id、token usage 与 costEstimate(`not_calculated`) envelope。
 - [缺失] 真实 runtime 的指标维度（错误类型分布、耗时分位、真实成本）；账本归档/保留策略。
 - [已满足] provider_preflight token usage / costEstimate(`not_calculated`) envelope 已就位，为真实成本指标预留字段。
 
@@ -125,8 +130,8 @@
 
 ## 12. 最小 Phase 2 Spike 建议
 
-1. **Agent Real Adapter spike（最小闭环）**：单一 LLM provider 的 `IAgentRuntime` 实现 + 隔离层（真实 HTTP transport + 凭证作用域化）+ 错误映射；经 Bridge 创建 job → worker 真实执行 → 结果落账本。**不回写控制平面**（先证执行，再证回写）。
-2. **Relay 回写 spike**：实现一个真实 handler，按 result_id/subject 幂等回写**单一** stage_run 状态（经 ADR-006 状态机），含并发领取保护。
+1. **Relay 回写 readiness spike**：先实现 handler contract、result_id/subject 输入与幂等计划，默认 no-op/disabled；并补 outbox claim lease / 并发领取保护。**先证消费侧安全，再允许真实回写**。
+2. **Agent Real Transport spike**：在 `AgentRealRuntime` skeleton 基础上接真实 HTTP transport 与真实 secret material 注入，但仍需独立 kill switch 与人工确认。
 3. **MCP Real Runtime safety spike**：先做 stdio/process cancel + sandbox/资源限额，再接 transport。
 4. 各 spike 独立验证后再合流；Publisher 单独立项，不混入。
 
@@ -150,5 +155,6 @@
 - **Phase 2.12 已补齐**：Agent real adapter disabled fixture、`agent:real` descriptor 元数据、factory/registry fail-closed、guard disabled fixture readiness。
 - **Phase 2.13 已补齐**：Agent real provider config preflight、provider/model/endpoint/credential/timeout/quota/cost config validation、只读 ops endpoint、脱敏输出。
 - **Phase 2.14 已补齐**：Agent real provider transport disabled harness、provider config → HTTP request shape、disabled transport fail-closed、只读 ops endpoint、Authorization 快照脱敏。
+- **Phase 2.15 已补齐**：Agent real adapter minimum closed-loop skeleton、显式注入 fake/local HTTP client、worker ledger/outbox 闭环、默认未注入 fail-closed、secret 安全布尔元数据脱敏例外。
 - **接真实外部系统前仍必须完成**：MCP / 进程级取消、资源限额/沙箱、真实 secret store 解析与 material 注入、分布式 provider 配额 enforcement、真实 billing/cost calculation、high-risk 确认闸门、relay 真实回写 + 并发领取保护。
 - **仍缺失（非 Real Adapter 阻塞，但需规划）**：Publisher + publish_records、审批态建模、账本归档、成本/指标维度。

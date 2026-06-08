@@ -15,6 +15,7 @@ import {
 import { AgentProviderRuntime } from "./agent-provider-runtime.js";
 import { AgentProviderPreflightRuntime } from "./provider-preflight-runtime.js";
 import { throwAgentRealAdapterDisabledFixture } from "./agent-real-adapter-disabled-fixture.js";
+import type { AgentRealRuntime } from "./agent-real-runtime.js";
 import type { RuntimeAdapterMode } from "./adapter-registry.js";
 import {
   AgentMockRuntime,
@@ -33,6 +34,7 @@ export interface RuntimeAdapterFactory {
 
 export interface RuntimeAdapterFactoryOptions extends Partial<RuntimeSafetyPolicy> {
   adapterMode?: RuntimeAdapterMode;
+  realAgentRuntime?: AgentRealRuntime;
 }
 
 export class MockRuntimeAdapterFactory implements RuntimeAdapterFactory {
@@ -53,17 +55,27 @@ export class MockRuntimeAdapterFactory implements RuntimeAdapterFactory {
 
   private readonly agentProviderRuntime = new AgentProviderRuntime();
   private readonly agentProviderPreflightRuntime = new AgentProviderPreflightRuntime();
+  private readonly realAgentRuntime: AgentRealRuntime | null;
 
   constructor(policy: RuntimeAdapterFactoryOptions = {}) {
-    const { adapterMode = "mock", ...safetyPolicy } = policy;
+    const { adapterMode = "mock", realAgentRuntime = null, ...safetyPolicy } = policy;
     this.adapterMode = adapterMode;
+    this.realAgentRuntime = realAgentRuntime;
     this.policy = { ...DEFAULT_RUNTIME_SAFETY_POLICY, ...safetyPolicy };
     validateRuntimeSafetyPolicy(this.policy);
   }
 
   getRuntime(type: ExecutionJobType, context?: RuntimeExecutionContext): AnyRuntime {
     const policy = context?.policy ?? this.policy;
-    if (this.adapterMode === "real") throwAgentRealAdapterDisabledFixture();
+    if (this.adapterMode === "real") {
+      if (type === "agent" && this.realAgentRuntime) {
+        if (policy.mode !== "real_enabled" || !policy.allowRealExecution)
+          throw new ValidationError("real adapter requires real_enabled mode and allowRealExecution=true");
+        if (!policy.allowNetwork) throw new ValidationError("real adapter requires allowNetwork=true");
+        return this.realAgentRuntime;
+      }
+      throwAgentRealAdapterDisabledFixture();
+    }
     if (this.adapterMode === "fake_provider") {
       if (policy.mode !== "real_enabled" || !policy.allowRealExecution)
         throw new ValidationError("fake provider adapter requires real_enabled mode and allowRealExecution=true");
