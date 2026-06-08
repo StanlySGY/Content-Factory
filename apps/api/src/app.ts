@@ -10,7 +10,7 @@ import { DashboardService } from "./application/dashboard.service.js";
 import { EditorQueryService } from "./application/editor-query.service.js";
 import { ExecutionJobService } from "./application/execution-job.service.js";
 import { ExecutionBridgeService } from "./application/execution-bridge.service.js";
-import { ExecutionOpsService } from "./application/execution-ops.service.js";
+import { defaultExecutionOpsRuntimeRegistry, ExecutionOpsService } from "./application/execution-ops.service.js";
 import { ExecutionResultService } from "./application/execution-result.service.js";
 import { ExecutionWorker } from "./application/execution-worker.js";
 import { MockRuntimeAdapterFactory } from "./application/runtime/adapter-factory.js";
@@ -78,7 +78,7 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
   validateRuntimeSafetyPolicy(runtimeSafetyPolicy);
   const executionWorker = new ExecutionWorker(
     db,
-    new MockRuntimeAdapterFactory(runtimeSafetyPolicy),
+    new MockRuntimeAdapterFactory({ ...runtimeSafetyPolicy, adapterMode: env.executionRuntimeAdapterMode }),
     env.executionWorkerIntervalMs,
     env.executionWorkerLockTimeoutMs,
     env.executionRuntimeTimeoutMs,
@@ -96,6 +96,8 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
     runtimeTimeoutMs: env.executionRuntimeTimeoutMs,
     lockTimeoutMs: env.executionWorkerLockTimeoutMs,
     runtimeSafetyPolicy,
+    runtimeAdapterMode: env.executionRuntimeAdapterMode,
+    runtimeAdapterRegistry: defaultExecutionOpsRuntimeRegistry(),
   });
   const agentProfileService = new AgentProfileService(db);
   const agentRuntimeService = new AgentRuntimeMockService(db);

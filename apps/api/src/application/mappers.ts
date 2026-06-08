@@ -15,6 +15,9 @@ import type {
   OutboxEventDTO,
   PendingReviewDTO,
   ReviewRecordDTO,
+  RuntimeAdapterDescriptorDTO,
+  RuntimeAdapterDryRunResponse,
+  RuntimeAdaptersResponse,
   RuntimeSafetyPolicyDTO,
   StageRunDTO,
   ToolInvocationDTO,
@@ -44,9 +47,30 @@ import type {
 } from "../infrastructure/db/schema.js";
 import type { ExecutionResultSummary } from "../domain/execution/result.js";
 import type { RuntimeSafetyPolicy } from "../domain/execution/runtime-safety.js";
+import type { RuntimeResponse } from "../domain/execution/runtime-contract.js";
+import type { RuntimeAdapterDescriptor, RuntimeAdapterMode } from "./runtime/adapter-registry.js";
 import type { ExecutionSystemHealth } from "./execution-ops.service.js";
 
 const iso = (d: Date | null): string | null => (d ? d.toISOString() : null);
+
+function snakeRuntimeValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(snakeRuntimeValue);
+  if (!value || typeof value !== "object") return value;
+  const out: Record<string, unknown> = {};
+  for (const [key, v] of Object.entries(value)) {
+    const snakeKey =
+      key === "dryRun" ? "dry_run" :
+      key === "inputAccepted" ? "input_accepted" :
+      key === "keyRef" ? "key_ref" :
+      key === "blockedReason" ? "blocked_reason" :
+      key === "requiresCredentialRef" ? "requires_credential_ref" :
+      key === "allowNetwork" ? "allow_network" :
+      key === "allowProcessSpawn" ? "allow_process_spawn" :
+      key;
+    out[snakeKey] = snakeRuntimeValue(v);
+  }
+  return out;
+}
 
 /** 持久化行 → 对外 DTO（应用边界转换） */
 export function toTaskDTO(r: ContentTaskRow): ContentTaskDTO {
@@ -396,5 +420,48 @@ export function toRuntimeSafetyPolicyDTO(p: RuntimeSafetyPolicy): RuntimeSafetyP
     redact_snapshots: p.redactSnapshots,
     runtime_timeout_ms: p.timeoutMs,
     runtime_max_timeout_ms: p.maxTimeoutMs,
+  };
+}
+
+export function toRuntimeAdapterDescriptorDTO(d: RuntimeAdapterDescriptor): RuntimeAdapterDescriptorDTO {
+  return {
+    type: d.type,
+    mode: d.mode,
+    name: d.name,
+    version: d.version,
+    capabilities: d.capabilities,
+    requires_credential_ref: d.requiresCredentialRef,
+    allow_network: d.allowNetwork,
+    allow_process_spawn: d.allowProcessSpawn,
+    status: d.status,
+    ...(d.blockedReason ? { blocked_reason: d.blockedReason } : {}),
+  };
+}
+
+export function toRuntimeAdaptersResponseDTO(input: {
+  adapters: RuntimeAdapterDescriptor[];
+  activeAdapterMode: RuntimeAdapterMode;
+  policy: RuntimeSafetyPolicy;
+}): RuntimeAdaptersResponse {
+  return {
+    adapters: input.adapters.map(toRuntimeAdapterDescriptorDTO),
+    active_adapter_mode: input.activeAdapterMode,
+    runtime_mode: input.policy.mode,
+    allow_real_runtime: input.policy.allowRealExecution,
+    allow_network: input.policy.allowNetwork,
+    allow_process_spawn: input.policy.allowProcessSpawn,
+  };
+}
+
+export function toRuntimeAdapterDryRunResponseDTO(res: RuntimeResponse): RuntimeAdapterDryRunResponse {
+  return {
+    job_id: res.jobId,
+    status: res.status,
+    output: snakeRuntimeValue(res.output) as Record<string, unknown>,
+    error: res.error,
+    error_type: res.errorType,
+    retryable: res.retryable,
+    duration_ms: res.durationMs,
+    metadata: snakeRuntimeValue(res.metadata) as Record<string, unknown>,
   };
 }

@@ -16,6 +16,7 @@ export interface Env {
   executionWorkerLockTimeoutMs: number;
   executionRuntimeTimeoutMs: number;
   executionRuntimeMode: "mock" | "real_disabled" | "real_enabled";
+  executionRuntimeAdapterMode: "mock" | "dry_run" | "real";
   executionAllowRealRuntime: boolean;
   executionAllowNetwork: boolean;
   executionAllowProcessSpawn: boolean;
@@ -44,6 +45,12 @@ function runtimeMode(value: string | undefined): Env["executionRuntimeMode"] {
   throw new Error(`invalid EXECUTION_RUNTIME_MODE: ${value}`);
 }
 
+function runtimeAdapterMode(value: string | undefined): Env["executionRuntimeAdapterMode"] {
+  if (value === undefined || value === "") return "mock";
+  if (value === "mock" || value === "dry_run" || value === "real") return value;
+  throw new Error(`invalid EXECUTION_RUNTIME_ADAPTER_MODE: ${value}`);
+}
+
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
   const databaseUrl = required("DATABASE_URL", source.DATABASE_URL);
   return {
@@ -59,6 +66,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     executionWorkerLockTimeoutMs: Number(source.EXECUTION_WORKER_LOCK_TIMEOUT_MS ?? 30000),
     executionRuntimeTimeoutMs: Number(source.EXECUTION_RUNTIME_TIMEOUT_MS ?? 30000),
     executionRuntimeMode: runtimeMode(source.EXECUTION_RUNTIME_MODE),
+    executionRuntimeAdapterMode: runtimeAdapterMode(source.EXECUTION_RUNTIME_ADAPTER_MODE),
     executionAllowRealRuntime: bool(source.EXECUTION_ALLOW_REAL_RUNTIME, false),
     executionAllowNetwork: bool(source.EXECUTION_ALLOW_NETWORK, false),
     executionAllowProcessSpawn: bool(source.EXECUTION_ALLOW_PROCESS_SPAWN, false),

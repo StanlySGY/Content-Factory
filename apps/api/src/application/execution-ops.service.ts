@@ -1,12 +1,25 @@
 import { randomUUID } from "node:crypto";
 import { EXECUTION_OUTBOX_EVENTS } from "@cf/shared";
-import { ConflictError, NotFoundError } from "../domain/errors.js";
-import type { RuntimeSafetyPolicy } from "../domain/execution/runtime-safety.js";
+import { ConflictError, NotFoundError, ValidationError } from "../domain/errors.js";
+import {
+  buildRuntimeExecutionContext,
+  type RuntimeCredentialRef,
+  type RuntimeSafetyPolicy,
+} from "../domain/execution/runtime-safety.js";
+import { validateRuntimeRequest, type RuntimeResponse, type RuntimeRequest } from "../domain/execution/runtime-contract.js";
 import type { Db } from "../infrastructure/db/client.js";
 import type { ExecutionJobRow } from "../infrastructure/db/schema.js";
 import * as jobRepo from "../infrastructure/repositories/execution-job.repository.js";
 import * as outboxRepo from "../infrastructure/repositories/outbox.repository.js";
 import * as resultRepo from "../infrastructure/repositories/execution-result.repository.js";
+import {
+  assertAdapterAllowedBySafetyPolicy,
+  createDefaultRuntimeAdapterRegistry,
+  type RuntimeAdapterDescriptor,
+  type RuntimeAdapterMode,
+  type RuntimeAdapterRegistry,
+} from "./runtime/adapter-registry.js";
+import { AgentDryRunRuntime, MCPDryRunRuntime, PublisherDryRunRuntime } from "./runtime/dry-run-runtimes.js";
 import type { OutboxRelay } from "./outbox-relay.js";
 
 // 运维健康只读聚合（camelCase；mapper → snake_case DTO）。仅聚合 execution plane 表，不 join 业务表/不读 audit。
@@ -33,6 +46,8 @@ export interface ExecutionOpsConfig {
   runtimeTimeoutMs: number;
   lockTimeoutMs: number;
   runtimeSafetyPolicy: RuntimeSafetyPolicy;
+  runtimeAdapterMode: RuntimeAdapterMode;
+  runtimeAdapterRegistry: RuntimeAdapterRegistry;
 }
 
 // ExecutionOpsService：execution layer 安全运维入口（health / stale 恢复 / outbox 批处理 / manual retry）。
@@ -65,6 +80,51 @@ export class ExecutionOpsService {
 
   getRuntimeSafety(): RuntimeSafetyPolicy {
     return this.config.runtimeSafetyPolicy;
+  }
+
+  listRuntimeAdapters(): {
+    adapters: RuntimeAdapterDescriptor[];
+    activeAdapterMode: RuntimeAdapterMode;
+    policy: RuntimeSafetyPolicy;
+  } {
+    return {
+      adapters: this.config.runtimeAdapterRegistry.listAdapterDescriptors(),
+      activeAdapterMode: this.config.runtimeAdapterMode,
+      policy: this.config.runtimeSafetyPolicy,
+    };
+  }
+
+  async dryRunRuntimeAdapter(input: {
+    type: "agent" | "mcp" | "publisher";
+    payload: Record<string, unknown>;
+    credentialRef?: RuntimeCredentialRef;
+  }): Promise<RuntimeResponse> {
+    if (this.config.runtimeAdapterMode === "real") throw new ValidationError("no real adapter registered");
+    const descriptor = this.config.runtimeAdapterRegistry.getAdapterDescriptor(input.type, "dry_run");
+    assertAdapterAllowedBySafetyPolicy(descriptor, this.config.runtimeSafetyPolicy);
+    const request: RuntimeRequest = {
+      jobId: "ops-dry-run",
+      jobType: input.type,
+      payload: input.payload,
+      attemptCount: 0,
+      idempotencyKey: "ops-dry-run",
+      timeoutMs: this.config.runtimeSafetyPolicy.timeoutMs,
+      metadata: {},
+    };
+    validateRuntimeRequest(request);
+    const context = buildRuntimeExecutionContext({
+      jobId: request.jobId,
+      jobType: request.jobType,
+      timeoutMs: request.timeoutMs,
+      policy: this.config.runtimeSafetyPolicy,
+      credentialRef: input.credentialRef ?? null,
+      metadata: {},
+    });
+    const runtime =
+      input.type === "agent" ? new AgentDryRunRuntime() :
+      input.type === "mcp" ? new MCPDryRunRuntime() :
+      new PublisherDryRunRuntime();
+    return runtime.execute(request, context);
   }
 
   /** 恢复 stale running 作业（复用 recoverStaleRunningJobs），并写一条 ops 汇总 outbox 事件。*/
@@ -115,4 +175,8 @@ export class ExecutionOpsService {
       return retried;
     });
   }
+}
+
+export function defaultExecutionOpsRuntimeRegistry(): RuntimeAdapterRegistry {
+  return createDefaultRuntimeAdapterRegistry();
 }

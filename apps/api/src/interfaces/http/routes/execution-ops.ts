@@ -7,10 +7,19 @@ import {
   ProcessOutboxBatchResponseSchema,
   RecoverStaleJobsBodySchema,
   RecoverStaleJobsResponseSchema,
+  RuntimeAdapterDryRunBodySchema,
+  RuntimeAdapterDryRunResponseSchema,
+  RuntimeAdaptersResponseSchema,
   RuntimeSafetyPolicySchema,
 } from "@cf/shared";
 import type { ExecutionOpsService } from "../../../application/execution-ops.service.js";
-import { toExecutionJobDTO, toExecutionSystemHealthDTO, toRuntimeSafetyPolicyDTO } from "../../../application/mappers.js";
+import {
+  toExecutionJobDTO,
+  toExecutionSystemHealthDTO,
+  toRuntimeAdapterDryRunResponseDTO,
+  toRuntimeAdaptersResponseDTO,
+  toRuntimeSafetyPolicyDTO,
+} from "../../../application/mappers.js";
 
 export interface ExecutionOpsRoutesOptions {
   executionOpsService: ExecutionOpsService;
@@ -34,6 +43,31 @@ export const executionOpsRoutes: FastifyPluginAsyncTypebox<ExecutionOpsRoutesOpt
     "/api/execution/ops/runtime-safety",
     { schema: { response: { 200: RuntimeSafetyPolicySchema } } },
     async () => toRuntimeSafetyPolicyDTO(executionOpsService.getRuntimeSafety()),
+  );
+
+  app.get(
+    "/api/execution/ops/runtime-adapters",
+    { schema: { response: { 200: RuntimeAdaptersResponseSchema } } },
+    async () => toRuntimeAdaptersResponseDTO(executionOpsService.listRuntimeAdapters()),
+  );
+
+  app.post(
+    "/api/execution/ops/runtime-adapters/dry-run",
+    { schema: { body: RuntimeAdapterDryRunBodySchema, response: { 200: RuntimeAdapterDryRunResponseSchema } } },
+    async (request) =>
+      toRuntimeAdapterDryRunResponseDTO(
+        await executionOpsService.dryRunRuntimeAdapter({
+          type: request.body.type,
+          payload: request.body.payload,
+          credentialRef: request.body.credential_ref
+            ? {
+                provider: request.body.credential_ref.provider,
+                keyRef: request.body.credential_ref.key_ref,
+                scope: request.body.credential_ref.scope,
+              }
+            : undefined,
+        }),
+      ),
   );
 
   app.post(

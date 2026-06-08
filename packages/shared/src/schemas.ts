@@ -19,6 +19,7 @@ import {
   EXECUTION_JOB_TYPES,
   EXECUTION_RESULT_STATUSES,
   EXECUTION_SUBJECT_TYPES,
+  RUNTIME_ADAPTER_MODES,
   RUNTIME_MODES,
   RUNTIME_ERROR_TYPES,
   WORKFLOW_RUN_STATUSES,
@@ -852,6 +853,7 @@ export type RequestStageExecutionBody = Static<typeof RequestStageExecutionSchem
 const ExecutionResultStatusSchema = StringEnum(EXECUTION_RESULT_STATUSES);
 const RuntimeErrorTypeSchema = StringEnum(RUNTIME_ERROR_TYPES);
 const RuntimeModeSchema = StringEnum(RUNTIME_MODES);
+const RuntimeAdapterModeSchema = StringEnum(RUNTIME_ADAPTER_MODES);
 
 export const ExecutionResultSchema = Type.Object(
   {
@@ -952,3 +954,68 @@ export const RuntimeSafetyPolicySchema = Type.Object(
   { additionalProperties: false },
 );
 export type RuntimeSafetyPolicyDTO = Static<typeof RuntimeSafetyPolicySchema>;
+
+export const RuntimeCredentialRefSchema = Type.Object(
+  {
+    provider: Type.String({ minLength: 1 }),
+    key_ref: Type.String({ minLength: 1 }),
+    scope: StringEnum(["project", "workspace", "system"] as const),
+  },
+  { additionalProperties: false },
+);
+export type RuntimeCredentialRefDTO = Static<typeof RuntimeCredentialRefSchema>;
+
+export const RuntimeAdapterDescriptorSchema = Type.Object(
+  {
+    type: ExecutionJobTypeSchema,
+    mode: RuntimeAdapterModeSchema,
+    name: Type.String(),
+    version: Type.String(),
+    capabilities: Type.Array(Type.String()),
+    requires_credential_ref: Type.Boolean(),
+    allow_network: Type.Boolean(),
+    allow_process_spawn: Type.Boolean(),
+    status: StringEnum(["available", "disabled", "blocked"] as const),
+    blocked_reason: Type.Optional(Type.String()),
+  },
+  { additionalProperties: false },
+);
+export type RuntimeAdapterDescriptorDTO = Static<typeof RuntimeAdapterDescriptorSchema>;
+
+export const RuntimeAdaptersResponseSchema = Type.Object(
+  {
+    adapters: Type.Array(RuntimeAdapterDescriptorSchema),
+    active_adapter_mode: RuntimeAdapterModeSchema,
+    runtime_mode: RuntimeModeSchema,
+    allow_real_runtime: Type.Boolean(),
+    allow_network: Type.Boolean(),
+    allow_process_spawn: Type.Boolean(),
+  },
+  { additionalProperties: false },
+);
+export type RuntimeAdaptersResponse = Static<typeof RuntimeAdaptersResponseSchema>;
+
+export const RuntimeAdapterDryRunBodySchema = Type.Object(
+  {
+    type: ExecutionJobTypeSchema,
+    payload: JsonRecord(),
+    credential_ref: Type.Optional(RuntimeCredentialRefSchema),
+  },
+  { additionalProperties: false },
+);
+export type RuntimeAdapterDryRunBody = Static<typeof RuntimeAdapterDryRunBodySchema>;
+
+export const RuntimeAdapterDryRunResponseSchema = Type.Object(
+  {
+    job_id: Type.String(),
+    status: ExecutionResultStatusSchema,
+    output: JsonRecord(),
+    error: Nullable(Type.String()),
+    error_type: Nullable(RuntimeErrorTypeSchema),
+    retryable: Type.Boolean(),
+    duration_ms: Type.Integer(),
+    metadata: JsonRecord(),
+  },
+  { additionalProperties: false },
+);
+export type RuntimeAdapterDryRunResponse = Static<typeof RuntimeAdapterDryRunResponseSchema>;

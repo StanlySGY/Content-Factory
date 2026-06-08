@@ -22,6 +22,7 @@ import {
   DEFAULT_RUNTIME_SAFETY_POLICY,
   redactRuntimeSnapshot,
   validateRuntimeSafetyPolicy,
+  type RuntimeCredentialRef,
   type RuntimeSafetyPolicy,
 } from "../domain/execution/runtime-safety.js";
 import type { Db } from "../infrastructure/db/client.js";
@@ -43,6 +44,15 @@ function runtimeSnapshot(res: RuntimeResponse): Record<string, unknown> {
     retryable: res.retryable,
     duration_ms: res.durationMs,
   };
+}
+
+function runtimeCredentialRef(input: Record<string, unknown>): RuntimeCredentialRef | null {
+  const value = input.credential_ref ?? input.credentialRef;
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const ref = value as { provider?: unknown; keyRef?: unknown; key_ref?: unknown; scope?: unknown };
+  const keyRef = ref.keyRef ?? ref.key_ref;
+  if (typeof ref.provider !== "string" || typeof keyRef !== "string" || typeof ref.scope !== "string") return null;
+  return { provider: ref.provider, keyRef, scope: ref.scope as RuntimeCredentialRef["scope"] };
 }
 
 // ExecutionWorker：纯 DB 轮询 worker（无 Redis/MQ）。默认关闭（feature flag），可手动 tick 或定时 start。
@@ -139,6 +149,7 @@ export class ExecutionWorker {
         jobType: request.jobType,
         timeoutMs: request.timeoutMs,
         policy: this.safetyPolicy,
+        credentialRef: runtimeCredentialRef(input),
         metadata: request.metadata,
       });
       const response = await this.factory.getRuntime(request.jobType, context).execute(request, context);

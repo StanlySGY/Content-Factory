@@ -8,6 +8,12 @@ import {
   type RuntimeSafetyPolicy,
 } from "../../domain/execution/runtime-safety.js";
 import {
+  AgentDryRunRuntime,
+  MCPDryRunRuntime,
+  PublisherDryRunRuntime,
+} from "./dry-run-runtimes.js";
+import type { RuntimeAdapterMode } from "./adapter-registry.js";
+import {
   AgentMockRuntime,
   MCPMockRuntime,
   PublisherMockRuntime,
@@ -22,26 +28,45 @@ export interface RuntimeAdapterFactory {
   getRuntime(type: ExecutionJobType, context?: RuntimeExecutionContext): AnyRuntime;
 }
 
+export interface RuntimeAdapterFactoryOptions extends Partial<RuntimeSafetyPolicy> {
+  adapterMode?: RuntimeAdapterMode;
+}
+
 export class MockRuntimeAdapterFactory implements RuntimeAdapterFactory {
   private readonly policy: RuntimeSafetyPolicy;
+  private readonly adapterMode: RuntimeAdapterMode;
 
-  private readonly runtimes: Record<ExecutionJobType, AnyRuntime> = {
+  private readonly mockRuntimes: Record<ExecutionJobType, AnyRuntime> = {
     agent: new AgentMockRuntime(),
     mcp: new MCPMockRuntime(),
     publisher: new PublisherMockRuntime(),
   };
 
-  constructor(policy: Partial<RuntimeSafetyPolicy> = {}) {
-    this.policy = { ...DEFAULT_RUNTIME_SAFETY_POLICY, ...policy };
+  private readonly dryRunRuntimes: Record<ExecutionJobType, AnyRuntime> = {
+    agent: new AgentDryRunRuntime(),
+    mcp: new MCPDryRunRuntime(),
+    publisher: new PublisherDryRunRuntime(),
+  };
+
+  constructor(policy: RuntimeAdapterFactoryOptions = {}) {
+    const { adapterMode = "mock", ...safetyPolicy } = policy;
+    this.adapterMode = adapterMode;
+    this.policy = { ...DEFAULT_RUNTIME_SAFETY_POLICY, ...safetyPolicy };
     validateRuntimeSafetyPolicy(this.policy);
   }
 
   getRuntime(type: ExecutionJobType, context?: RuntimeExecutionContext): AnyRuntime {
     const policy = context?.policy ?? this.policy;
+    if (this.adapterMode === "real") throw new ValidationError("no real adapter registered");
+    if (this.adapterMode === "dry_run") {
+      if (policy.mode !== "real_enabled" || !policy.allowRealExecution)
+        throw new ValidationError("dry-run adapter requires real_enabled mode and allowRealExecution=true");
+      return this.dryRunRuntimes[type];
+    }
     if (policy.mode !== "mock") {
       assertRealExecutionAllowed(policy);
       throw new ValidationError("no real runtime adapter registered");
     }
-    return this.runtimes[type];
+    return this.mockRuntimes[type];
   }
 }
