@@ -21,6 +21,8 @@ export interface Env {
   executionAllowNetwork: boolean;
   executionAllowProcessSpawn: boolean;
   executionNetworkAllowlist: string[];
+  executionSecretStoreEnabled: boolean;
+  executionSecretInjectionEnabled: boolean;
   executionRequireCredentialRef: boolean;
   executionRedactSnapshots: boolean;
   executionRuntimeMaxTimeoutMs: number;
@@ -77,6 +79,8 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     executionAllowNetwork: bool(source.EXECUTION_ALLOW_NETWORK, false),
     executionAllowProcessSpawn: bool(source.EXECUTION_ALLOW_PROCESS_SPAWN, false),
     executionNetworkAllowlist: csv(source.EXECUTION_NETWORK_ALLOWLIST),
+    executionSecretStoreEnabled: bool(source.EXECUTION_SECRET_STORE_ENABLED, false),
+    executionSecretInjectionEnabled: bool(source.EXECUTION_SECRET_INJECTION_ENABLED, false),
     executionRequireCredentialRef: bool(source.EXECUTION_REQUIRE_CREDENTIAL_REF, true),
     executionRedactSnapshots: bool(source.EXECUTION_REDACT_SNAPSHOTS, true),
     executionRuntimeMaxTimeoutMs: Number(source.EXECUTION_RUNTIME_MAX_TIMEOUT_MS ?? 300000),

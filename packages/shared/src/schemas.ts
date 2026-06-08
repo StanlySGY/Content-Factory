@@ -1168,3 +1168,32 @@ export const AgentRealHttpAdapterReadinessResponseSchema = Type.Object(
   { additionalProperties: false },
 );
 export type AgentRealHttpAdapterReadinessResponse = Static<typeof AgentRealHttpAdapterReadinessResponseSchema>;
+
+export const SecretInjectionPreflightReadinessResponseSchema = Type.Object(
+  {
+    mode: StringEnum(["secret_injection_preflight"] as const),
+    resolver_kind: StringEnum(["external_placeholder"] as const),
+    secret_store_enabled: Type.Boolean(),
+    secret_injection_enabled: Type.Boolean(),
+    secret_store_connected: Type.Boolean(),
+    secret_material_read: Type.Boolean(),
+    secret_material_returned: Type.Boolean(),
+    allowed_ref_schemes: Type.Array(Type.String()),
+    supported_purposes: Type.Array(StringEnum(["agent_runtime", "mcp_runtime", "publisher_runtime"] as const)),
+    transport_local_header_injection_ready: Type.Boolean(),
+    persist_secret_material: Type.Boolean(),
+    snapshot_persistence_allowed: Type.Boolean(),
+    dto_exposure_allowed: Type.Boolean(),
+    audit_metadata_required: Type.Boolean(),
+    real_adapter_worker_enabled: Type.Boolean(),
+    allow_real_runtime: Type.Boolean(),
+    allow_network: Type.Boolean(),
+    active_adapter_mode: RuntimeAdapterModeSchema,
+    runtime_mode: RuntimeModeSchema,
+    blocked_real_adapter_reason: Type.String(),
+  },
+  { additionalProperties: false },
+);
+export type SecretInjectionPreflightReadinessResponse = Static<
+  typeof SecretInjectionPreflightReadinessResponseSchema
+>;

@@ -21,6 +21,7 @@ import type {
   RuntimeAdaptersResponse,
   ProviderHttpBoundaryResponse,
   ProviderSafetyResponse,
+  SecretInjectionPreflightReadinessResponse,
   SecretResolverReadinessResponse,
   RuntimeSafetyPolicyDTO,
   StageRunDTO,
@@ -58,6 +59,7 @@ import type {
   AgentRealHttpAdapterReadiness,
   ProviderHttpBoundaryReadiness,
   ProviderSafetySummary,
+  SecretInjectionPreflightReadiness,
   SecretResolverReadiness,
 } from "./execution-ops.service.js";
 
@@ -590,5 +592,32 @@ export function toAgentRealHttpAdapterReadinessDTO(
     runtime_mode: s.runtimeMode,
     blocked_real_adapter_reason: s.blockedRealAdapterReason,
     secret_material_injected: s.secretMaterialInjected,
+  };
+}
+
+export function toSecretInjectionPreflightReadinessDTO(
+  s: SecretInjectionPreflightReadiness,
+): SecretInjectionPreflightReadinessResponse {
+  return {
+    mode: s.mode,
+    resolver_kind: s.resolverKind,
+    secret_store_enabled: s.secretStoreEnabled,
+    secret_injection_enabled: s.secretInjectionEnabled,
+    secret_store_connected: s.secretStoreConnected,
+    secret_material_read: s.secretMaterialRead,
+    secret_material_returned: s.secretMaterialReturned,
+    allowed_ref_schemes: s.allowedRefSchemes,
+    supported_purposes: s.supportedPurposes,
+    transport_local_header_injection_ready: s.transportLocalHeaderInjectionReady,
+    persist_secret_material: s.persistSecretMaterial,
+    snapshot_persistence_allowed: s.snapshotPersistenceAllowed,
+    dto_exposure_allowed: s.dtoExposureAllowed,
+    audit_metadata_required: s.auditMetadataRequired,
+    real_adapter_worker_enabled: s.realAdapterWorkerEnabled,
+    allow_real_runtime: s.allowRealRuntime,
+    allow_network: s.allowNetwork,
+    active_adapter_mode: s.activeAdapterMode,
+    runtime_mode: s.runtimeMode,
+    blocked_real_adapter_reason: s.blockedRealAdapterReason,
   };
 }

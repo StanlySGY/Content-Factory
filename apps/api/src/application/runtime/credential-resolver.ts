@@ -172,3 +172,24 @@ export class MockRuntimeSecretResolver implements IRuntimeSecretResolver {
     return resolution;
   }
 }
+
+export class ExternalPlaceholderRuntimeSecretResolver implements IRuntimeSecretResolver {
+  async resolve(ref: RuntimeSecretRef, context: RuntimeSecretResolverContext): Promise<RuntimeSecretResolution> {
+    validateRuntimeSecretRef(ref);
+    validateResolverContext(context);
+    const resolution: RuntimeSecretResolution = {
+      provider: ref.provider,
+      scope: ref.scope,
+      keyRef: ref.keyRef,
+      purpose: ref.purpose,
+      resolved: false,
+      materialAvailable: false,
+      materialPreview: null,
+      resolverKind: "external_placeholder",
+      auditMetadata: buildSecretResolutionAuditMetadata(ref, "external_placeholder"),
+      createdAt: new Date(),
+    };
+    validateRuntimeSecretResolution(resolution);
+    return resolution;
+  }
+}

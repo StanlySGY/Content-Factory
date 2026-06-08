@@ -56,6 +56,8 @@ export interface ExecutionOpsConfig {
   runtimeAdapterMode: RuntimeAdapterMode;
   runtimeAdapterRegistry: RuntimeAdapterRegistry;
   networkAllowlist: string[];
+  secretStoreEnabled: boolean;
+  secretInjectionEnabled: boolean;
 }
 
 export interface ProviderSafetySummary {
@@ -143,6 +145,29 @@ export interface AgentRealHttpAdapterReadiness {
   runtimeMode: RuntimeSafetyPolicy["mode"];
   blockedRealAdapterReason: "no real adapter registered";
   secretMaterialInjected: false;
+}
+
+export interface SecretInjectionPreflightReadiness {
+  mode: "secret_injection_preflight";
+  resolverKind: "external_placeholder";
+  secretStoreEnabled: boolean;
+  secretInjectionEnabled: boolean;
+  secretStoreConnected: false;
+  secretMaterialRead: false;
+  secretMaterialReturned: false;
+  allowedRefSchemes: string[];
+  supportedPurposes: RuntimeSecretPurpose[];
+  transportLocalHeaderInjectionReady: true;
+  persistSecretMaterial: false;
+  snapshotPersistenceAllowed: false;
+  dtoExposureAllowed: false;
+  auditMetadataRequired: true;
+  realAdapterWorkerEnabled: false;
+  allowRealRuntime: boolean;
+  allowNetwork: boolean;
+  activeAdapterMode: RuntimeAdapterMode;
+  runtimeMode: RuntimeSafetyPolicy["mode"];
+  blockedRealAdapterReason: "no real adapter registered";
 }
 
 // ExecutionOpsService：execution layer 安全运维入口（health / stale 恢复 / outbox 批处理 / manual retry）。
@@ -284,6 +309,31 @@ export class ExecutionOpsService {
       runtimeMode: this.config.runtimeSafetyPolicy.mode,
       blockedRealAdapterReason: "no real adapter registered",
       secretMaterialInjected: false,
+    };
+  }
+
+  getSecretInjectionPreflightReadiness(): SecretInjectionPreflightReadiness {
+    return {
+      mode: "secret_injection_preflight",
+      resolverKind: "external_placeholder",
+      secretStoreEnabled: this.config.secretStoreEnabled,
+      secretInjectionEnabled: this.config.secretInjectionEnabled,
+      secretStoreConnected: false,
+      secretMaterialRead: false,
+      secretMaterialReturned: false,
+      allowedRefSchemes: [...DEFAULT_SECRET_RESOLUTION_POLICY.allowedSchemes],
+      supportedPurposes: [...RUNTIME_SECRET_PURPOSES],
+      transportLocalHeaderInjectionReady: true,
+      persistSecretMaterial: false,
+      snapshotPersistenceAllowed: false,
+      dtoExposureAllowed: false,
+      auditMetadataRequired: true,
+      realAdapterWorkerEnabled: false,
+      allowRealRuntime: this.config.runtimeSafetyPolicy.allowRealExecution,
+      allowNetwork: this.config.runtimeSafetyPolicy.allowNetwork,
+      activeAdapterMode: this.config.runtimeAdapterMode,
+      runtimeMode: this.config.runtimeSafetyPolicy.mode,
+      blockedRealAdapterReason: "no real adapter registered",
     };
   }
 

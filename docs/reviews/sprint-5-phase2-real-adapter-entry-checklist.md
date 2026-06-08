@@ -1,7 +1,7 @@
 # Sprint-5 Phase 2 — Real Adapter Entry Checklist
 
 > 接入真实 Agent / MCP / LLM / Publisher 前的准入清单。标注每项：**[已满足] Phase 1.x 已就位 / [缺失] 待补 / [必须] 接真实外部系统前硬性前置**。
-> 基线：Phase 1.x 冻结（`fc001fb`→`32fd423`，见 release-gate 文档）；Phase 2.0 Runtime Safety Foundation、Phase 2.1 Dry-run Readiness Harness、Phase 2.2 Agent Fake Provider Harness、Phase 2.3 Agent Provider Safety Preflight、Phase 2.4 Agent Real Adapter Preflight Spike、Phase 2.5 Runtime Secret Resolver Boundary、Phase 2.6 Agent Provider HTTP Boundary 与 Phase 2.7 Agent Real HTTP Adapter Skeleton 已补安全准入基础。
+> 基线：Phase 1.x 冻结（`fc001fb`→`32fd423`，见 release-gate 文档）；Phase 2.0 Runtime Safety Foundation、Phase 2.1 Dry-run Readiness Harness、Phase 2.2 Agent Fake Provider Harness、Phase 2.3 Agent Provider Safety Preflight、Phase 2.4 Agent Real Adapter Preflight Spike、Phase 2.5 Runtime Secret Resolver Boundary、Phase 2.6 Agent Provider HTTP Boundary、Phase 2.7 Agent Real HTTP Adapter Skeleton 与 Phase 2.8 Runtime Secret Store Injection Preflight 已补安全准入基础。
 
 ## 1. 真实 Agent Runtime 准入
 
@@ -56,7 +56,8 @@
 - [已满足] Secret material non-return guarantee 已由 `assertNoSecretMaterialReturned()` 与 provider_preflight metadata 测试覆盖。
 - [已满足] result/request/response/outbox runtime 快照已做 secret-like key 深度脱敏。
 - [已满足] snapshot redaction regression 已覆盖 nested object / array 与 secret-like string value（`sk-...` / `Bearer ...` 等）。
-- [缺失][必须] 凭证引用解析与注入实现（ADR-010），真实 secret store 仍未接入。
+- [已满足] Runtime secret injection preflight 已就位：`ExternalPlaceholderRuntimeSecretResolver`、transport-local header plan、`*_ref` 可持久化快照、`GET /secret-injection-preflight` readiness；真实 secret store 仍未接入。
+- [缺失][必须] 凭证引用解析与真实 material 注入实现（ADR-010），真实 secret store 仍未接入。
 - [缺失][必须] 凭证按 `sensitivity_level` 作用域化（context_packs 已建模传播控制，ContextBuilder 为强制点）。
 - [已满足] request_snapshot / response_snapshot / outbox payload 当前经 `redactRuntimeSnapshot()` 脱敏后落库。
 
@@ -78,6 +79,7 @@
 - [缺失][必须] 外部进程 MCP 的进程隔离与崩溃遏制。
 - [已满足] `EXECUTION_ALLOW_NETWORK=false` / `EXECUTION_ALLOW_PROCESS_SPAWN=false` 默认关闭，作为真实 adapter 前置 kill switch。
 - [已满足] `EXECUTION_NETWORK_ALLOWLIST` 已接入 env 与 ops readiness；real HTTP skeleton 会校验 endpoint host allowlist。
+- [已满足] `EXECUTION_SECRET_STORE_ENABLED=false` / `EXECUTION_SECRET_INJECTION_ENABLED=false` 默认关闭，作为真实 secret 注入前置 kill switch。
 - [缺失] 进程沙箱实际执行环境。
 
 ## 9. Observability / Result Ledger 使用规范
@@ -89,6 +91,7 @@
 - [已满足] ops provider preflight test endpoint：`POST /runtime-adapters/provider-preflight-test` 已就位，只调用 fake HTTP boundary / fake OpenAI-compatible response，不写 execution tables。
 - [已满足] ops provider HTTP boundary endpoint：`GET /provider-http-boundary` 已就位，只读展示 fake HTTP client、status mapping、provider request id 与 real HTTP blocked 状态。
 - [已满足] ops agent real HTTP adapter endpoint：`GET /agent-real-http-adapter` 已就位，只读展示 real HTTP skeleton、network allowlist、disabled transport 与 real worker blocked 状态。
+- [已满足] ops secret injection preflight endpoint：`GET /secret-injection-preflight` 已就位，只读展示 external placeholder resolver、transport-local header plan 与 secret material 禁止持久化边界。
 - [缺失] 真实 runtime 的指标维度（错误类型分布、耗时分位、成本）；账本归档/保留策略。
 - [已满足] provider_preflight token usage / costEstimate(`not_calculated`) envelope 已就位，为真实成本指标预留字段。
 
@@ -107,7 +110,7 @@
 
 ## 12. 最小 Phase 2 Spike 建议
 
-1. **Runtime Secret Store Injection Preflight**：在 Phase 2.7 skeleton 后补真实 secret resolver skeleton 与 transport-local header injection 规则；默认仍关闭，禁止 secret material 落账本/outbox/DTO。
+1. **Agent Real Adapter Abort + Timeout Harness**：在 Phase 2.8 secret injection preflight 后补真实 HTTP transport timeout/abort 骨架；默认仍关闭，不发真实 provider 请求。
 2. **Agent Real Adapter spike（最小闭环）**：单一 LLM provider 的 `IAgentRuntime` 实现 + 隔离层（真实 HTTP abort + 凭证作用域化）+ 错误映射；经 Bridge 创建 job → worker 真实执行 → 结果落账本。**不回写控制平面**（先证执行，再证回写）。
 3. **Relay 回写 spike**：实现一个真实 handler，按 result_id/subject 幂等回写**单一** stage_run 状态（经状态机），含并发领取保护。
 4. 各 spike 独立验证后再合流；Publisher 单独立项，不混入。
@@ -125,5 +128,6 @@
 - **Phase 2.5 已补齐**：runtime secret resolver contract、mock resolver、resolver readiness ops endpoint、resolver audit metadata、secret material non-return guarantee、snapshot redaction regression coverage。
 - **Phase 2.6 已补齐**：Agent provider HTTP boundary contract、`IAgentProviderHttpClient` port、fake HTTP client、HTTP error mapping、provider request id/status metadata、provider HTTP boundary ops endpoint、worker ledger/outbox snapshot coverage。
 - **Phase 2.7 已补齐**：Agent real HTTP client skeleton、disabled default transport、endpointMap + network allowlist policy、`EXECUTION_NETWORK_ALLOWLIST`、agent real HTTP adapter ops readiness；real worker adapter 仍 blocked。
-- **接真实外部系统前仍必须完成**：真实超时中断落地、资源限额/沙箱、secret store 解析注入、provider 配额策略、high-risk 确认闸门、relay 真实回写 + 并发领取保护。
+- **Phase 2.8 已补齐**：Runtime secret store injection preflight、external placeholder resolver、transport-local header plan、secret store/injection kill switch、secret material 禁止持久化边界、secret injection ops readiness。
+- **接真实外部系统前仍必须完成**：真实超时中断落地、资源限额/沙箱、真实 secret store 解析与 material 注入、provider 配额策略、high-risk 确认闸门、relay 真实回写 + 并发领取保护。
 - **仍缺失（非 Real Adapter 阻塞，但需规划）**：Publisher + publish_records、审批态建模、账本归档、成本/指标维度。

@@ -18,6 +18,7 @@ import {
   RuntimeAdapterProviderPreflightTestResponseSchema,
   RuntimeAdaptersResponseSchema,
   RuntimeSafetyPolicySchema,
+  SecretInjectionPreflightReadinessResponseSchema,
   SecretResolverReadinessResponseSchema,
 } from "@cf/shared";
 import type { ExecutionOpsService } from "../../../application/execution-ops.service.js";
@@ -31,6 +32,7 @@ import {
   toProviderSafetyResponseDTO,
   toSecretResolverReadinessDTO,
   toRuntimeSafetyPolicyDTO,
+  toSecretInjectionPreflightReadinessDTO,
 } from "../../../application/mappers.js";
 
 export interface ExecutionOpsRoutesOptions {
@@ -85,6 +87,12 @@ export const executionOpsRoutes: FastifyPluginAsyncTypebox<ExecutionOpsRoutesOpt
     "/api/execution/ops/agent-real-http-adapter",
     { schema: { response: { 200: AgentRealHttpAdapterReadinessResponseSchema } } },
     async () => toAgentRealHttpAdapterReadinessDTO(executionOpsService.getAgentRealHttpAdapterReadiness()),
+  );
+
+  app.get(
+    "/api/execution/ops/secret-injection-preflight",
+    { schema: { response: { 200: SecretInjectionPreflightReadinessResponseSchema } } },
+    async () => toSecretInjectionPreflightReadinessDTO(executionOpsService.getSecretInjectionPreflightReadiness()),
   );
 
   app.post(

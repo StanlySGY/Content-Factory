@@ -99,6 +99,8 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
     runtimeAdapterMode: env.executionRuntimeAdapterMode,
     runtimeAdapterRegistry: defaultExecutionOpsRuntimeRegistry(),
     networkAllowlist: env.executionNetworkAllowlist,
+    secretStoreEnabled: env.executionSecretStoreEnabled,
+    secretInjectionEnabled: env.executionSecretInjectionEnabled,
   });
   const agentProfileService = new AgentProfileService(db);
   const agentRuntimeService = new AgentRuntimeMockService(db);
