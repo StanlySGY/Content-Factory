@@ -20,6 +20,7 @@ import {
   RuntimeSafetyPolicySchema,
   SecretInjectionPreflightReadinessResponseSchema,
   SecretResolverReadinessResponseSchema,
+  ProviderQuotaCostPreflightReadinessResponseSchema,
 } from "@cf/shared";
 import type { ExecutionOpsService } from "../../../application/execution-ops.service.js";
 import {
@@ -29,6 +30,7 @@ import {
   toRuntimeAdapterDryRunResponseDTO,
   toRuntimeAdaptersResponseDTO,
   toProviderHttpBoundaryDTO,
+  toProviderQuotaCostPreflightReadinessDTO,
   toProviderSafetyResponseDTO,
   toSecretResolverReadinessDTO,
   toRuntimeSafetyPolicyDTO,
@@ -87,6 +89,13 @@ export const executionOpsRoutes: FastifyPluginAsyncTypebox<ExecutionOpsRoutesOpt
     "/api/execution/ops/agent-real-http-adapter",
     { schema: { response: { 200: AgentRealHttpAdapterReadinessResponseSchema } } },
     async () => toAgentRealHttpAdapterReadinessDTO(executionOpsService.getAgentRealHttpAdapterReadiness()),
+  );
+
+  app.get(
+    "/api/execution/ops/provider-quota-cost-preflight",
+    { schema: { response: { 200: ProviderQuotaCostPreflightReadinessResponseSchema } } },
+    async () =>
+      toProviderQuotaCostPreflightReadinessDTO(executionOpsService.getProviderQuotaCostPreflightReadiness()),
   );
 
   app.get(

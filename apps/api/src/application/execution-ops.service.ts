@@ -27,6 +27,12 @@ import {
   buildSecretResolutionReadinessSnapshot,
 } from "./runtime/secret-resolution-policy.js";
 import { RUNTIME_SECRET_PURPOSES, type RuntimeSecretPurpose } from "./runtime/credential-resolver.js";
+import {
+  buildProviderQuotaCostPreflightReadiness,
+  DEFAULT_PROVIDER_QUOTA_MAX_REQUESTS,
+  DEFAULT_PROVIDER_QUOTA_WINDOW_MS,
+  type ProviderQuotaCostPreflightReadiness,
+} from "./runtime/provider-quota-cost-preflight.js";
 import type { OutboxRelay } from "./outbox-relay.js";
 
 // 运维健康只读聚合（camelCase；mapper → snake_case DTO）。仅聚合 execution plane 表，不 join 业务表/不读 audit。
@@ -240,8 +246,8 @@ export class ExecutionOpsService {
       },
       quotaPolicy: {
         distributed: false,
-        defaultWindowMs: 60000,
-        defaultMaxRequestsPerWindow: 60,
+        defaultWindowMs: DEFAULT_PROVIDER_QUOTA_WINDOW_MS,
+        defaultMaxRequestsPerWindow: DEFAULT_PROVIDER_QUOTA_MAX_REQUESTS,
       },
       fakeProvider: {
         agent: descriptorStatus("agent"),
@@ -318,6 +324,13 @@ export class ExecutionOpsService {
       timeoutErrorType: "timeout",
       abortErrorType: "aborted",
     };
+  }
+
+  getProviderQuotaCostPreflightReadiness(): ProviderQuotaCostPreflightReadiness {
+    return buildProviderQuotaCostPreflightReadiness({
+      activeAdapterMode: this.config.runtimeAdapterMode,
+      runtimeSafetyPolicy: this.config.runtimeSafetyPolicy,
+    });
   }
 
   getSecretInjectionPreflightReadiness(): SecretInjectionPreflightReadiness {

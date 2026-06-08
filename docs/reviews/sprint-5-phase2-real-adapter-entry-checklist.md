@@ -1,7 +1,7 @@
 # Sprint-5 Phase 2 — Real Adapter Entry Checklist
 
 > 接入真实 Agent / MCP / LLM / Publisher 前的准入清单。标注每项：**[已满足] Phase 1.x 已就位 / [缺失] 待补 / [必须] 接真实外部系统前硬性前置**。
-> 基线：Phase 1.x 冻结（`fc001fb`→`32fd423`，见 release-gate 文档）；Phase 2.0 Runtime Safety Foundation、Phase 2.1 Dry-run Readiness Harness、Phase 2.2 Agent Fake Provider Harness、Phase 2.3 Agent Provider Safety Preflight、Phase 2.4 Agent Real Adapter Preflight Spike、Phase 2.5 Runtime Secret Resolver Boundary、Phase 2.6 Agent Provider HTTP Boundary、Phase 2.7 Agent Real HTTP Adapter Skeleton、Phase 2.8 Runtime Secret Store Injection Preflight 与 Phase 2.9 Agent Real HTTP Timeout/Abort Harness 已补安全准入基础。
+> 基线：Phase 1.x 冻结（`fc001fb`→`32fd423`，见 release-gate 文档）；Phase 2.0 Runtime Safety Foundation、Phase 2.1 Dry-run Readiness Harness、Phase 2.2 Agent Fake Provider Harness、Phase 2.3 Agent Provider Safety Preflight、Phase 2.4 Agent Real Adapter Preflight Spike、Phase 2.5 Runtime Secret Resolver Boundary、Phase 2.6 Agent Provider HTTP Boundary、Phase 2.7 Agent Real HTTP Adapter Skeleton、Phase 2.8 Runtime Secret Store Injection Preflight、Phase 2.9 Agent Real HTTP Timeout/Abort Harness 与 Phase 2.10 Provider Quota + Cost Metrics Preflight 已补安全准入基础。
 
 ## 1. 真实 Agent Runtime 准入
 
@@ -11,6 +11,7 @@
 - [已满足] Agent dry-run runtime readiness validation 已就位（不调用 LLM、不发网络、不读取 secret）。
 - [已满足] Agent provider-shaped contract + fake provider harness 已就位，可验证 provider response、错误映射、脱敏与 worker ledger/outbox 路径。
 - [已满足] Agent provider safety preflight 已就位：credential policy、transport port、timeout/abort 契约、raw response normalization、quota policy。
+- [已满足] Provider quota + cost preflight readiness 已就位：冻结 allow/throttle 样例决策、429→`rate_limited`、token usage ready、cost source=`not_calculated`、real billing disabled。
 - [已满足] Agent provider_preflight adapter mode 已就位：OpenAI-compatible raw schema、fake OpenAI-compatible client、secret readiness snapshot、metrics envelope、ops preflight-test、worker ledger/outbox path。
 - [已满足] Provider-like error → RuntimeErrorType 的基础映射（429/timeout/403/connection/4xx/unknown）已就位；真实 provider 可在此基础上细化内容策略。
 - [已满足] Agent provider HTTP boundary 已就位：`IAgentProviderHttpClient` port、`AgentProviderHttpRequest/Response/Error` contract、fake HTTP client、provider request id / status code / HTTP metadata、inline secret 拒绝与 redaction 回归。
@@ -68,7 +69,9 @@
 - [已满足] 确定性退避重试 + max_attempts + next_run_at；retryable 语义。
 - [已满足] 429 已映射为 `rate_limited`，沿用 retryable/backoff 语义。
 - [已满足] Agent provider quota policy 骨架已就位（纯策略，allow/throttle，不落库、不分布式）。
+- [已满足] Provider quota/cost preflight ops readiness 已就位：默认 60 req / 60s、分布式 quota=false、真实 billing=false、真实 worker adapter blocked。
 - [缺失][必须] 真实供应商配额策略（provider quota、租户限额、429 退避参数定标）。
+- [缺失][必须] 分布式 quota enforcement / provider usage sync / billing cost calculation。
 - [缺失] 退避参数针对真实 runtime 压测定标（当前 1s–60s 为骨架默认）。
 
 ## 7. Manual Approval / High-risk Tool Confirmation
@@ -94,7 +97,8 @@
 - [已满足] ops provider HTTP boundary endpoint：`GET /provider-http-boundary` 已就位，只读展示 fake HTTP client、status mapping、provider request id 与 real HTTP blocked 状态。
 - [已满足] ops agent real HTTP adapter endpoint：`GET /agent-real-http-adapter` 已就位，只读展示 real HTTP skeleton、network allowlist、disabled transport、timeout/abort harness readiness 与 real worker blocked 状态。
 - [已满足] ops secret injection preflight endpoint：`GET /secret-injection-preflight` 已就位，只读展示 external placeholder resolver、transport-local header plan 与 secret material 禁止持久化边界。
-- [缺失] 真实 runtime 的指标维度（错误类型分布、耗时分位、成本）；账本归档/保留策略。
+- [已满足] ops provider quota/cost preflight endpoint：`GET /provider-quota-cost-preflight` 已就位，只读展示 quota/cost 准入字段，不写 execution tables。
+- [缺失] 真实 runtime 的指标维度（错误类型分布、耗时分位、真实成本）；账本归档/保留策略。
 - [已满足] provider_preflight token usage / costEstimate(`not_calculated`) envelope 已就位，为真实成本指标预留字段。
 
 ## 10. Rollback / Kill Switch
@@ -112,7 +116,7 @@
 
 ## 12. 最小 Phase 2 Spike 建议
 
-1. **Provider Quota + Cost Metrics Preflight**：在不发真实请求前，冻结 provider quota / token usage / cost estimate envelope 的准入字段与 ops readiness。
+1. **Agent Real Adapter registration guard**：在不启用真实网络/secret 的前提下，冻结真实 adapter 注册前的配置闸门、descriptor 状态与错误语义。
 2. **Agent Real Adapter spike（最小闭环）**：单一 LLM provider 的 `IAgentRuntime` 实现 + 隔离层（真实 HTTP transport + 凭证作用域化）+ 错误映射；经 Bridge 创建 job → worker 真实执行 → 结果落账本。**不回写控制平面**（先证执行，再证回写）。
 3. **Relay 回写 spike**：实现一个真实 handler，按 result_id/subject 幂等回写**单一** stage_run 状态（经状态机），含并发领取保护。
 4. 各 spike 独立验证后再合流；Publisher 单独立项，不混入。
@@ -132,5 +136,6 @@
 - **Phase 2.7 已补齐**：Agent real HTTP client skeleton、disabled default transport、endpointMap + network allowlist policy、`EXECUTION_NETWORK_ALLOWLIST`、agent real HTTP adapter ops readiness；real worker adapter 仍 blocked。
 - **Phase 2.8 已补齐**：Runtime secret store injection preflight、external placeholder resolver、transport-local header plan、secret store/injection kill switch、secret material 禁止持久化边界、secret injection ops readiness。
 - **Phase 2.9 已补齐**：Agent real HTTP timeout/abort harness、transport signal forwarding、timeout/parent abort 稳定错误映射、agent real HTTP adapter ops readiness 字段。
-- **接真实外部系统前仍必须完成**：MCP / 进程级取消、资源限额/沙箱、真实 secret store 解析与 material 注入、provider 配额策略、high-risk 确认闸门、relay 真实回写 + 并发领取保护。
+- **Phase 2.10 已补齐**：Provider quota + cost metrics preflight readiness、quota allow/throttle 样例、429 rate_limited 错误类型、cost not_calculated envelope、只读 ops endpoint、不写 execution tables。
+- **接真实外部系统前仍必须完成**：MCP / 进程级取消、资源限额/沙箱、真实 secret store 解析与 material 注入、分布式 provider 配额 enforcement、真实 billing/cost calculation、high-risk 确认闸门、relay 真实回写 + 并发领取保护。
 - **仍缺失（非 Real Adapter 阻塞，但需规划）**：Publisher + publish_records、审批态建模、账本归档、成本/指标维度。

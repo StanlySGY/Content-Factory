@@ -20,6 +20,7 @@ import type {
   RuntimeAdapterDryRunResponse,
   RuntimeAdaptersResponse,
   ProviderHttpBoundaryResponse,
+  ProviderQuotaCostPreflightReadinessResponse,
   ProviderSafetyResponse,
   SecretInjectionPreflightReadinessResponse,
   SecretResolverReadinessResponse,
@@ -62,6 +63,7 @@ import type {
   SecretInjectionPreflightReadiness,
   SecretResolverReadiness,
 } from "./execution-ops.service.js";
+import type { ProviderQuotaCostPreflightReadiness } from "./runtime/provider-quota-cost-preflight.js";
 
 const iso = (d: Date | null): string | null => (d ? d.toISOString() : null);
 
@@ -596,6 +598,33 @@ export function toAgentRealHttpAdapterReadinessDTO(
     transport_signal_forwarded: s.transportSignalForwarded,
     timeout_error_type: s.timeoutErrorType,
     abort_error_type: s.abortErrorType,
+  };
+}
+
+export function toProviderQuotaCostPreflightReadinessDTO(
+  s: ProviderQuotaCostPreflightReadiness,
+): ProviderQuotaCostPreflightReadinessResponse {
+  return {
+    mode: s.mode,
+    quota_policy_ready: s.quotaPolicyReady,
+    distributed_quota_ready: s.distributedQuotaReady,
+    default_window_ms: s.defaultWindowMs,
+    default_max_requests_per_window: s.defaultMaxRequestsPerWindow,
+    quota_decision_allow_status: s.quotaDecisionAllowStatus,
+    quota_decision_throttle_status: s.quotaDecisionThrottleStatus,
+    rate_limit_error_type: s.rateLimitErrorType,
+    cost_metrics_ready: s.costMetricsReady,
+    cost_source: s.costSource,
+    token_usage_ready: s.tokenUsageReady,
+    cost_amount: s.costAmount,
+    cost_currency: s.costCurrency,
+    real_provider_billing_enabled: s.realProviderBillingEnabled,
+    real_adapter_worker_enabled: s.realAdapterWorkerEnabled,
+    blocked_real_adapter_reason: s.blockedRealAdapterReason,
+    allow_real_runtime: s.allowRealRuntime,
+    allow_network: s.allowNetwork,
+    active_adapter_mode: s.activeAdapterMode,
+    runtime_mode: s.runtimeMode,
   };
 }
 

@@ -18,4 +18,17 @@ describe("Agent provider metrics envelope", () => {
     expect(metrics.tokenUsage?.totalTokens).toBe(3);
     expect(() => validateAgentProviderMetricsEnvelope(metrics)).not.toThrow();
   });
+
+  it("rejects real cost amounts in the preflight envelope", () => {
+    const metrics = buildAgentProviderMetricsEnvelope({
+      provider: "openai_compatible",
+      model: "gpt-test",
+      durationMs: 12,
+    });
+
+    expect(() => validateAgentProviderMetricsEnvelope({
+      ...metrics,
+      costEstimate: { amount: 1, currency: "USD", source: "not_calculated" },
+    })).toThrow("not_calculated");
+  });
 });

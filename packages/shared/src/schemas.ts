@@ -1173,6 +1173,35 @@ export const AgentRealHttpAdapterReadinessResponseSchema = Type.Object(
 );
 export type AgentRealHttpAdapterReadinessResponse = Static<typeof AgentRealHttpAdapterReadinessResponseSchema>;
 
+export const ProviderQuotaCostPreflightReadinessResponseSchema = Type.Object(
+  {
+    mode: StringEnum(["provider_quota_cost_preflight"] as const),
+    quota_policy_ready: Type.Boolean(),
+    distributed_quota_ready: Type.Boolean(),
+    default_window_ms: Type.Integer(),
+    default_max_requests_per_window: Type.Integer(),
+    quota_decision_allow_status: StringEnum(["allow"] as const),
+    quota_decision_throttle_status: StringEnum(["throttle"] as const),
+    rate_limit_error_type: StringEnum(["rate_limited"] as const),
+    cost_metrics_ready: Type.Boolean(),
+    cost_source: StringEnum(["not_calculated"] as const),
+    token_usage_ready: Type.Boolean(),
+    cost_amount: Type.Null(),
+    cost_currency: Type.Null(),
+    real_provider_billing_enabled: Type.Boolean(),
+    real_adapter_worker_enabled: Type.Boolean(),
+    blocked_real_adapter_reason: Type.String(),
+    allow_real_runtime: Type.Boolean(),
+    allow_network: Type.Boolean(),
+    active_adapter_mode: RuntimeAdapterModeSchema,
+    runtime_mode: RuntimeModeSchema,
+  },
+  { additionalProperties: false },
+);
+export type ProviderQuotaCostPreflightReadinessResponse = Static<
+  typeof ProviderQuotaCostPreflightReadinessResponseSchema
+>;
+
 export const SecretInjectionPreflightReadinessResponseSchema = Type.Object(
   {
     mode: StringEnum(["secret_injection_preflight"] as const),
