@@ -1023,6 +1023,60 @@ export type ExecutionWritebackTransactionPlanReadinessResponse = Static<
   typeof ExecutionWritebackTransactionPlanReadinessResponseSchema
 >;
 
+export const ExecutionWritebackDryRunStepSchema = Type.Object(
+  {
+    key: ExecutionWritebackTransactionStepSchema.properties.key,
+    status: StringEnum(["blocked"] as const),
+    executed: Type.Boolean(),
+    missing_requirements: Type.Array(Type.String()),
+  },
+  { additionalProperties: false },
+);
+
+export const ExecutionWritebackDryRunSchema = Type.Object(
+  {
+    writeback_id: Uuid(),
+    execution_result_id: Uuid(),
+    execution_job_id: Uuid(),
+    subject_type: Type.String(),
+    subject_id: Type.String(),
+    mode: StringEnum(["disabled_dry_run"] as const),
+    enabled: Type.Boolean(),
+    executable: Type.Boolean(),
+    control_plane_adapter_registered: Type.Boolean(),
+    audit_adapter_registered: Type.Boolean(),
+    control_plane_read_performed: Type.Boolean(),
+    control_plane_write_performed: Type.Boolean(),
+    audit_write_performed: Type.Boolean(),
+    plan: ExecutionWritebackTransactionPlanSchema,
+    steps: Type.Array(ExecutionWritebackDryRunStepSchema),
+    missing_requirements: Type.Array(Type.String()),
+    next_phase_requirements: Type.Array(Type.String()),
+  },
+  { additionalProperties: false },
+);
+export type ExecutionWritebackDryRunDTO = Static<typeof ExecutionWritebackDryRunSchema>;
+
+export const ExecutionWritebackDryRunReadinessResponseSchema = Type.Object(
+  {
+    mode: StringEnum(["disabled_dry_run"] as const),
+    enabled: Type.Boolean(),
+    executable: Type.Boolean(),
+    control_plane_adapter_registered: Type.Boolean(),
+    audit_adapter_registered: Type.Boolean(),
+    control_plane_read_enabled: Type.Boolean(),
+    control_plane_write_enabled: Type.Boolean(),
+    audit_write_enabled: Type.Boolean(),
+    required_steps: Type.Array(ExecutionWritebackTransactionStepSchema.properties.key),
+    missing_requirements: Type.Array(Type.String()),
+    next_phase_requirements: Type.Array(Type.String()),
+  },
+  { additionalProperties: false },
+);
+export type ExecutionWritebackDryRunReadinessResponse = Static<
+  typeof ExecutionWritebackDryRunReadinessResponseSchema
+>;
+
 // ---- Execution Ops (S5 Phase 1.10；运维健康观测 + 恢复控制，仅 execution plane) ----
 export const ExecutionSystemHealthSchema = Type.Object(
   {

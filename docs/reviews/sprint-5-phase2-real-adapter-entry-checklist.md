@@ -1,7 +1,7 @@
 # Sprint-5 Phase 2 — Real Adapter Entry Checklist
 
 > 接入真实 Agent / MCP / LLM / Publisher 前的准入清单。标注每项：**[已满足] Phase 1.x 已就位 / [缺失] 待补 / [必须] 接真实外部系统前硬性前置**。
-> 基线：Phase 1.x 冻结（`fc001fb`→`32fd423`，见 release-gate 文档）；Phase 2.0 Runtime Safety Foundation、Phase 2.1 Dry-run Readiness Harness、Phase 2.2 Agent Fake Provider Harness、Phase 2.3 Agent Provider Safety Preflight、Phase 2.4 Agent Real Adapter Preflight Spike、Phase 2.5 Runtime Secret Resolver Boundary、Phase 2.6 Agent Provider HTTP Boundary、Phase 2.7 Agent Real HTTP Adapter Skeleton、Phase 2.8 Runtime Secret Store Injection Preflight、Phase 2.9 Agent Real HTTP Timeout/Abort Harness、Phase 2.10 Provider Quota + Cost Metrics Preflight、Phase 2.11 Agent Real Adapter Registration Guard、Phase 2.12 Agent Real Adapter Disabled Fixture、Phase 2.13 Agent Real Provider Config Preflight、Phase 2.14 Agent Real Provider Transport Disabled Harness、Phase 2.15 Agent Real Adapter Minimum Closed-loop Spike、Phase 2.16 Relay Writeback Readiness、Phase 2.17 Outbox Lease / Concurrent Relay Claim Readiness、Phase 2.18 Writeback Ledger / Idempotent Consumer Readiness、Phase 2.19 Single Subject Writeback Guard / Disabled Fixture 与 Phase 2.20 Writeback Transaction Plan / Audit Coupling Readiness 已补安全准入基础。
+> 基线：Phase 1.x 冻结（`fc001fb`→`32fd423`，见 release-gate 文档）；Phase 2.0 Runtime Safety Foundation、Phase 2.1 Dry-run Readiness Harness、Phase 2.2 Agent Fake Provider Harness、Phase 2.3 Agent Provider Safety Preflight、Phase 2.4 Agent Real Adapter Preflight Spike、Phase 2.5 Runtime Secret Resolver Boundary、Phase 2.6 Agent Provider HTTP Boundary、Phase 2.7 Agent Real HTTP Adapter Skeleton、Phase 2.8 Runtime Secret Store Injection Preflight、Phase 2.9 Agent Real HTTP Timeout/Abort Harness、Phase 2.10 Provider Quota + Cost Metrics Preflight、Phase 2.11 Agent Real Adapter Registration Guard、Phase 2.12 Agent Real Adapter Disabled Fixture、Phase 2.13 Agent Real Provider Config Preflight、Phase 2.14 Agent Real Provider Transport Disabled Harness、Phase 2.15 Agent Real Adapter Minimum Closed-loop Spike、Phase 2.16 Relay Writeback Readiness、Phase 2.17 Outbox Lease / Concurrent Relay Claim Readiness、Phase 2.18 Writeback Ledger / Idempotent Consumer Readiness、Phase 2.19 Single Subject Writeback Guard / Disabled Fixture、Phase 2.20 Writeback Transaction Plan / Audit Coupling Readiness 与 Phase 2.21 Writeback Dry-run Executor / Control-plane Adapter Disabled Harness 已补安全准入基础。
 
 ## 1. 真实 Agent Runtime 准入
 
@@ -130,12 +130,13 @@
 - [已满足] at-least-once 投递的消费侧幂等对账已就位：`execution_writebacks` 记录 disabled no-op plan，`idempotency_key UNIQUE`，重复 terminal event handler 调用只返回同一 ledger row。
 - [已满足] 单 subject writeback guard disabled fixture 已就位：`workflow_stage_run` 为首个支持 subject，guard 默认 `enabled=false` / `side_effect_allowed=false` / `decision=blocked`，并暴露 writeback guard 与 ops readiness API。
 - [已满足] Writeback transaction plan / audit coupling readiness 已就位：`workflow_stage_run` 真实回写的必要事务步骤已冻结为 disabled plan，明确 `transaction_required=true` / `audit_coupling_required=true` / `control_plane_write_planned=false`，并暴露 writeback transaction plan 与 ops readiness API。
+- [已满足] Writeback dry-run executor / control-plane adapter disabled harness 已就位：dry-run 输出每个 transaction step 的 `blocked` 结果与 missing requirements，并证明 `control_plane_read_performed=false` / `control_plane_write_performed=false` / `audit_write_performed=false`。
 - [缺失][必须] 真实 writeback guard 执行版：在写 `stage_runs/assets/reviews` 前校验状态机允许边、ledger 状态、audit 计划与 feature flag，并执行同事务写入。
 - [缺失][必须] 真实 writeback transaction executor：按 plan 在同一事务内读取 subject、校验 ADR-006 状态边、更新控制面、追加 audit event、最后标记 writeback applied。
 
 ## 12. 最小 Phase 2 Spike 建议
 
-1. **Writeback Dry-run Executor / Control-plane Adapter Disabled Harness**：在 transaction plan 基础上做禁用态 dry-run executor，只模拟步骤结果，不读写控制面。
+1. **Writeback Apply Guard / Real Executor Final Gate**：在 guard、transaction plan、dry-run harness 基础上定义真实 executor 前最终闸门，继续 disabled，不读写控制面。
 2. **Relay 真实回写 spike**：在 readiness handler、lease、writeback ledger、guard 与 transaction plan 基础上实现单一 subject 类型的幂等 control-plane writeback，经 ADR-006 状态机，不旁路。
 3. **Agent Real Transport spike**：在 `AgentRealRuntime` skeleton 基础上接真实 HTTP transport 与真实 secret material 注入，但仍需独立 kill switch 与人工确认。
 4. **MCP Real Runtime safety spike**：先做 stdio/process cancel + sandbox/资源限额，再接 transport。
@@ -167,5 +168,6 @@
 - **Phase 2.18 已补齐**：Execution writeback ledger、disabled no-op plan 持久化、`idempotency_key UNIQUE` 消费侧幂等、writeback 只读 API、subject/result 观测查询。
 - **Phase 2.19 已补齐**：Single subject writeback guard disabled fixture、`workflow_stage_run` 首个支持 subject、writeback guard API、ops guard readiness API、真实回写前阻塞项可观测。
 - **Phase 2.20 已补齐**：Writeback transaction plan / audit coupling readiness、真实回写必要事务步骤、transaction/audit coupling 标志、writeback transaction plan API、ops transaction plan readiness API。
+- **Phase 2.21 已补齐**：Writeback dry-run executor / control-plane adapter disabled harness、每步 blocked dry-run 输出、control-plane/audit side effect 未发生证明、writeback dry-run API、ops dry-run readiness API。
 - **接真实外部系统前仍必须完成**：MCP / 进程级取消、资源限额/沙箱、真实 secret store 解析与 material 注入、分布式 provider 配额 enforcement、真实 billing/cost calculation、high-risk 确认闸门、relay 真实幂等回写。
 - **仍缺失（非 Real Adapter 阻塞，但需规划）**：Publisher + publish_records、审批态建模、账本归档、成本/指标维度。

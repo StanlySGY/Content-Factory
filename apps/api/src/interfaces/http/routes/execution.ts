@@ -7,6 +7,7 @@ import {
   ExecutionResultSchema,
   ExecutionResultsResponseSchema,
   ExecutionResultSummarySchema,
+  ExecutionWritebackDryRunSchema,
   ExecutionWritebackGuardSchema,
   ExecutionWritebackTransactionPlanSchema,
   ExecutionWritebackSchema,
@@ -31,6 +32,7 @@ import {
   toExecutionJobDTO,
   toExecutionResultDTO,
   toExecutionResultSummaryDTO,
+  toExecutionWritebackDryRunDTO,
   toExecutionWritebackGuardDTO,
   toExecutionWritebackTransactionPlanDTO,
   toExecutionWritebackDTO,
@@ -158,6 +160,13 @@ export const executionRoutes: FastifyPluginAsyncTypebox<ExecutionRoutesOptions> 
       toExecutionWritebackTransactionPlanDTO(
         await executionWritebackService.getTransactionPlan(request.params.id),
       ),
+  );
+
+  // 真实回写前 dry-run：disabled harness，只模拟 blocked 步骤，不读/写控制面。
+  app.post(
+    "/api/execution/writebacks/:id/dry-run",
+    { schema: { params: IdParamSchema, response: { 200: ExecutionWritebackDryRunSchema } } },
+    async (request) => toExecutionWritebackDryRunDTO(await executionWritebackService.dryRun(request.params.id)),
   );
 
   app.get(

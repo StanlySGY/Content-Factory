@@ -13,6 +13,8 @@ import type {
   ExecutionJobDTO,
   ExecutionResultDTO,
   ExecutionWritebackDTO,
+  ExecutionWritebackDryRunDTO,
+  ExecutionWritebackDryRunReadinessResponse,
   ExecutionWritebackGuardDTO,
   ExecutionWritebackGuardReadinessResponse,
   ExecutionWritebackTransactionPlanDTO,
@@ -61,6 +63,7 @@ import type {
   WorkflowRunRow,
 } from "../infrastructure/db/schema.js";
 import type { ExecutionResultSummary } from "../domain/execution/result.js";
+import type { ExecutionWritebackDryRun, ExecutionWritebackDryRunReadiness } from "../domain/execution/writeback-dry-run.js";
 import type { ExecutionWritebackGuard, ExecutionWritebackGuardReadiness } from "../domain/execution/writeback-guard.js";
 import type {
   ExecutionWritebackTransactionPlan,
@@ -533,6 +536,51 @@ export function toExecutionWritebackTransactionPlanReadinessDTO(
     control_plane_write_planned: r.controlPlaneWritePlanned,
     supported_subject_types: r.supportedSubjectTypes,
     real_transaction_executor_registered: r.realTransactionExecutorRegistered,
+    required_steps: r.requiredSteps,
+    missing_requirements: r.missingRequirements,
+    next_phase_requirements: r.nextPhaseRequirements,
+  };
+}
+
+export function toExecutionWritebackDryRunDTO(d: ExecutionWritebackDryRun): ExecutionWritebackDryRunDTO {
+  return {
+    writeback_id: d.writebackId,
+    execution_result_id: d.executionResultId,
+    execution_job_id: d.executionJobId,
+    subject_type: d.subjectType,
+    subject_id: d.subjectId,
+    mode: d.mode,
+    enabled: d.enabled,
+    executable: d.executable,
+    control_plane_adapter_registered: d.controlPlaneAdapterRegistered,
+    audit_adapter_registered: d.auditAdapterRegistered,
+    control_plane_read_performed: d.controlPlaneReadPerformed,
+    control_plane_write_performed: d.controlPlaneWritePerformed,
+    audit_write_performed: d.auditWritePerformed,
+    plan: toExecutionWritebackTransactionPlanDTO(d.plan),
+    steps: d.steps.map((s) => ({
+      key: s.key,
+      status: s.status,
+      executed: s.executed,
+      missing_requirements: s.missingRequirements,
+    })),
+    missing_requirements: d.missingRequirements,
+    next_phase_requirements: d.nextPhaseRequirements,
+  };
+}
+
+export function toExecutionWritebackDryRunReadinessDTO(
+  r: ExecutionWritebackDryRunReadiness,
+): ExecutionWritebackDryRunReadinessResponse {
+  return {
+    mode: r.mode,
+    enabled: r.enabled,
+    executable: r.executable,
+    control_plane_adapter_registered: r.controlPlaneAdapterRegistered,
+    audit_adapter_registered: r.auditAdapterRegistered,
+    control_plane_read_enabled: r.controlPlaneReadEnabled,
+    control_plane_write_enabled: r.controlPlaneWriteEnabled,
+    audit_write_enabled: r.auditWriteEnabled,
     required_steps: r.requiredSteps,
     missing_requirements: r.missingRequirements,
     next_phase_requirements: r.nextPhaseRequirements,

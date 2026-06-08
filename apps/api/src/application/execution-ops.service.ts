@@ -6,6 +6,10 @@ import {
   type ExecutionWritebackGuardReadiness,
 } from "../domain/execution/writeback-guard.js";
 import {
+  buildExecutionWritebackDryRunReadiness,
+  type ExecutionWritebackDryRunReadiness,
+} from "../domain/execution/writeback-dry-run.js";
+import {
   buildExecutionWritebackTransactionPlanReadiness,
   type ExecutionWritebackTransactionPlanReadiness,
 } from "../domain/execution/writeback-transaction-plan.js";
@@ -421,6 +425,10 @@ export class ExecutionOpsService {
 
   getWritebackTransactionPlanReadiness(): ExecutionWritebackTransactionPlanReadiness {
     return buildExecutionWritebackTransactionPlanReadiness();
+  }
+
+  getWritebackDryRunReadiness(): ExecutionWritebackDryRunReadiness {
+    return buildExecutionWritebackDryRunReadiness();
   }
 
   async dryRunRuntimeAdapter(input: {
