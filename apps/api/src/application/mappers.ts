@@ -62,6 +62,7 @@ function snakeRuntimeValue(value: unknown): unknown {
     const snakeKey =
       key === "dryRun" ? "dry_run" :
       key === "fakeProvider" ? "fake_provider" :
+      key === "providerPreflight" ? "provider_preflight" :
       key === "inputAccepted" ? "input_accepted" :
       key === "keyRef" ? "key_ref" :
       key === "blockedReason" ? "blocked_reason" :
@@ -73,6 +74,14 @@ function snakeRuntimeValue(value: unknown): unknown {
       key === "networkUsed" ? "network_used" :
       key === "processSpawned" ? "process_spawned" :
       key === "providerErrorType" ? "provider_error_type" :
+      key === "providerKind" ? "provider_kind" :
+      key === "providerRequestId" ? "provider_request_id" :
+      key === "tokenUsage" ? "token_usage" :
+      key === "promptTokens" ? "prompt_tokens" :
+      key === "completionTokens" ? "completion_tokens" :
+      key === "totalTokens" ? "total_tokens" :
+      key === "costEstimate" ? "cost_estimate" :
+      key === "secretResolution" ? "secret_resolution" :
       key;
     out[snakeKey] = snakeRuntimeValue(v);
   }
@@ -497,5 +506,18 @@ export function toProviderSafetyResponseDTO(s: ProviderSafetySummary): ProviderS
       default_max_requests_per_window: s.quotaPolicy.defaultMaxRequestsPerWindow,
     },
     fake_provider: s.fakeProvider,
+    openai_compatible: {
+      schema_ready: s.openaiCompatible.schemaReady,
+      fake_client_ready: s.openaiCompatible.fakeClientReady,
+    },
+    secret_resolver: {
+      resolver_ready: s.secretResolver.resolverReady,
+      secret_material_present: s.secretResolver.secretMaterialPresent,
+      allowed_schemes: s.secretResolver.allowedSchemes,
+    },
+    metrics_envelope: {
+      cost_source: s.metricsEnvelope.costSource,
+      token_usage_ready: s.metricsEnvelope.tokenUsageReady,
+    },
   };
 }

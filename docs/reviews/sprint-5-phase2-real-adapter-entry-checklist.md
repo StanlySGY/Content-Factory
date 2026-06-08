@@ -1,7 +1,7 @@
 # Sprint-5 Phase 2 — Real Adapter Entry Checklist
 
 > 接入真实 Agent / MCP / LLM / Publisher 前的准入清单。标注每项：**[已满足] Phase 1.x 已就位 / [缺失] 待补 / [必须] 接真实外部系统前硬性前置**。
-> 基线：Phase 1.x 冻结（`fc001fb`→`32fd423`，见 release-gate 文档）；Phase 2.0 Runtime Safety Foundation、Phase 2.1 Dry-run Readiness Harness、Phase 2.2 Agent Fake Provider Harness 与 Phase 2.3 Agent Provider Safety Preflight 已补安全准入基础。
+> 基线：Phase 1.x 冻结（`fc001fb`→`32fd423`，见 release-gate 文档）；Phase 2.0 Runtime Safety Foundation、Phase 2.1 Dry-run Readiness Harness、Phase 2.2 Agent Fake Provider Harness、Phase 2.3 Agent Provider Safety Preflight 与 Phase 2.4 Agent Real Adapter Preflight Spike 已补安全准入基础。
 
 ## 1. 真实 Agent Runtime 准入
 
@@ -11,6 +11,7 @@
 - [已满足] Agent dry-run runtime readiness validation 已就位（不调用 LLM、不发网络、不读取 secret）。
 - [已满足] Agent provider-shaped contract + fake provider harness 已就位，可验证 provider response、错误映射、脱敏与 worker ledger/outbox 路径。
 - [已满足] Agent provider safety preflight 已就位：credential policy、transport port、timeout/abort 契约、raw response normalization、quota policy。
+- [已满足] Agent provider_preflight adapter mode 已就位：OpenAI-compatible raw schema、fake OpenAI-compatible client、secret readiness snapshot、metrics envelope、ops preflight-test、worker ledger/outbox path。
 - [已满足] Provider-like error → RuntimeErrorType 的基础映射（429/timeout/403/connection/4xx/unknown）已就位；真实 provider 可在此基础上细化内容策略。
 - [缺失] 多轮会话 / agent_messages 模型（若需要）。
 
@@ -18,7 +19,7 @@
 
 - [缺失][必须] `IMCPRuntime` 真实实现：stdio / HTTP / SSE / WS transport + 工具分发，替换 `MCPMockRuntime`。
 - [已满足] Adapter Factory 路由（getRuntime(type)）作为替换点。
-- [已满足] Runtime Adapter Registry 已登记 `mock/dry_run/fake_provider/real` descriptor；real descriptor 当前 blocked，MCP/Publisher fake_provider 当前 blocked。
+- [已满足] Runtime Adapter Registry 已登记 `mock/dry_run/fake_provider/provider_preflight/real` descriptor；real descriptor 当前 blocked，MCP/Publisher fake_provider 与 provider_preflight 当前 blocked。
 - [已满足] MCP dry-run runtime readiness validation 已就位（不实现 transport、不发网络、不 spawn process）。
 - [缺失][必须] MCP `risk_level` 驱动的隔离/确认策略接入（见 §7）。
 - [已满足] RuntimeExecutionContext + AbortController 基础已就位。
@@ -45,6 +46,7 @@
 - [已满足] `RuntimeCredentialRef` 已要求凭证以 `secret://` / `vault://` / `env://` 引用表达，并拒绝 inline secret-like 值。
 - [已满足] `IRuntimeCredentialResolver` port + `MockCredentialResolver` 已就位；当前只校验引用，`resolved=false`，不返回 secret value。
 - [已满足] Agent credential resolution snapshot 已就位，明确 `resolved=false` / `secretMaterialPresent=false`。
+- [已满足] Secret resolution readiness snapshot 已就位，明确 `resolver_ready=false` / `secret_material_present=false`，并拒绝 plain env secret reads。
 - [已满足] result/request/response/outbox runtime 快照已做 secret-like key 深度脱敏。
 - [缺失][必须] 凭证引用解析与注入实现（ADR-010），真实 secret store 仍未接入。
 - [缺失][必须] 凭证按 `sensitivity_level` 作用域化（context_packs 已建模传播控制，ContextBuilder 为强制点）。
@@ -75,13 +77,15 @@
 - [已满足] ops health 指标（stale / backlog / failed / latest_result_at）。
 - [已满足] ops runtime adapter readiness endpoint：`GET /runtime-adapters` 与 `POST /runtime-adapters/dry-run` 已就位。
 - [已满足] ops provider safety endpoint：`GET /provider-safety` 已就位，只读展示 credential/transport/quota/fake_provider 状态。
+- [已满足] ops provider preflight test endpoint：`POST /runtime-adapters/provider-preflight-test` 已就位，只调用 fake OpenAI-compatible client，不写 execution tables。
 - [缺失] 真实 runtime 的指标维度（错误类型分布、耗时分位、成本）；账本归档/保留策略。
+- [已满足] provider_preflight token usage / costEstimate(`not_calculated`) envelope 已就位，为真实成本指标预留字段。
 
 ## 10. Rollback / Kill Switch
 
 - [已满足] feature flag（EXECUTION_WORKER_ENABLED / OUTBOX_RELAY_ENABLED）默认关闭。
 - [已满足] `EXECUTION_RUNTIME_MODE=mock|real_disabled|real_enabled` + `EXECUTION_ALLOW_REAL_RUNTIME=false` 已接入 Factory/Worker；默认 Mock，real_disabled 安全失败，real_enabled 仍需显式总开关。
-- [已满足] `EXECUTION_RUNTIME_ADAPTER_MODE=mock|dry_run|fake_provider|real` 已接入；`fake_provider` 仅 agent 可用，`real` 当前始终失败为 `no real adapter registered`。
+- [已满足] `EXECUTION_RUNTIME_ADAPTER_MODE=mock|dry_run|fake_provider|provider_preflight|real` 已接入；`fake_provider` 与 `provider_preflight` 仅 agent 可用，`real` 当前始终失败为 `no real adapter registered`。
 - [已满足] 无 DB 迁移的阶段可代码回滚；Real Adapter 接入须保证可快速停摆。
 
 ## 11. 结果回写（execution → Control Plane）
@@ -92,10 +96,11 @@
 
 ## 12. 最小 Phase 2 Spike 建议
 
-1. **Agent Real Adapter preflight spike（仍不回写）**：选择单一 LLM provider，冻结 raw response schema，实现真实 HTTP abort 测试、secret resolver mock-to-real 边界测试、provider cost/token 字段预留。
-2. **Agent Real Adapter spike（最小闭环）**：单一 LLM provider 的 `IAgentRuntime` 实现 + 隔离层（超时中断 + 凭证作用域化）+ 错误映射；经 Bridge 创建 job → worker 真实执行 → 结果落账本。**不回写控制平面**（先证执行，再证回写）。
-3. **Relay 回写 spike**：实现一个真实 handler，按 result_id/subject 幂等回写**单一** stage_run 状态（经状态机），含并发领取保护。
-4. 各 spike 独立验证后再合流；Publisher 单独立项，不混入。
+1. **Real Adapter Secret Resolver Boundary**：定义真实 resolver contract、secret material 生命周期、日志脱敏与 audit metadata；仍不调用真实 provider。
+2. **Agent Real Adapter HTTP spike（仍不回写）**：单一 LLM provider 的 HTTP client boundary + abort/timeout 测试 + 错误映射；先使用受控 test double，再考虑真实 provider。
+3. **Agent Real Adapter spike（最小闭环）**：单一 LLM provider 的 `IAgentRuntime` 实现 + 隔离层（超时中断 + 凭证作用域化）+ 错误映射；经 Bridge 创建 job → worker 真实执行 → 结果落账本。**不回写控制平面**（先证执行，再证回写）。
+4. **Relay 回写 spike**：实现一个真实 handler，按 result_id/subject 幂等回写**单一** stage_run 状态（经状态机），含并发领取保护。
+5. 各 spike 独立验证后再合流；Publisher 单独立项，不混入。
 
 ---
 
@@ -106,5 +111,6 @@
 - **Phase 2.1 已补齐**：adapter registry readiness、credential resolver port、dry-run runtime validation、runtime adapter ops endpoint、worker dry-run ledger/outbox path。
 - **Phase 2.2 已补齐**：Agent provider contract、fake provider harness、`fake_provider` adapter mode、fake-provider-test ops API、worker agent fake provider ledger/outbox path、MCP/Publisher fake_provider 安全阻断。
 - **Phase 2.3 已补齐**：Agent credential policy、transport port、fake transport、timeout/abort preflight、raw response normalizer、quota policy、provider-safety ops endpoint。
+- **Phase 2.4 已补齐**：`provider_preflight` adapter mode、OpenAI-compatible raw schema、fake OpenAI-compatible client、secret readiness policy、metrics envelope、provider-preflight-test ops API、worker agent provider_preflight ledger/outbox path、MCP/Publisher provider_preflight 安全阻断。
 - **接真实外部系统前仍必须完成**：真实超时中断落地、资源限额/沙箱、secret store 解析注入、provider 配额策略、high-risk 确认闸门、relay 真实回写 + 并发领取保护。
 - **仍缺失（非 Real Adapter 阻塞，但需规划）**：Publisher + publish_records、审批态建模、账本归档、成本/指标维度。

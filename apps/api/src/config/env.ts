@@ -16,7 +16,7 @@ export interface Env {
   executionWorkerLockTimeoutMs: number;
   executionRuntimeTimeoutMs: number;
   executionRuntimeMode: "mock" | "real_disabled" | "real_enabled";
-  executionRuntimeAdapterMode: "mock" | "dry_run" | "fake_provider" | "real";
+  executionRuntimeAdapterMode: "mock" | "dry_run" | "fake_provider" | "provider_preflight" | "real";
   executionAllowRealRuntime: boolean;
   executionAllowNetwork: boolean;
   executionAllowProcessSpawn: boolean;
@@ -47,7 +47,7 @@ function runtimeMode(value: string | undefined): Env["executionRuntimeMode"] {
 
 function runtimeAdapterMode(value: string | undefined): Env["executionRuntimeAdapterMode"] {
   if (value === undefined || value === "") return "mock";
-  if (value === "mock" || value === "dry_run" || value === "fake_provider" || value === "real") return value;
+  if (value === "mock" || value === "dry_run" || value === "fake_provider" || value === "provider_preflight" || value === "real") return value;
   throw new Error(`invalid EXECUTION_RUNTIME_ADAPTER_MODE: ${value}`);
 }
 

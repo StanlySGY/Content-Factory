@@ -2,7 +2,7 @@ import type { ExecutionJobType } from "@cf/shared";
 import { ValidationError } from "../../domain/errors.js";
 import type { RuntimeSafetyPolicy } from "../../domain/execution/runtime-safety.js";
 
-export const RUNTIME_ADAPTER_MODES = ["mock", "dry_run", "fake_provider", "real"] as const;
+export const RUNTIME_ADAPTER_MODES = ["mock", "dry_run", "fake_provider", "provider_preflight", "real"] as const;
 export type RuntimeAdapterMode = (typeof RUNTIME_ADAPTER_MODES)[number];
 
 export type RuntimeAdapterStatus = "available" | "disabled" | "blocked";
@@ -94,6 +94,20 @@ export function createDefaultRuntimeAdapterRegistry(): RuntimeAdapterRegistry {
       allowProcessSpawn: false,
       status: type === "agent" ? "available" : "blocked",
       ...(type === "agent" ? {} : { blockedReason: "fake provider only supports agent" }),
+    });
+    registry.registerAdapter({
+      type,
+      mode: "provider_preflight",
+      name: type === "agent" ? "agent-provider-preflight-runtime" : `${type}-provider-preflight-runtime`,
+      version: "2.4.0",
+      capabilities: type === "agent"
+        ? ["openai_compatible_schema_validate", "fake_openai_compatible_execute", "metrics_envelope"]
+        : [],
+      requiresCredentialRef: true,
+      allowNetwork: false,
+      allowProcessSpawn: false,
+      status: type === "agent" ? "available" : "blocked",
+      ...(type === "agent" ? {} : { blockedReason: "provider preflight only supports agent" }),
     });
     registry.registerAdapter({
       type,

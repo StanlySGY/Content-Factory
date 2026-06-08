@@ -21,6 +21,11 @@ import {
 } from "./runtime/adapter-registry.js";
 import { AgentProviderRuntime } from "./runtime/agent-provider-runtime.js";
 import { AgentDryRunRuntime, MCPDryRunRuntime, PublisherDryRunRuntime } from "./runtime/dry-run-runtimes.js";
+import { AgentProviderPreflightRuntime } from "./runtime/provider-preflight-runtime.js";
+import {
+  DEFAULT_SECRET_RESOLUTION_POLICY,
+  buildSecretResolutionReadinessSnapshot,
+} from "./runtime/secret-resolution-policy.js";
 import type { OutboxRelay } from "./outbox-relay.js";
 
 // 运维健康只读聚合（camelCase；mapper → snake_case DTO）。仅聚合 execution plane 表，不 join 业务表/不读 audit。
@@ -77,6 +82,19 @@ export interface ProviderSafetySummary {
     agent: string;
     mcp: string;
     publisher: string;
+  };
+  openaiCompatible: {
+    schemaReady: boolean;
+    fakeClientReady: boolean;
+  };
+  secretResolver: {
+    resolverReady: boolean;
+    secretMaterialPresent: boolean;
+    allowedSchemes: string[];
+  };
+  metricsEnvelope: {
+    costSource: "not_calculated";
+    tokenUsageReady: boolean;
   };
 }
 
@@ -154,6 +172,19 @@ export class ExecutionOpsService {
         mcp: descriptorStatus("mcp"),
         publisher: descriptorStatus("publisher"),
       },
+      openaiCompatible: {
+        schemaReady: true,
+        fakeClientReady: true,
+      },
+      secretResolver: {
+        resolverReady: buildSecretResolutionReadinessSnapshot(DEFAULT_SECRET_RESOLUTION_POLICY).resolver_ready,
+        secretMaterialPresent: false,
+        allowedSchemes: [...DEFAULT_SECRET_RESOLUTION_POLICY.allowedSchemes],
+      },
+      metricsEnvelope: {
+        costSource: "not_calculated",
+        tokenUsageReady: true,
+      },
     };
   }
 
@@ -216,6 +247,37 @@ export class ExecutionOpsService {
       metadata: {},
     });
     return new AgentProviderRuntime().execute(request, context);
+  }
+
+  async providerPreflightTest(input: {
+    providerKind: "openai_compatible";
+    payload: Record<string, unknown>;
+    credentialRef?: RuntimeCredentialRef;
+  }): Promise<RuntimeResponse> {
+    if (this.config.runtimeAdapterMode === "real") throw new ValidationError("no real adapter registered");
+    if (input.providerKind !== "openai_compatible")
+      throw new ValidationError("provider preflight only supports openai_compatible");
+    const descriptor = this.config.runtimeAdapterRegistry.getAdapterDescriptor("agent", "provider_preflight");
+    assertAdapterAllowedBySafetyPolicy(descriptor, this.config.runtimeSafetyPolicy);
+    const request: RuntimeRequest = {
+      jobId: "ops-provider-preflight-test",
+      jobType: "agent",
+      payload: input.payload,
+      attemptCount: 0,
+      idempotencyKey: "ops-provider-preflight-test",
+      timeoutMs: this.config.runtimeSafetyPolicy.timeoutMs,
+      metadata: {},
+    };
+    validateRuntimeRequest(request);
+    const context = buildRuntimeExecutionContext({
+      jobId: request.jobId,
+      jobType: request.jobType,
+      timeoutMs: request.timeoutMs,
+      policy: this.config.runtimeSafetyPolicy,
+      credentialRef: input.credentialRef ?? null,
+      metadata: {},
+    });
+    return new AgentProviderPreflightRuntime().execute(request, context);
   }
 
   /** 恢复 stale running 作业（复用 recoverStaleRunningJobs），并写一条 ops 汇总 outbox 事件。*/

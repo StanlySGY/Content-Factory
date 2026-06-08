@@ -1032,6 +1032,19 @@ export type RuntimeAdapterFakeProviderTestBody = Static<typeof RuntimeAdapterFak
 export const RuntimeAdapterFakeProviderTestResponseSchema = RuntimeAdapterDryRunResponseSchema;
 export type RuntimeAdapterFakeProviderTestResponse = Static<typeof RuntimeAdapterFakeProviderTestResponseSchema>;
 
+export const RuntimeAdapterProviderPreflightTestBodySchema = Type.Object(
+  {
+    provider_kind: StringEnum(["openai_compatible"] as const),
+    payload: JsonRecord(),
+    credential_ref: Type.Optional(RuntimeCredentialRefSchema),
+  },
+  { additionalProperties: false },
+);
+export type RuntimeAdapterProviderPreflightTestBody = Static<typeof RuntimeAdapterProviderPreflightTestBodySchema>;
+
+export const RuntimeAdapterProviderPreflightTestResponseSchema = RuntimeAdapterDryRunResponseSchema;
+export type RuntimeAdapterProviderPreflightTestResponse = Static<typeof RuntimeAdapterProviderPreflightTestResponseSchema>;
+
 export const ProviderSafetyResponseSchema = Type.Object(
   {
     active_adapter_mode: RuntimeAdapterModeSchema,
@@ -1069,6 +1082,28 @@ export const ProviderSafetyResponseSchema = Type.Object(
         agent: Type.String(),
         mcp: Type.String(),
         publisher: Type.String(),
+      },
+      { additionalProperties: false },
+    ),
+    openai_compatible: Type.Object(
+      {
+        schema_ready: Type.Boolean(),
+        fake_client_ready: Type.Boolean(),
+      },
+      { additionalProperties: false },
+    ),
+    secret_resolver: Type.Object(
+      {
+        resolver_ready: Type.Boolean(),
+        secret_material_present: Type.Boolean(),
+        allowed_schemes: Type.Array(Type.String()),
+      },
+      { additionalProperties: false },
+    ),
+    metrics_envelope: Type.Object(
+      {
+        cost_source: Type.String(),
+        token_usage_ready: Type.Boolean(),
       },
       { additionalProperties: false },
     ),
