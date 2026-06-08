@@ -22,6 +22,10 @@ import {
   type ExecutionWritebackTransactionPrototypeReadiness,
 } from "../domain/execution/writeback-transaction-prototype.js";
 import {
+  buildExecutionWritebackTransactionPortReadiness,
+  type ExecutionWritebackTransactionPortReadiness,
+} from "./writeback/control-plane-transaction-port.js";
+import {
   buildRuntimeExecutionContext,
   type RuntimeCredentialRef,
   type RuntimeSafetyPolicy,
@@ -445,6 +449,10 @@ export class ExecutionOpsService {
 
   getWritebackTransactionPrototypeReadiness(): ExecutionWritebackTransactionPrototypeReadiness {
     return buildExecutionWritebackTransactionPrototypeReadiness();
+  }
+
+  getWritebackTransactionPortReadiness(): ExecutionWritebackTransactionPortReadiness {
+    return buildExecutionWritebackTransactionPortReadiness();
   }
 
   async dryRunRuntimeAdapter(input: {

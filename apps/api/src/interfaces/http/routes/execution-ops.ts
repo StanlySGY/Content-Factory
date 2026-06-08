@@ -9,6 +9,7 @@ import {
   ExecutionWritebackDryRunReadinessResponseSchema,
   ExecutionWritebackGuardReadinessResponseSchema,
   ExecutionWritebackTransactionPlanReadinessResponseSchema,
+  ExecutionWritebackTransactionPortReadinessResponseSchema,
   ExecutionWritebackTransactionPrototypeReadinessResponseSchema,
   IdParamSchema,
   ManualRetryJobResponseSchema,
@@ -42,6 +43,7 @@ import {
   toExecutionWritebackDryRunReadinessDTO,
   toExecutionWritebackGuardReadinessDTO,
   toExecutionWritebackTransactionPlanReadinessDTO,
+  toExecutionWritebackTransactionPortReadinessDTO,
   toExecutionWritebackTransactionPrototypeReadinessDTO,
   toRuntimeAdapterDryRunResponseDTO,
   toRuntimeAdaptersResponseDTO,
@@ -174,6 +176,15 @@ export const executionOpsRoutes: FastifyPluginAsyncTypebox<ExecutionOpsRoutesOpt
     async () =>
       toExecutionWritebackTransactionPrototypeReadinessDTO(
         executionOpsService.getWritebackTransactionPrototypeReadiness(),
+      ),
+  );
+
+  app.get(
+    "/api/execution/ops/writeback-transaction-port-readiness",
+    { schema: { response: { 200: ExecutionWritebackTransactionPortReadinessResponseSchema } } },
+    async () =>
+      toExecutionWritebackTransactionPortReadinessDTO(
+        executionOpsService.getWritebackTransactionPortReadiness(),
       ),
   );
 

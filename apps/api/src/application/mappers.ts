@@ -21,6 +21,7 @@ import type {
   ExecutionWritebackGuardReadinessResponse,
   ExecutionWritebackTransactionPlanDTO,
   ExecutionWritebackTransactionPlanReadinessResponse,
+  ExecutionWritebackTransactionPortReadinessResponse,
   ExecutionWritebackTransactionPrototypeDTO,
   ExecutionWritebackTransactionPrototypeReadinessResponse,
   ExecutionResultSummaryDTO,
@@ -81,6 +82,7 @@ import type {
   ExecutionWritebackTransactionPrototype,
   ExecutionWritebackTransactionPrototypeReadiness,
 } from "../domain/execution/writeback-transaction-prototype.js";
+import type { ExecutionWritebackTransactionPortReadiness } from "./writeback/control-plane-transaction-port.js";
 import type { RuntimeSafetyPolicy } from "../domain/execution/runtime-safety.js";
 import type { RuntimeResponse } from "../domain/execution/runtime-contract.js";
 import type { RuntimeAdapterDescriptor, RuntimeAdapterMode } from "./runtime/adapter-registry.js";
@@ -693,6 +695,37 @@ export function toExecutionWritebackTransactionPrototypeReadinessDTO(
     apply_guard_required: r.applyGuardRequired,
     rollback_plan_ready: r.rollbackPlanReady,
     error_contract_ready: r.errorContractReady,
+    missing_requirements: r.missingRequirements,
+    next_phase_requirements: r.nextPhaseRequirements,
+  };
+}
+
+export function toExecutionWritebackTransactionPortReadinessDTO(
+  r: ExecutionWritebackTransactionPortReadiness,
+): ExecutionWritebackTransactionPortReadinessResponse {
+  return {
+    mode: r.mode,
+    executable: r.executable,
+    transaction_port_registered: r.transactionPortRegistered,
+    control_plane_read_allowed: r.controlPlaneReadAllowed,
+    control_plane_write_allowed: r.controlPlaneWriteAllowed,
+    audit_write_allowed: r.auditWriteAllowed,
+    capabilities: {
+      kind: r.capabilities.kind,
+      registered: r.capabilities.registered,
+      can_read_subject: r.capabilities.canReadSubject,
+      can_validate_state_transition: r.capabilities.canValidateStateTransition,
+      can_update_subject: r.capabilities.canUpdateSubject,
+      can_append_audit: r.capabilities.canAppendAudit,
+      can_mark_applied: r.capabilities.canMarkApplied,
+      missing_requirements: r.capabilities.missingRequirements,
+    },
+    methods: r.methods.map((m) => ({
+      method: m.method,
+      status: m.status,
+      executed: m.executed,
+      missing_requirements: m.missingRequirements,
+    })),
     missing_requirements: r.missingRequirements,
     next_phase_requirements: r.nextPhaseRequirements,
   };

@@ -1247,6 +1247,55 @@ export type ExecutionWritebackTransactionPrototypeReadinessResponse = Static<
   typeof ExecutionWritebackTransactionPrototypeReadinessResponseSchema
 >;
 
+export const ControlPlaneWritebackTransactionPortCapabilitiesSchema = Type.Object(
+  {
+    kind: StringEnum(["disabled_control_plane_transaction_port"] as const),
+    registered: Type.Boolean(),
+    can_read_subject: Type.Boolean(),
+    can_validate_state_transition: Type.Boolean(),
+    can_update_subject: Type.Boolean(),
+    can_append_audit: Type.Boolean(),
+    can_mark_applied: Type.Boolean(),
+    missing_requirements: Type.Array(Type.String()),
+  },
+  { additionalProperties: false },
+);
+
+export const ControlPlaneWritebackTransactionMethodReadinessSchema = Type.Object(
+  {
+    method: StringEnum([
+      "load_subject",
+      "validate_state_transition",
+      "update_subject",
+      "append_audit_event",
+      "mark_writeback_applied",
+    ] as const),
+    status: StringEnum(["blocked"] as const),
+    executed: Type.Boolean(),
+    missing_requirements: Type.Array(Type.String()),
+  },
+  { additionalProperties: false },
+);
+
+export const ExecutionWritebackTransactionPortReadinessResponseSchema = Type.Object(
+  {
+    mode: StringEnum(["disabled_transaction_port"] as const),
+    executable: Type.Boolean(),
+    transaction_port_registered: Type.Boolean(),
+    control_plane_read_allowed: Type.Boolean(),
+    control_plane_write_allowed: Type.Boolean(),
+    audit_write_allowed: Type.Boolean(),
+    capabilities: ControlPlaneWritebackTransactionPortCapabilitiesSchema,
+    methods: Type.Array(ControlPlaneWritebackTransactionMethodReadinessSchema),
+    missing_requirements: Type.Array(Type.String()),
+    next_phase_requirements: Type.Array(Type.String()),
+  },
+  { additionalProperties: false },
+);
+export type ExecutionWritebackTransactionPortReadinessResponse = Static<
+  typeof ExecutionWritebackTransactionPortReadinessResponseSchema
+>;
+
 // ---- Execution Ops (S5 Phase 1.10；运维健康观测 + 恢复控制，仅 execution plane) ----
 export const ExecutionSystemHealthSchema = Type.Object(
   {
