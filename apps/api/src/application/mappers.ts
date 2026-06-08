@@ -18,6 +18,7 @@ import type {
   RuntimeAdapterDescriptorDTO,
   RuntimeAdapterDryRunResponse,
   RuntimeAdaptersResponse,
+  ProviderSafetyResponse,
   RuntimeSafetyPolicyDTO,
   StageRunDTO,
   ToolInvocationDTO,
@@ -49,7 +50,7 @@ import type { ExecutionResultSummary } from "../domain/execution/result.js";
 import type { RuntimeSafetyPolicy } from "../domain/execution/runtime-safety.js";
 import type { RuntimeResponse } from "../domain/execution/runtime-contract.js";
 import type { RuntimeAdapterDescriptor, RuntimeAdapterMode } from "./runtime/adapter-registry.js";
-import type { ExecutionSystemHealth } from "./execution-ops.service.js";
+import type { ExecutionSystemHealth, ProviderSafetySummary } from "./execution-ops.service.js";
 
 const iso = (d: Date | null): string | null => (d ? d.toISOString() : null);
 
@@ -469,5 +470,32 @@ export function toRuntimeAdapterDryRunResponseDTO(res: RuntimeResponse): Runtime
     retryable: res.retryable,
     duration_ms: res.durationMs,
     metadata: snakeRuntimeValue(res.metadata) as Record<string, unknown>,
+  };
+}
+
+export function toProviderSafetyResponseDTO(s: ProviderSafetySummary): ProviderSafetyResponse {
+  return {
+    active_adapter_mode: s.activeAdapterMode,
+    runtime_mode: s.runtimeMode,
+    allow_real_runtime: s.allowRealRuntime,
+    allow_network: s.allowNetwork,
+    allow_process_spawn: s.allowProcessSpawn,
+    credential_policy: {
+      allowed_ref_schemes: s.credentialPolicy.allowedRefSchemes,
+      resolves_secret_material: s.credentialPolicy.resolvesSecretMaterial,
+      inline_secret_rejected: s.credentialPolicy.inlineSecretRejected,
+    },
+    transport_policy: {
+      network_used: s.transportPolicy.networkUsed,
+      process_spawned: s.transportPolicy.processSpawned,
+      timeout_ms: s.transportPolicy.timeoutMs,
+      abort_signal_required: s.transportPolicy.abortSignalRequired,
+    },
+    quota_policy: {
+      distributed: s.quotaPolicy.distributed,
+      default_window_ms: s.quotaPolicy.defaultWindowMs,
+      default_max_requests_per_window: s.quotaPolicy.defaultMaxRequestsPerWindow,
+    },
+    fake_provider: s.fakeProvider,
   };
 }

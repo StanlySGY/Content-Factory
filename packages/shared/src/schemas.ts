@@ -1031,3 +1031,48 @@ export type RuntimeAdapterFakeProviderTestBody = Static<typeof RuntimeAdapterFak
 
 export const RuntimeAdapterFakeProviderTestResponseSchema = RuntimeAdapterDryRunResponseSchema;
 export type RuntimeAdapterFakeProviderTestResponse = Static<typeof RuntimeAdapterFakeProviderTestResponseSchema>;
+
+export const ProviderSafetyResponseSchema = Type.Object(
+  {
+    active_adapter_mode: RuntimeAdapterModeSchema,
+    runtime_mode: RuntimeModeSchema,
+    allow_real_runtime: Type.Boolean(),
+    allow_network: Type.Boolean(),
+    allow_process_spawn: Type.Boolean(),
+    credential_policy: Type.Object(
+      {
+        allowed_ref_schemes: Type.Array(Type.String()),
+        resolves_secret_material: Type.Boolean(),
+        inline_secret_rejected: Type.Boolean(),
+      },
+      { additionalProperties: false },
+    ),
+    transport_policy: Type.Object(
+      {
+        network_used: Type.Boolean(),
+        process_spawned: Type.Boolean(),
+        timeout_ms: Type.Integer(),
+        abort_signal_required: Type.Boolean(),
+      },
+      { additionalProperties: false },
+    ),
+    quota_policy: Type.Object(
+      {
+        distributed: Type.Boolean(),
+        default_window_ms: Type.Integer(),
+        default_max_requests_per_window: Type.Integer(),
+      },
+      { additionalProperties: false },
+    ),
+    fake_provider: Type.Object(
+      {
+        agent: Type.String(),
+        mcp: Type.String(),
+        publisher: Type.String(),
+      },
+      { additionalProperties: false },
+    ),
+  },
+  { additionalProperties: false },
+);
+export type ProviderSafetyResponse = Static<typeof ProviderSafetyResponseSchema>;

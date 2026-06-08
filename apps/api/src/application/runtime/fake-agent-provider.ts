@@ -1,81 +1,55 @@
-import type {
-  AgentProviderErrorType,
-  AgentProviderRequest,
-  AgentProviderResponse,
-} from "./agent-provider-contract.js";
 import {
+  type AgentProviderRequest,
+  type AgentProviderResponse,
   validateAgentProviderRequest,
   validateAgentProviderResponse,
 } from "./agent-provider-contract.js";
-
-const FAILURE_STATUSES: ReadonlySet<string> = new Set([
-  "timeout",
-  "rate_limited",
-  "permission_denied",
-  "validation_error",
-  "content_blocked",
-  "external_unavailable",
-  "unknown",
-]);
-
-function isPlainObject(v: unknown): v is Record<string, unknown> {
-  return v !== null && typeof v === "object" && !Array.isArray(v);
-}
-
-function providerStatus(input: Record<string, unknown>): AgentProviderErrorType | "success" {
-  const status = input.fakeProviderStatus;
-  if (typeof status === "string" && FAILURE_STATUSES.has(status)) return status as AgentProviderErrorType;
-  return "success";
-}
-
-function providerOutput(input: Record<string, unknown>): Record<string, unknown> {
-  return isPlainObject(input.fakeProviderOutput) ? input.fakeProviderOutput : { text: "fake provider output" };
-}
+import { buildCredentialResolutionSnapshot } from "./agent-provider-credential-policy.js";
+import {
+  mapNormalizedProviderErrorToRuntimeError,
+  normalizeAgentProviderRawResponse,
+} from "./agent-provider-response-normalizer.js";
+import { FakeAgentProviderTransport, type IAgentProviderTransport } from "./agent-provider-transport.js";
+import {
+  assertTransportAllowed,
+  resolveProviderTimeoutMs,
+} from "./agent-provider-transport-policy.js";
 
 export class FakeAgentProvider {
+  constructor(private readonly transport: IAgentProviderTransport = new FakeAgentProviderTransport()) {}
+
   async execute(request: AgentProviderRequest, signal?: AbortSignal): Promise<AgentProviderResponse> {
-    const started = Date.now();
     try {
       validateAgentProviderRequest(request);
-      const delay = typeof request.input.fakeProviderDelayMs === "number" ? request.input.fakeProviderDelayMs : 0;
-      if (signal?.aborted || delay > request.timeoutMs) {
-        return this.failure("timeout", "fake provider timeout", started);
-      }
-
-      const status = providerStatus(request.input);
-      if (status !== "success") return this.failure(status, `fake provider ${status}`, started);
-
+      const transportPolicy = {
+        allowNetwork: false,
+        allowProcessSpawn: false,
+        timeoutMs: request.timeoutMs,
+        maxTimeoutMs: request.timeoutMs,
+      };
+      assertTransportAllowed(transportPolicy);
+      buildCredentialResolutionSnapshot(request.credentialRef);
+      const timeoutMs = resolveProviderTimeoutMs(request.timeoutMs, transportPolicy);
+      const raw = await this.transport.send(request, { signal: signal ?? new AbortController().signal, timeoutMs });
+      const res = normalizeAgentProviderRawResponse(raw);
+      validateAgentProviderResponse(res);
+      return res;
+    } catch (e) {
       const res: AgentProviderResponse = {
-        status: "success",
-        output: providerOutput(request.input),
-        durationMs: Math.max(0, Date.now() - started),
+        status: "failed",
+        output: {},
+        error: e instanceof Error ? e.message : String(e),
+        providerErrorType: "validation_error",
+        durationMs: 0,
         rawMetadata: {
           provider: "fake",
+          runtimeErrorType: mapNormalizedProviderErrorToRuntimeError("validation_error"),
           networkUsed: false,
           processSpawned: false,
         },
       };
       validateAgentProviderResponse(res);
       return res;
-    } catch (e) {
-      return this.failure("validation_error", e instanceof Error ? e.message : String(e), started);
     }
-  }
-
-  private failure(type: AgentProviderErrorType, error: string, started: number): AgentProviderResponse {
-    const res: AgentProviderResponse = {
-      status: "failed",
-      output: {},
-      error,
-      providerErrorType: type,
-      durationMs: Math.max(0, Date.now() - started),
-      rawMetadata: {
-        provider: "fake",
-        networkUsed: false,
-        processSpawned: false,
-      },
-    };
-    validateAgentProviderResponse(res);
-    return res;
   }
 }

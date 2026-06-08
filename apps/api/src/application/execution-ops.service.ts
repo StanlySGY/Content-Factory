@@ -51,6 +51,35 @@ export interface ExecutionOpsConfig {
   runtimeAdapterRegistry: RuntimeAdapterRegistry;
 }
 
+export interface ProviderSafetySummary {
+  activeAdapterMode: RuntimeAdapterMode;
+  runtimeMode: RuntimeSafetyPolicy["mode"];
+  allowRealRuntime: boolean;
+  allowNetwork: boolean;
+  allowProcessSpawn: boolean;
+  credentialPolicy: {
+    allowedRefSchemes: string[];
+    resolvesSecretMaterial: boolean;
+    inlineSecretRejected: boolean;
+  };
+  transportPolicy: {
+    networkUsed: boolean;
+    processSpawned: boolean;
+    timeoutMs: number;
+    abortSignalRequired: boolean;
+  };
+  quotaPolicy: {
+    distributed: boolean;
+    defaultWindowMs: number;
+    defaultMaxRequestsPerWindow: number;
+  };
+  fakeProvider: {
+    agent: string;
+    mcp: string;
+    publisher: string;
+  };
+}
+
 // ExecutionOpsService：execution layer 安全运维入口（health / stale 恢复 / outbox 批处理 / manual retry）。
 // 严格隔离：所有操作只影响 execution plane 表，不改 Workflow/Review/Agent/MCP，不删/改 execution_results 历史。
 export class ExecutionOpsService {
@@ -92,6 +121,39 @@ export class ExecutionOpsService {
       adapters: this.config.runtimeAdapterRegistry.listAdapterDescriptors(),
       activeAdapterMode: this.config.runtimeAdapterMode,
       policy: this.config.runtimeSafetyPolicy,
+    };
+  }
+
+  getProviderSafety(): ProviderSafetySummary {
+    const descriptorStatus = (type: "agent" | "mcp" | "publisher") =>
+      this.config.runtimeAdapterRegistry.getAdapterDescriptor(type, "fake_provider").status;
+    return {
+      activeAdapterMode: this.config.runtimeAdapterMode,
+      runtimeMode: this.config.runtimeSafetyPolicy.mode,
+      allowRealRuntime: this.config.runtimeSafetyPolicy.allowRealExecution,
+      allowNetwork: this.config.runtimeSafetyPolicy.allowNetwork,
+      allowProcessSpawn: this.config.runtimeSafetyPolicy.allowProcessSpawn,
+      credentialPolicy: {
+        allowedRefSchemes: ["secret://", "vault://", "env://"],
+        resolvesSecretMaterial: false,
+        inlineSecretRejected: true,
+      },
+      transportPolicy: {
+        networkUsed: false,
+        processSpawned: false,
+        timeoutMs: this.config.runtimeSafetyPolicy.timeoutMs,
+        abortSignalRequired: true,
+      },
+      quotaPolicy: {
+        distributed: false,
+        defaultWindowMs: 60000,
+        defaultMaxRequestsPerWindow: 60,
+      },
+      fakeProvider: {
+        agent: descriptorStatus("agent"),
+        mcp: descriptorStatus("mcp"),
+        publisher: descriptorStatus("publisher"),
+      },
     };
   }
 

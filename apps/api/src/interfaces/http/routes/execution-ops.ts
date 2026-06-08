@@ -5,6 +5,7 @@ import {
   ManualRetryJobResponseSchema,
   ProcessOutboxBatchBodySchema,
   ProcessOutboxBatchResponseSchema,
+  ProviderSafetyResponseSchema,
   RecoverStaleJobsBodySchema,
   RecoverStaleJobsResponseSchema,
   RuntimeAdapterDryRunBodySchema,
@@ -20,6 +21,7 @@ import {
   toExecutionSystemHealthDTO,
   toRuntimeAdapterDryRunResponseDTO,
   toRuntimeAdaptersResponseDTO,
+  toProviderSafetyResponseDTO,
   toRuntimeSafetyPolicyDTO,
 } from "../../../application/mappers.js";
 
@@ -51,6 +53,12 @@ export const executionOpsRoutes: FastifyPluginAsyncTypebox<ExecutionOpsRoutesOpt
     "/api/execution/ops/runtime-adapters",
     { schema: { response: { 200: RuntimeAdaptersResponseSchema } } },
     async () => toRuntimeAdaptersResponseDTO(executionOpsService.listRuntimeAdapters()),
+  );
+
+  app.get(
+    "/api/execution/ops/provider-safety",
+    { schema: { response: { 200: ProviderSafetyResponseSchema } } },
+    async () => toProviderSafetyResponseDTO(executionOpsService.getProviderSafety()),
   );
 
   app.post(

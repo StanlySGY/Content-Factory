@@ -12,9 +12,9 @@ import {
 } from "../../domain/execution/runtime-safety.js";
 import {
   buildAgentProviderRequestFromRuntime,
-  mapAgentProviderErrorToRuntimeError,
   validateAgentProviderResponse,
 } from "./agent-provider-contract.js";
+import { mapNormalizedProviderErrorToRuntimeError } from "./agent-provider-response-normalizer.js";
 import { FakeAgentProvider } from "./fake-agent-provider.js";
 import type { IAgentRuntime } from "./ports.js";
 
@@ -59,7 +59,7 @@ export class AgentProviderRuntime implements IAgentRuntime {
         };
       }
 
-      const errorType = mapAgentProviderErrorToRuntimeError(providerResponse.providerErrorType ?? "unknown");
+      const errorType = mapNormalizedProviderErrorToRuntimeError(providerResponse.providerErrorType ?? "unknown");
       return {
         jobId: request.jobId,
         status: "failed",
