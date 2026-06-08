@@ -12,6 +12,7 @@ import type {
   EditorStateDTO,
   ExecutionJobDTO,
   ExecutionResultDTO,
+  ExecutionWritebackDTO,
   ExecutionResultSummaryDTO,
   ExecutionSystemHealthDTO,
   McpServerDTO,
@@ -45,6 +46,7 @@ import type {
   ContextPackRow,
   ExecutionJobRow,
   ExecutionResultRow,
+  ExecutionWritebackRow,
   McpServerRow,
   McpToolRow,
   OutboxEventRow,
@@ -433,6 +435,23 @@ export function toExecutionResultDTO(r: ExecutionResultRow): ExecutionResultDTO 
     response_snapshot: r.responseSnapshot,
     subject_snapshot: r.subjectSnapshot ?? null,
     created_at: r.createdAt.toISOString(),
+  };
+}
+
+export function toExecutionWritebackDTO(r: ExecutionWritebackRow): ExecutionWritebackDTO {
+  return {
+    id: r.id,
+    idempotency_key: r.idempotencyKey,
+    outbox_event_id: r.outboxEventId,
+    execution_result_id: r.executionResultId,
+    execution_job_id: r.executionJobId,
+    subject_type: r.subjectType,
+    subject_id: r.subjectId,
+    status: r.status as ExecutionWritebackDTO["status"],
+    plan: r.plan,
+    error: r.error,
+    created_at: r.createdAt.toISOString(),
+    updated_at: r.updatedAt.toISOString(),
   };
 }
 

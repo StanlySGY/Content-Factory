@@ -4,6 +4,8 @@ import { ValidationError } from "../domain/errors.js";
 import type { Db } from "../infrastructure/db/client.js";
 import type { ExecutionResultRow, OutboxEventRow } from "../infrastructure/db/schema.js";
 import * as resultRepo from "../infrastructure/repositories/execution-result.repository.js";
+import * as writebackRepo from "../infrastructure/repositories/execution-writeback.repository.js";
+import { buildExecutionWritebackRecord } from "../domain/execution/writeback.js";
 import type { OutboxHandler } from "./outbox-relay.js";
 
 type JsonRecord = Record<string, unknown>;
@@ -130,7 +132,19 @@ export function createExecutionWritebackReadinessHandler(
     handle: async (event) => {
       const result = await resultRepo.getExecutionResult(db, resultIdFromEvent(event));
       if (!result) throw new ValidationError("execution writeback result not found");
-      buildExecutionWritebackPlan({ event, result });
+      const plan = buildExecutionWritebackPlan({ event, result });
+      await writebackRepo.createOrGetWriteback(
+        db,
+        buildExecutionWritebackRecord({
+          idempotencyKey: plan.idempotencyKey,
+          outboxEventId: event.id,
+          executionResultId: result.id,
+          executionJobId: result.executionJobId,
+          subjectType: plan.target.subjectType,
+          subjectId: plan.target.subjectId,
+          plan: plan as unknown as Record<string, unknown>,
+        }),
+      );
     },
   };
 }

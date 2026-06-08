@@ -12,6 +12,7 @@ import { ExecutionJobService } from "./application/execution-job.service.js";
 import { ExecutionBridgeService } from "./application/execution-bridge.service.js";
 import { defaultExecutionOpsRuntimeRegistry, ExecutionOpsService } from "./application/execution-ops.service.js";
 import { ExecutionResultService } from "./application/execution-result.service.js";
+import { ExecutionWritebackService } from "./application/execution-writeback.service.js";
 import { ExecutionWorker } from "./application/execution-worker.js";
 import { MockRuntimeAdapterFactory } from "./application/runtime/adapter-factory.js";
 import { McpRuntimeMockService } from "./application/mcp-runtime-mock.service.js";
@@ -88,6 +89,7 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
   const outboxRelay = new OutboxRelay(db, undefined, env.outboxRelayIntervalMs);
   const executionBridgeService = new ExecutionBridgeService(executionJobService);
   const executionResultService = new ExecutionResultService(db);
+  const executionWritebackService = new ExecutionWritebackService(db);
   const executionOpsService = new ExecutionOpsService(db, outboxRelay, {
     workerEnabled: env.executionWorkerEnabled,
     relayEnabled: env.outboxRelayEnabled,
@@ -131,7 +133,15 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
   await app.register(reviewRoutes, { env, reviewService });
   await app.register(dashboardRoutes, { env, dashboardService });
   await app.register(editorRoutes, { env, editorQueryService });
-  await app.register(executionRoutes, { executionJobService, executionWorker, outboxService, outboxRelay, executionBridgeService, executionResultService });
+  await app.register(executionRoutes, {
+    executionJobService,
+    executionWorker,
+    outboxService,
+    outboxRelay,
+    executionBridgeService,
+    executionResultService,
+    executionWritebackService,
+  });
   await app.register(executionOpsRoutes, { executionOpsService });
   await app.register(agentRoutes, { env, agentProfileService, agentRuntimeService });
   await app.register(mcpRoutes, { env, mcpServerService, mcpToolService, mcpRuntimeService });

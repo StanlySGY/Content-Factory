@@ -309,6 +309,21 @@ export const executionResults = pgTable("execution_results", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const executionWritebacks = pgTable("execution_writebacks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  idempotencyKey: varchar("idempotency_key", { length: 200 }).notNull(),
+  outboxEventId: uuid("outbox_event_id").notNull(),
+  executionResultId: uuid("execution_result_id").notNull(),
+  executionJobId: uuid("execution_job_id").notNull(),
+  subjectType: varchar("subject_type", { length: 80 }).notNull(),
+  subjectId: varchar("subject_id", { length: 200 }).notNull(),
+  status: varchar("status", { length: 32 }).notNull(),
+  plan: jsonb("plan").$type<JsonRecord>().notNull(),
+  error: text("error"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export type WorkflowDefinitionRow = typeof workflowDefinitions.$inferSelect;
 export type WorkflowStageRow = typeof workflowStages.$inferSelect;
 export type WorkflowStageDependencyRow = typeof workflowStageDependencies.$inferSelect;
@@ -326,3 +341,4 @@ export type ToolInvocationRow = typeof toolInvocations.$inferSelect;
 export type ExecutionJobRow = typeof executionJobs.$inferSelect;
 export type OutboxEventRow = typeof outboxEvents.$inferSelect;
 export type ExecutionResultRow = typeof executionResults.$inferSelect;
+export type ExecutionWritebackRow = typeof executionWritebacks.$inferSelect;

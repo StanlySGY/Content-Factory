@@ -893,6 +893,39 @@ export const ExecutionResultSummarySchema = Type.Object(
 );
 export type ExecutionResultSummaryDTO = Static<typeof ExecutionResultSummarySchema>;
 
+// ---- Execution Writeback Ledger (S5 Phase 2.18；disabled no-op writeback 幂等消费账本) ----
+export const ExecutionWritebackStatusSchema = StringEnum(["planned", "skipped", "failed"] as const);
+
+export const ExecutionWritebackSchema = Type.Object(
+  {
+    id: Uuid(),
+    idempotency_key: Type.String(),
+    outbox_event_id: Uuid(),
+    execution_result_id: Uuid(),
+    execution_job_id: Uuid(),
+    subject_type: Type.String(),
+    subject_id: Type.String(),
+    status: ExecutionWritebackStatusSchema,
+    plan: JsonRecord(),
+    error: Nullable(Type.String()),
+    created_at: Type.String({ format: "date-time" }),
+    updated_at: Type.String({ format: "date-time" }),
+  },
+  { additionalProperties: false },
+);
+export type ExecutionWritebackDTO = Static<typeof ExecutionWritebackSchema>;
+
+export const ExecutionWritebacksResponseSchema = Type.Array(ExecutionWritebackSchema);
+
+export const ListExecutionWritebacksQuerySchema = Type.Object(
+  {
+    subject_type: Type.Optional(Type.String()),
+    subject_id: Type.Optional(Type.String()),
+  },
+  { additionalProperties: false },
+);
+export type ListExecutionWritebacksQuery = Static<typeof ListExecutionWritebacksQuerySchema>;
+
 // ---- Execution Ops (S5 Phase 1.10；运维健康观测 + 恢复控制，仅 execution plane) ----
 export const ExecutionSystemHealthSchema = Type.Object(
   {

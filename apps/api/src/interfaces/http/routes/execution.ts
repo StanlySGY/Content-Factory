@@ -7,8 +7,11 @@ import {
   ExecutionResultSchema,
   ExecutionResultsResponseSchema,
   ExecutionResultSummarySchema,
+  ExecutionWritebackSchema,
+  ExecutionWritebacksResponseSchema,
   IdParamSchema,
   ListExecutionJobsQuerySchema,
+  ListExecutionWritebacksQuerySchema,
   ListOutboxEventsQuerySchema,
   OutboxEventSchema,
   OutboxEventsResponseSchema,
@@ -17,6 +20,7 @@ import {
 import type { ExecutionBridgeService } from "../../../application/execution-bridge.service.js";
 import type { ExecutionJobService } from "../../../application/execution-job.service.js";
 import type { ExecutionResultService } from "../../../application/execution-result.service.js";
+import type { ExecutionWritebackService } from "../../../application/execution-writeback.service.js";
 import type { ExecutionWorker } from "../../../application/execution-worker.js";
 import type { OutboxRelay } from "../../../application/outbox-relay.js";
 import type { OutboxService } from "../../../application/outbox.service.js";
@@ -25,6 +29,7 @@ import {
   toExecutionJobDTO,
   toExecutionResultDTO,
   toExecutionResultSummaryDTO,
+  toExecutionWritebackDTO,
   toOutboxEventDTO,
 } from "../../../application/mappers.js";
 
@@ -35,13 +40,22 @@ export interface ExecutionRoutesOptions {
   outboxRelay: OutboxRelay;
   executionBridgeService: ExecutionBridgeService;
   executionResultService: ExecutionResultService;
+  executionWritebackService: ExecutionWritebackService;
 }
 
 // Sprint-5 Phase 1.6/1.8/1.9：execution 控制面 + 出箱可观测面 + control plane bridge + 结果账本观测（Mock-only）。
 // 不接入 Agent/MCP/Workflow 状态机与 UI；bridge 仅创建 job、result ledger 只追加，不改任何业务表。
 export const executionRoutes: FastifyPluginAsyncTypebox<ExecutionRoutesOptions> = async (
   app,
-  { executionJobService, executionWorker, outboxService, outboxRelay, executionBridgeService, executionResultService },
+  {
+    executionJobService,
+    executionWorker,
+    outboxService,
+    outboxRelay,
+    executionBridgeService,
+    executionResultService,
+    executionWritebackService,
+  },
 ) => {
   app.post(
     "/api/execution/jobs",
@@ -100,6 +114,29 @@ export const executionRoutes: FastifyPluginAsyncTypebox<ExecutionRoutesOptions> 
     "/api/execution/results/:id",
     { schema: { params: IdParamSchema, response: { 200: ExecutionResultSchema } } },
     async (request) => toExecutionResultDTO(await executionResultService.getResult(request.params.id)),
+  );
+
+  // 某执行结果关联的 writeback readiness 账本（只读，不 join 控制面表）
+  app.get(
+    "/api/execution/results/:id/writebacks",
+    { schema: { params: IdParamSchema, response: { 200: ExecutionWritebacksResponseSchema } } },
+    async (request) =>
+      (await executionWritebackService.listByResult(request.params.id)).map(toExecutionWritebackDTO),
+  );
+
+  app.get(
+    "/api/execution/writebacks",
+    { schema: { querystring: ListExecutionWritebacksQuerySchema, response: { 200: ExecutionWritebacksResponseSchema } } },
+    async (request) =>
+      (await executionWritebackService.listBySubject(request.query.subject_type, request.query.subject_id)).map(
+        toExecutionWritebackDTO,
+      ),
+  );
+
+  app.get(
+    "/api/execution/writebacks/:id",
+    { schema: { params: IdParamSchema, response: { 200: ExecutionWritebackSchema } } },
+    async (request) => toExecutionWritebackDTO(await executionWritebackService.getWriteback(request.params.id)),
   );
 
   app.get(

@@ -1,7 +1,7 @@
 # Sprint-5 Phase 2 — Real Adapter Entry Checklist
 
 > 接入真实 Agent / MCP / LLM / Publisher 前的准入清单。标注每项：**[已满足] Phase 1.x 已就位 / [缺失] 待补 / [必须] 接真实外部系统前硬性前置**。
-> 基线：Phase 1.x 冻结（`fc001fb`→`32fd423`，见 release-gate 文档）；Phase 2.0 Runtime Safety Foundation、Phase 2.1 Dry-run Readiness Harness、Phase 2.2 Agent Fake Provider Harness、Phase 2.3 Agent Provider Safety Preflight、Phase 2.4 Agent Real Adapter Preflight Spike、Phase 2.5 Runtime Secret Resolver Boundary、Phase 2.6 Agent Provider HTTP Boundary、Phase 2.7 Agent Real HTTP Adapter Skeleton、Phase 2.8 Runtime Secret Store Injection Preflight、Phase 2.9 Agent Real HTTP Timeout/Abort Harness、Phase 2.10 Provider Quota + Cost Metrics Preflight、Phase 2.11 Agent Real Adapter Registration Guard、Phase 2.12 Agent Real Adapter Disabled Fixture、Phase 2.13 Agent Real Provider Config Preflight、Phase 2.14 Agent Real Provider Transport Disabled Harness、Phase 2.15 Agent Real Adapter Minimum Closed-loop Spike、Phase 2.16 Relay Writeback Readiness 与 Phase 2.17 Outbox Lease / Concurrent Relay Claim Readiness 已补安全准入基础。
+> 基线：Phase 1.x 冻结（`fc001fb`→`32fd423`，见 release-gate 文档）；Phase 2.0 Runtime Safety Foundation、Phase 2.1 Dry-run Readiness Harness、Phase 2.2 Agent Fake Provider Harness、Phase 2.3 Agent Provider Safety Preflight、Phase 2.4 Agent Real Adapter Preflight Spike、Phase 2.5 Runtime Secret Resolver Boundary、Phase 2.6 Agent Provider HTTP Boundary、Phase 2.7 Agent Real HTTP Adapter Skeleton、Phase 2.8 Runtime Secret Store Injection Preflight、Phase 2.9 Agent Real HTTP Timeout/Abort Harness、Phase 2.10 Provider Quota + Cost Metrics Preflight、Phase 2.11 Agent Real Adapter Registration Guard、Phase 2.12 Agent Real Adapter Disabled Fixture、Phase 2.13 Agent Real Provider Config Preflight、Phase 2.14 Agent Real Provider Transport Disabled Harness、Phase 2.15 Agent Real Adapter Minimum Closed-loop Spike、Phase 2.16 Relay Writeback Readiness、Phase 2.17 Outbox Lease / Concurrent Relay Claim Readiness 与 Phase 2.18 Writeback Ledger / Idempotent Consumer Readiness 已补安全准入基础。
 
 ## 1. 真实 Agent Runtime 准入
 
@@ -127,12 +127,13 @@
 - [已满足] relay writeback readiness handler skeleton 已就位：消费 terminal outbox 的 result_id/subject，生成 deterministic idempotency key 与 disabled no-op plan；默认不回写控制平面。
 - [缺失][必须] relay 真实 handler：按 result_id/subject **幂等**回写控制平面（stage_runs/assets/reviews，经 ADR-006 状态机，不旁路）。
 - [已满足] relay 并发领取保护 readiness 已就位：`claimed_at` / `claimed_owner` / `claim_expires_at` 持久 lease、active lease 阻止重复 claim、expired lease 可重领、processed/failed 清 lease；真实 writeback 前仍需消费侧幂等账本。
-- [缺失] at-least-once 投递的幂等对账（idempotencyKey 已就位，消费侧待建）。
+- [已满足] at-least-once 投递的消费侧幂等对账已就位：`execution_writebacks` 记录 disabled no-op plan，`idempotency_key UNIQUE`，重复 terminal event handler 调用只返回同一 ledger row。
+- [缺失][必须] 真实 writeback guard：在写 `stage_runs/assets/reviews` 前校验 subject 类型、状态机允许边、ledger 状态、audit 计划与 feature flag。
 
 ## 12. 最小 Phase 2 Spike 建议
 
-1. **Writeback Ledger / Idempotent Consumer spike**：补 writeback idempotency ledger 或 consumer ledger；继续 disabled no-op，不回写控制面。
-2. **Relay 真实回写 spike**：在 readiness handler 与 lease 基础上实现单一 subject 类型的幂等 control-plane writeback，经 ADR-006 状态机，不旁路。
+1. **Single Subject Writeback Guard / Disabled Fixture spike**：先定义 `workflow_stage_run` 单 subject 回写前 guard contract；继续 disabled no-op，不写控制面。
+2. **Relay 真实回写 spike**：在 readiness handler、lease 与 writeback ledger 基础上实现单一 subject 类型的幂等 control-plane writeback，经 ADR-006 状态机，不旁路。
 3. **Agent Real Transport spike**：在 `AgentRealRuntime` skeleton 基础上接真实 HTTP transport 与真实 secret material 注入，但仍需独立 kill switch 与人工确认。
 4. **MCP Real Runtime safety spike**：先做 stdio/process cancel + sandbox/资源限额，再接 transport。
 5. 各 spike 独立验证后再合流；Publisher 单独立项，不混入。
@@ -160,5 +161,6 @@
 - **Phase 2.15 已补齐**：Agent real adapter minimum closed-loop skeleton、显式注入 fake/local HTTP client、worker ledger/outbox 闭环、默认未注入 fail-closed、secret 安全布尔元数据脱敏例外。
 - **Phase 2.16 已补齐**：Relay writeback readiness handler skeleton、terminal outbox result_id/subject 输入解析、disabled no-op plan、writeback idempotency key 规划、不触碰控制面表。
 - **Phase 2.17 已补齐**：Outbox durable claim lease、active lease 阻止重复 claim、expired lease crash recovery、relay owner/leaseMs 注入、outbox API lease 观测字段。
+- **Phase 2.18 已补齐**：Execution writeback ledger、disabled no-op plan 持久化、`idempotency_key UNIQUE` 消费侧幂等、writeback 只读 API、subject/result 观测查询。
 - **接真实外部系统前仍必须完成**：MCP / 进程级取消、资源限额/沙箱、真实 secret store 解析与 material 注入、分布式 provider 配额 enforcement、真实 billing/cost calculation、high-risk 确认闸门、relay 真实幂等回写。
 - **仍缺失（非 Real Adapter 阻塞，但需规划）**：Publisher + publish_records、审批态建模、账本归档、成本/指标维度。
