@@ -30,6 +30,10 @@ import {
   type ExecutionWritebackExecutorPreflightMatrix,
 } from "../domain/execution/writeback-executor-preflight-matrix.js";
 import {
+  buildExecutionWritebackExecutorFeatureFlagReadiness,
+  type ExecutionWritebackExecutorFeatureFlagReadiness,
+} from "../domain/execution/writeback-executor-feature-flag.js";
+import {
   buildExecutionWritebackTransactionPrototypeReadiness,
   type ExecutionWritebackTransactionPrototypeReadiness,
 } from "../domain/execution/writeback-transaction-prototype.js";
@@ -113,6 +117,7 @@ export interface ExecutionOpsConfig {
   networkAllowlist: string[];
   secretStoreEnabled: boolean;
   secretInjectionEnabled: boolean;
+  writebackExecutorEnabled: boolean;
 }
 
 export interface ProviderSafetySummary {
@@ -477,6 +482,12 @@ export class ExecutionOpsService {
 
   getWritebackExecutorPreflightMatrix(): ExecutionWritebackExecutorPreflightMatrix {
     return buildExecutionWritebackExecutorPreflightMatrix();
+  }
+
+  getWritebackExecutorFeatureFlagReadiness(): ExecutionWritebackExecutorFeatureFlagReadiness {
+    return buildExecutionWritebackExecutorFeatureFlagReadiness({
+      configuredEnabled: this.config.writebackExecutorEnabled,
+    });
   }
 
   async dryRunRuntimeAdapter(input: {

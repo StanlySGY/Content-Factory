@@ -1426,6 +1426,7 @@ export const ExecutionWritebackExecutorPreflightGateKeySchema = StringEnum([
   "transaction_port",
   "state_transition_policy",
   "subject_snapshot",
+  "executor_feature_flag",
 ] as const);
 
 export const ExecutionWritebackExecutorPreflightGateSchema = Type.Object(
@@ -1459,6 +1460,30 @@ export const ExecutionWritebackExecutorPreflightMatrixResponseSchema = Type.Obje
 );
 export type ExecutionWritebackExecutorPreflightMatrixResponse = Static<
   typeof ExecutionWritebackExecutorPreflightMatrixResponseSchema
+>;
+
+export const ExecutionWritebackExecutorFeatureFlagReadinessResponseSchema = Type.Object(
+  {
+    mode: StringEnum(["disabled_writeback_executor_feature_flag"] as const),
+    feature_flag_name: StringEnum(["EXECUTION_WRITEBACK_EXECUTOR_ENABLED"] as const),
+    configured_enabled: Type.Boolean(),
+    effective_enabled: Type.Boolean(),
+    executor_registration_allowed: Type.Boolean(),
+    real_executor_registered: Type.Boolean(),
+    real_executor_executable: Type.Boolean(),
+    control_plane_read_allowed: Type.Boolean(),
+    control_plane_write_allowed: Type.Boolean(),
+    audit_write_allowed: Type.Boolean(),
+    subject_type: StringEnum(["workflow_stage_run"] as const),
+    preflight_matrix_required: Type.Boolean(),
+    preflight_matrix_ready: Type.Boolean(),
+    missing_requirements: Type.Array(Type.String()),
+    next_phase_requirements: Type.Array(Type.String()),
+  },
+  { additionalProperties: false },
+);
+export type ExecutionWritebackExecutorFeatureFlagReadinessResponse = Static<
+  typeof ExecutionWritebackExecutorFeatureFlagReadinessResponseSchema
 >;
 
 // ---- Execution Ops (S5 Phase 1.10；运维健康观测 + 恢复控制，仅 execution plane) ----

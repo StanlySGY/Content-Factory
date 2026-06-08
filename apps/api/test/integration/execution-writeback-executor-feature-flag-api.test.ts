@@ -24,42 +24,33 @@ afterAll(async () => {
   await built.close();
 });
 
-describe("Execution writeback executor preflight matrix readiness API", () => {
-  it("exposes blocked executor preflight matrix without reading or writing control-plane rows", async () => {
+describe("Execution writeback executor feature flag readiness API", () => {
+  it("exposes fail-closed feature flag readiness without reading or writing control-plane rows", async () => {
     const beforeStageRuns = (await db.select({ value: count() }).from(stageRuns))[0]!.value;
     const beforeWritebacks = (await db.select({ value: count() }).from(executionWritebacks))[0]!.value;
 
     const res = await app.inject({
       method: "GET",
-      url: "/api/execution/ops/writeback-executor-preflight-matrix",
+      url: "/api/execution/ops/writeback-executor-feature-flag-readiness",
     });
 
     expect(res.statusCode).toBe(200);
     expect(res.json()).toMatchObject({
-      mode: "disabled_executor_preflight_matrix",
-      ready: false,
-      executable: false,
+      mode: "disabled_writeback_executor_feature_flag",
+      feature_flag_name: "EXECUTION_WRITEBACK_EXECUTOR_ENABLED",
+      configured_enabled: false,
+      effective_enabled: false,
+      executor_registration_allowed: false,
       real_executor_registered: false,
+      real_executor_executable: false,
       control_plane_read_allowed: false,
       control_plane_write_allowed: false,
       audit_write_allowed: false,
       subject_type: "workflow_stage_run",
+      preflight_matrix_required: true,
+      preflight_matrix_ready: false,
     });
-    expect(res.json().gates.map((gate: { key: string }) => gate.key)).toEqual([
-      "writeback_guard",
-      "transaction_plan",
-      "dry_run",
-      "apply_guard",
-      "transaction_prototype",
-      "transaction_port",
-      "state_transition_policy",
-      "subject_snapshot",
-      "executor_feature_flag",
-    ]);
-    expect(
-      res.json().gates.every((gate: { status: string; passed: boolean }) => gate.status === "blocked" && !gate.passed),
-    ).toBe(true);
-    expect(res.json().missing_requirements).toContain("real writeback executor is not registered");
+    expect(res.json().missing_requirements).toContain("writeback executor feature flag is disabled");
     expect(res.json().missing_requirements).toContain("control-plane write is disabled");
     expect((await db.select({ value: count() }).from(stageRuns))[0]!.value).toBe(beforeStageRuns);
     expect((await db.select({ value: count() }).from(executionWritebacks))[0]!.value).toBe(beforeWritebacks);

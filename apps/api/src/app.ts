@@ -103,6 +103,7 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
     networkAllowlist: env.executionNetworkAllowlist,
     secretStoreEnabled: env.executionSecretStoreEnabled,
     secretInjectionEnabled: env.executionSecretInjectionEnabled,
+    writebackExecutorEnabled: env.executionWritebackExecutorEnabled,
   });
   const agentProfileService = new AgentProfileService(db);
   const agentRuntimeService = new AgentRuntimeMockService(db);

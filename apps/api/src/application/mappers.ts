@@ -17,6 +17,7 @@ import type {
   ExecutionWritebackApplyGuardReadinessResponse,
   ExecutionWritebackDryRunDTO,
   ExecutionWritebackDryRunReadinessResponse,
+  ExecutionWritebackExecutorFeatureFlagReadinessResponse,
   ExecutionWritebackExecutorPreflightMatrixResponse,
   ExecutionWritebackGuardDTO,
   ExecutionWritebackGuardReadinessResponse,
@@ -76,6 +77,7 @@ import type {
   ExecutionWritebackApplyGuardReadiness,
 } from "../domain/execution/writeback-apply-guard.js";
 import type { ExecutionWritebackDryRun, ExecutionWritebackDryRunReadiness } from "../domain/execution/writeback-dry-run.js";
+import type { ExecutionWritebackExecutorFeatureFlagReadiness } from "../domain/execution/writeback-executor-feature-flag.js";
 import type { ExecutionWritebackExecutorPreflightMatrix } from "../domain/execution/writeback-executor-preflight-matrix.js";
 import type { ExecutionWritebackGuard, ExecutionWritebackGuardReadiness } from "../domain/execution/writeback-guard.js";
 import type {
@@ -825,6 +827,28 @@ export function toExecutionWritebackExecutorPreflightMatrixDTO(
       passed: gate.passed,
       missing_requirements: gate.missingRequirements,
     })),
+    missing_requirements: r.missingRequirements,
+    next_phase_requirements: r.nextPhaseRequirements,
+  };
+}
+
+export function toExecutionWritebackExecutorFeatureFlagReadinessDTO(
+  r: ExecutionWritebackExecutorFeatureFlagReadiness,
+): ExecutionWritebackExecutorFeatureFlagReadinessResponse {
+  return {
+    mode: r.mode,
+    feature_flag_name: r.featureFlagName,
+    configured_enabled: r.configuredEnabled,
+    effective_enabled: r.effectiveEnabled,
+    executor_registration_allowed: r.executorRegistrationAllowed,
+    real_executor_registered: r.realExecutorRegistered,
+    real_executor_executable: r.realExecutorExecutable,
+    control_plane_read_allowed: r.controlPlaneReadAllowed,
+    control_plane_write_allowed: r.controlPlaneWriteAllowed,
+    audit_write_allowed: r.auditWriteAllowed,
+    subject_type: r.subjectType,
+    preflight_matrix_required: r.preflightMatrixRequired,
+    preflight_matrix_ready: r.preflightMatrixReady,
     missing_requirements: r.missingRequirements,
     next_phase_requirements: r.nextPhaseRequirements,
   };

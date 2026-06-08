@@ -21,6 +21,7 @@ describe("Execution writeback executor preflight matrix disabled harness", () =>
       subjectType: "workflow_stage_run",
     });
     expect(matrix.gates.map((gate) => gate.key)).toEqual([...EXECUTION_WRITEBACK_EXECUTOR_PREFLIGHT_GATES]);
+    expect(matrix.gates.map((gate) => gate.key)).toContain("executor_feature_flag");
     expect(matrix.gates.every((gate) => gate.status === "blocked" && gate.passed === false)).toBe(true);
     expect(matrix.gates.every((gate) => gate.missingRequirements.length > 0)).toBe(true);
     expect(matrix.missingRequirements).toContain("real writeback executor is not registered");

@@ -1,5 +1,6 @@
 import { buildExecutionWritebackApplyGuardReadiness } from "./writeback-apply-guard.js";
 import { buildExecutionWritebackDryRunReadiness } from "./writeback-dry-run.js";
+import { buildExecutionWritebackExecutorFeatureFlagReadiness } from "./writeback-executor-feature-flag.js";
 import { buildExecutionWritebackGuardReadiness } from "./writeback-guard.js";
 import { buildExecutionWritebackStateTransitionPolicyReadiness } from "./writeback-state-transition-policy.js";
 import { buildExecutionWritebackSubjectSnapshotReadiness } from "./writeback-subject-snapshot.js";
@@ -16,6 +17,7 @@ export const EXECUTION_WRITEBACK_EXECUTOR_PREFLIGHT_GATES = [
   "transaction_port",
   "state_transition_policy",
   "subject_snapshot",
+  "executor_feature_flag",
 ] as const;
 
 export type ExecutionWritebackExecutorPreflightGateKey =
@@ -86,6 +88,7 @@ export function buildExecutionWritebackExecutorPreflightMatrix(): ExecutionWrite
   };
   const stateTransitionPolicy = buildExecutionWritebackStateTransitionPolicyReadiness();
   const subjectSnapshot = buildExecutionWritebackSubjectSnapshotReadiness();
+  const executorFeatureFlag = buildExecutionWritebackExecutorFeatureFlagReadiness({ configuredEnabled: false });
 
   const gates = [
     gate("writeback_guard", writebackGuard.missingRequirements),
@@ -96,6 +99,7 @@ export function buildExecutionWritebackExecutorPreflightMatrix(): ExecutionWrite
     gate("transaction_port", transactionPort.missingRequirements),
     gate("state_transition_policy", stateTransitionPolicy.missingRequirements),
     gate("subject_snapshot", subjectSnapshot.missingRequirements),
+    gate("executor_feature_flag", executorFeatureFlag.missingRequirements),
   ];
   const matrix: ExecutionWritebackExecutorPreflightMatrix = {
     mode: "disabled_executor_preflight_matrix",
