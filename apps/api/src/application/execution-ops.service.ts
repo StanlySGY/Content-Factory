@@ -114,6 +114,22 @@ export interface SecretResolverReadiness {
   runtimeMode: RuntimeSafetyPolicy["mode"];
 }
 
+export interface ProviderHttpBoundaryReadiness {
+  mode: "provider_http_boundary";
+  httpClientKind: "fake";
+  networkUsed: false;
+  realHttpEnabled: false;
+  supportsAbortSignal: true;
+  supportsTimeoutMapping: true;
+  supportsProviderRequestId: true;
+  supportsStatusCodeMapping: true;
+  secretMaterialInjected: false;
+  allowedAdapterModes: RuntimeAdapterMode[];
+  activeAdapterMode: RuntimeAdapterMode;
+  runtimeMode: RuntimeSafetyPolicy["mode"];
+  blockedRealAdapterReason: "no real adapter registered";
+}
+
 // ExecutionOpsService：execution layer 安全运维入口（health / stale 恢复 / outbox 批处理 / manual retry）。
 // 严格隔离：所有操作只影响 execution plane 表，不改 Workflow/Review/Agent/MCP，不删/改 execution_results 历史。
 export class ExecutionOpsService {
@@ -219,6 +235,24 @@ export class ExecutionOpsService {
       supportedPurposes: [...RUNTIME_SECRET_PURPOSES],
       activeAdapterMode: this.config.runtimeAdapterMode,
       runtimeMode: this.config.runtimeSafetyPolicy.mode,
+    };
+  }
+
+  getProviderHttpBoundaryReadiness(): ProviderHttpBoundaryReadiness {
+    return {
+      mode: "provider_http_boundary",
+      httpClientKind: "fake",
+      networkUsed: false,
+      realHttpEnabled: false,
+      supportsAbortSignal: true,
+      supportsTimeoutMapping: true,
+      supportsProviderRequestId: true,
+      supportsStatusCodeMapping: true,
+      secretMaterialInjected: false,
+      allowedAdapterModes: ["provider_preflight"],
+      activeAdapterMode: this.config.runtimeAdapterMode,
+      runtimeMode: this.config.runtimeSafetyPolicy.mode,
+      blockedRealAdapterReason: "no real adapter registered",
     };
   }
 

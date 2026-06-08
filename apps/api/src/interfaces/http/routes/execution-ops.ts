@@ -5,6 +5,7 @@ import {
   ManualRetryJobResponseSchema,
   ProcessOutboxBatchBodySchema,
   ProcessOutboxBatchResponseSchema,
+  ProviderHttpBoundaryResponseSchema,
   ProviderSafetyResponseSchema,
   RecoverStaleJobsBodySchema,
   RecoverStaleJobsResponseSchema,
@@ -24,6 +25,7 @@ import {
   toExecutionSystemHealthDTO,
   toRuntimeAdapterDryRunResponseDTO,
   toRuntimeAdaptersResponseDTO,
+  toProviderHttpBoundaryDTO,
   toProviderSafetyResponseDTO,
   toSecretResolverReadinessDTO,
   toRuntimeSafetyPolicyDTO,
@@ -69,6 +71,12 @@ export const executionOpsRoutes: FastifyPluginAsyncTypebox<ExecutionOpsRoutesOpt
     "/api/execution/ops/secret-resolver-readiness",
     { schema: { response: { 200: SecretResolverReadinessResponseSchema } } },
     async () => toSecretResolverReadinessDTO(executionOpsService.getSecretResolverReadiness()),
+  );
+
+  app.get(
+    "/api/execution/ops/provider-http-boundary",
+    { schema: { response: { 200: ProviderHttpBoundaryResponseSchema } } },
+    async () => toProviderHttpBoundaryDTO(executionOpsService.getProviderHttpBoundaryReadiness()),
   );
 
   app.post(

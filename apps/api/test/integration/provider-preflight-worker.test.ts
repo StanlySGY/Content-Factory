@@ -48,6 +48,17 @@ describe("Provider preflight worker", () => {
     expect(updated.status).toBe("success");
     expect(result!.status).toBe("success");
     expect(JSON.stringify(result!.responseSnapshot)).toContain("openai_compatible");
+    expect(result!.responseSnapshot).toMatchObject({
+      metadata: {
+        httpBoundary: {
+          httpClientKind: "fake",
+          networkUsed: false,
+          secretMaterialInjected: false,
+        },
+        httpStatusCode: 200,
+        providerRequestId: "fake-agent-provider-http-request",
+      },
+    });
     expect(JSON.stringify(result!.requestSnapshot)).not.toContain("job-secret");
     expect(JSON.stringify(events)).not.toContain("job-secret");
     expect((await db.select({ value: count() }).from(stageRuns))[0]!.value).toBe(stageRunCountBefore);
@@ -86,10 +97,12 @@ describe("Provider preflight worker", () => {
     });
 
     for (const secret of ["nested-token", "secret-value", "nested-api-key", "nested-password", "Bearer nested", "sk-live-nested"]) {
-      expect(snapshots).not.toContain(secret);
+    expect(snapshots).not.toContain(secret);
     }
     expect(snapshots).toContain("[REDACTED]");
     expect(snapshots).toContain("secret_material_returned");
+    expect(snapshots).toContain("httpBoundary");
+    expect(snapshots).toContain("secretMaterialInjected");
   });
 
   it("mcp job fails safely", async () => {

@@ -1130,3 +1130,23 @@ export const SecretResolverReadinessResponseSchema = Type.Object(
   { additionalProperties: false },
 );
 export type SecretResolverReadinessResponse = Static<typeof SecretResolverReadinessResponseSchema>;
+
+export const ProviderHttpBoundaryResponseSchema = Type.Object(
+  {
+    mode: StringEnum(["provider_http_boundary"] as const),
+    http_client_kind: StringEnum(["fake"] as const),
+    network_used: Type.Boolean(),
+    real_http_enabled: Type.Boolean(),
+    supports_abort_signal: Type.Boolean(),
+    supports_timeout_mapping: Type.Boolean(),
+    supports_provider_request_id: Type.Boolean(),
+    supports_status_code_mapping: Type.Boolean(),
+    secret_material_injected: Type.Boolean(),
+    allowed_adapter_modes: Type.Array(RuntimeAdapterModeSchema),
+    active_adapter_mode: RuntimeAdapterModeSchema,
+    runtime_mode: RuntimeModeSchema,
+    blocked_real_adapter_reason: Type.String(),
+  },
+  { additionalProperties: false },
+);
+export type ProviderHttpBoundaryResponse = Static<typeof ProviderHttpBoundaryResponseSchema>;

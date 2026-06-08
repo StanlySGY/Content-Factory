@@ -1,7 +1,6 @@
 import { ValidationError } from "../../domain/errors.js";
 import {
   failedRuntimeResponse,
-  isRetryableRuntimeError,
   validateRuntimeRequest,
   type RuntimeRequest,
   type RuntimeResponse,
@@ -15,13 +14,19 @@ import {
   buildAgentProviderMetricsEnvelope,
   validateAgentProviderMetricsEnvelope,
 } from "./agent-provider-metrics.js";
-import { FakeOpenAICompatibleClient } from "./fake-openai-compatible-client.js";
 import {
-  normalizeOpenAICompatibleRawError,
   normalizeOpenAICompatibleRawResponse,
   type OpenAICompatibleRawRequest,
   type OpenAICompatibleRawResponse,
 } from "./openai-compatible-schema.js";
+import {
+  isAgentProviderHttpError,
+  mapAgentProviderHttpErrorToRuntimeErrorType,
+  validateAgentProviderHttpResponse,
+  type AgentProviderHttpRequest,
+  type IAgentProviderHttpClient,
+} from "./agent-provider-http-boundary.js";
+import { FakeAgentProviderHttpClient } from "./fake-agent-provider-http-client.js";
 import {
   DEFAULT_SECRET_RESOLUTION_POLICY,
   assertSecretResolutionAllowed,
@@ -49,12 +54,14 @@ function metadataFromPayload(payload: Record<string, unknown>): Record<string, u
 
 export class AgentProviderPreflightRuntime implements IAgentRuntime {
   constructor(
-    private readonly client = new FakeOpenAICompatibleClient(),
+    private readonly httpClient: IAgentProviderHttpClient = new FakeAgentProviderHttpClient(),
     private readonly secretResolver: IRuntimeSecretResolver = new MockRuntimeSecretResolver(),
   ) {}
 
   async execute(request: RuntimeRequest, context?: RuntimeExecutionContext): Promise<RuntimeResponse> {
     const started = Date.now();
+    let secretResolutionMetadata: unknown;
+    let secretResolverAuditMetadata: unknown;
     try {
       validateRuntimeRequest(request);
       if (!context) return this.failure(request.jobId, "validation_error", "runtime execution context is required", started);
@@ -70,6 +77,7 @@ export class AgentProviderPreflightRuntime implements IAgentRuntime {
 
       assertSecretResolutionAllowed(DEFAULT_SECRET_RESOLUTION_POLICY);
       const secretResolution = buildSecretResolutionReadinessSnapshot(DEFAULT_SECRET_RESOLUTION_POLICY);
+      secretResolutionMetadata = secretResolution;
       const subject = request.metadata.subject;
       const secretRef: RuntimeSecretRef = {
         ...context.credentialRef,
@@ -84,47 +92,39 @@ export class AgentProviderPreflightRuntime implements IAgentRuntime {
         auditMetadata: request.metadata,
       });
       const secretResolverAudit = secretResolutionRecord.auditMetadata;
+      secretResolverAuditMetadata = secretResolverAudit;
       const rawRequest: OpenAICompatibleRawRequest = {
         model: str(request.payload.model, DEFAULT_MODEL),
         messages: [{ role: "user", content: str(request.payload.prompt, "hello") }],
         metadata: metadataFromPayload(request.payload),
       };
-      const raw = await this.client.executeRaw(rawRequest, {
+      const httpBoundary = {
+        httpClientKind: "fake",
+        networkUsed: false,
+        secretMaterialInjected: false,
+      };
+      const httpRequest: AgentProviderHttpRequest = {
+        method: "POST",
+        urlRef: "provider://openai-compatible/chat-completions",
+        headersRef: { authorization_ref: context.credentialRef.keyRef },
+        body: rawRequest as unknown as Record<string, unknown>,
+        timeoutMs: request.timeoutMs,
+        requestId: `${request.jobId}:${request.attemptCount}:provider-preflight`,
+      };
+      const raw = await this.httpClient.send(httpRequest, {
         timeoutMs: request.timeoutMs,
         signal: context.abortSignal,
       });
+      validateAgentProviderHttpResponse(raw);
       const durationMs = Math.max(0, Date.now() - started);
 
-      if (raw.status === "failed") {
-        const normalized = normalizeOpenAICompatibleRawError(raw.error);
-        return {
-          jobId: request.jobId,
-          status: "failed",
-          output: {},
-          error: normalized.message,
-          errorType: normalized.runtimeErrorType,
-          retryable: isRetryableRuntimeError(normalized.runtimeErrorType),
-          durationMs,
-          metadata: {
-            adapterMode: "provider_preflight",
-            providerKind: "openai_compatible",
-            providerErrorType: normalized.providerErrorType,
-            providerRequestId: normalized.providerRequestId,
-            networkUsed: false,
-            processSpawned: false,
-            secretResolution,
-            secretResolverAudit,
-          },
-        };
-      }
-
-      const normalized = normalizeOpenAICompatibleRawResponse(raw.body as OpenAICompatibleRawResponse);
+      const normalized = normalizeOpenAICompatibleRawResponse(raw.bodySnapshot as unknown as OpenAICompatibleRawResponse);
       const metrics = buildAgentProviderMetricsEnvelope({
         provider: "openai_compatible",
         model: rawRequest.model,
         durationMs,
         tokenUsage: normalized.rawMetadata.tokenUsage,
-        providerRequestId: normalized.rawMetadata.providerRequestId,
+        providerRequestId: raw.providerRequestId ?? normalized.rawMetadata.providerRequestId,
       });
       validateAgentProviderMetricsEnvelope(metrics);
       return {
@@ -143,6 +143,8 @@ export class AgentProviderPreflightRuntime implements IAgentRuntime {
           adapterMode: "provider_preflight",
           providerKind: "openai_compatible",
           providerRequestId: metrics.providerRequestId,
+          httpStatusCode: raw.statusCode,
+          httpBoundary,
           networkUsed: false,
           processSpawned: false,
           secretResolution,
@@ -152,6 +154,34 @@ export class AgentProviderPreflightRuntime implements IAgentRuntime {
         },
       };
     } catch (e) {
+      if (isAgentProviderHttpError(e)) {
+        const mapped = mapAgentProviderHttpErrorToRuntimeErrorType(e);
+        return {
+          jobId: request.jobId,
+          status: "failed",
+          output: {},
+          error: e.message,
+          errorType: mapped.errorType,
+          retryable: mapped.retryable,
+          durationMs: Math.max(0, Date.now() - started),
+          metadata: {
+            adapterMode: "provider_preflight",
+            providerKind: "openai_compatible",
+            providerErrorType: e.type,
+            providerRequestId: e.providerRequestId,
+            httpStatusCode: e.statusCode,
+            httpBoundary: {
+              httpClientKind: "fake",
+              networkUsed: false,
+              secretMaterialInjected: false,
+            },
+            networkUsed: false,
+            processSpawned: false,
+            ...(secretResolutionMetadata ? { secretResolution: secretResolutionMetadata } : {}),
+            ...(secretResolverAuditMetadata ? { secretResolverAudit: secretResolverAuditMetadata } : {}),
+          },
+        };
+      }
       const errorType = e instanceof ValidationError ? "validation_error" : "unknown";
       return this.failure(request.jobId, errorType, e instanceof Error ? e.message : String(e), started);
     }

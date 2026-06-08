@@ -18,6 +18,7 @@ import type {
   RuntimeAdapterDescriptorDTO,
   RuntimeAdapterDryRunResponse,
   RuntimeAdaptersResponse,
+  ProviderHttpBoundaryResponse,
   ProviderSafetyResponse,
   SecretResolverReadinessResponse,
   RuntimeSafetyPolicyDTO,
@@ -51,7 +52,12 @@ import type { ExecutionResultSummary } from "../domain/execution/result.js";
 import type { RuntimeSafetyPolicy } from "../domain/execution/runtime-safety.js";
 import type { RuntimeResponse } from "../domain/execution/runtime-contract.js";
 import type { RuntimeAdapterDescriptor, RuntimeAdapterMode } from "./runtime/adapter-registry.js";
-import type { ExecutionSystemHealth, ProviderSafetySummary, SecretResolverReadiness } from "./execution-ops.service.js";
+import type {
+  ExecutionSystemHealth,
+  ProviderHttpBoundaryReadiness,
+  ProviderSafetySummary,
+  SecretResolverReadiness,
+} from "./execution-ops.service.js";
 
 const iso = (d: Date | null): string | null => (d ? d.toISOString() : null);
 
@@ -84,6 +90,10 @@ function snakeRuntimeValue(value: unknown): unknown {
       key === "costEstimate" ? "cost_estimate" :
       key === "secretResolution" ? "secret_resolution" :
       key === "secretResolverAudit" ? "secret_resolver_audit" :
+      key === "httpBoundary" ? "http_boundary" :
+      key === "httpClientKind" ? "http_client_kind" :
+      key === "httpStatusCode" ? "http_status_code" :
+      key === "secretMaterialInjected" ? "secret_material_injected" :
       key === "materialAvailable" ? "material_available" :
       key === "materialPreview" ? "material_preview" :
       key === "resolverKind" ? "resolver_kind" :
@@ -542,5 +552,23 @@ export function toSecretResolverReadinessDTO(s: SecretResolverReadiness): Secret
     supported_purposes: s.supportedPurposes,
     active_adapter_mode: s.activeAdapterMode,
     runtime_mode: s.runtimeMode,
+  };
+}
+
+export function toProviderHttpBoundaryDTO(s: ProviderHttpBoundaryReadiness): ProviderHttpBoundaryResponse {
+  return {
+    mode: s.mode,
+    http_client_kind: s.httpClientKind,
+    network_used: s.networkUsed,
+    real_http_enabled: s.realHttpEnabled,
+    supports_abort_signal: s.supportsAbortSignal,
+    supports_timeout_mapping: s.supportsTimeoutMapping,
+    supports_provider_request_id: s.supportsProviderRequestId,
+    supports_status_code_mapping: s.supportsStatusCodeMapping,
+    secret_material_injected: s.secretMaterialInjected,
+    allowed_adapter_modes: s.allowedAdapterModes,
+    active_adapter_mode: s.activeAdapterMode,
+    runtime_mode: s.runtimeMode,
+    blocked_real_adapter_reason: s.blockedRealAdapterReason,
   };
 }

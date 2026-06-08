@@ -40,6 +40,13 @@ describe("AgentProviderPreflightRuntime", () => {
     expect(res.output).toMatchObject({ provider: "openai_compatible", providerPreflight: true, result: { text: "ok" } });
     expect(res.metadata).toMatchObject({
       providerKind: "openai_compatible",
+      httpBoundary: {
+        httpClientKind: "fake",
+        networkUsed: false,
+        secretMaterialInjected: false,
+      },
+      providerRequestId: "fake-agent-provider-http-request",
+      httpStatusCode: 200,
       networkUsed: false,
       processSpawned: false,
       secretResolution: { secret_material_present: false },
@@ -69,6 +76,11 @@ describe("AgentProviderPreflightRuntime", () => {
       expect(res.errorType).toBe(errorType);
       expect(res.retryable).toBe(retryable);
       expect(res.metadata).toMatchObject({
+        httpBoundary: {
+          httpClientKind: "fake",
+          networkUsed: false,
+          secretMaterialInjected: false,
+        },
         secretResolverAudit: {
           secret_material_present: false,
           secret_material_returned: false,

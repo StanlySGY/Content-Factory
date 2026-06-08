@@ -76,7 +76,18 @@ function isRetryable(errorType: RuntimeErrorType): boolean {
 
 function isSecretKey(key: string): boolean {
   const normalized = key.replace(/[-\s]/g, "_").toLowerCase();
-  if (["key_ref", "keyref", "secretresolution", "secret_resolution", "secretresolveraudit", "secret_resolver_audit", "tokenusage", "token_usage"].includes(normalized))
+  if ([
+    "key_ref",
+    "keyref",
+    "secretresolution",
+    "secret_resolution",
+    "secretresolveraudit",
+    "secret_resolver_audit",
+    "secretmaterialinjected",
+    "secret_material_injected",
+    "tokenusage",
+    "token_usage",
+  ].includes(normalized))
     return false;
   return SECRET_KEY_MARKERS.some((marker) => normalized.includes(marker));
 }
