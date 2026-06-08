@@ -5,6 +5,7 @@ import {
   AgentRealProviderConfigPreflightResponseSchema,
   AgentRealProviderTransportDisabledHarnessResponseSchema,
   ExecutionSystemHealthSchema,
+  ExecutionWritebackGuardReadinessResponseSchema,
   IdParamSchema,
   ManualRetryJobResponseSchema,
   ProcessOutboxBatchBodySchema,
@@ -33,6 +34,7 @@ import {
   toAgentRealProviderTransportDisabledHarnessDTO,
   toExecutionJobDTO,
   toExecutionSystemHealthDTO,
+  toExecutionWritebackGuardReadinessDTO,
   toRuntimeAdapterDryRunResponseDTO,
   toRuntimeAdaptersResponseDTO,
   toProviderHttpBoundaryDTO,
@@ -129,6 +131,12 @@ export const executionOpsRoutes: FastifyPluginAsyncTypebox<ExecutionOpsRoutesOpt
     "/api/execution/ops/secret-injection-preflight",
     { schema: { response: { 200: SecretInjectionPreflightReadinessResponseSchema } } },
     async () => toSecretInjectionPreflightReadinessDTO(executionOpsService.getSecretInjectionPreflightReadiness()),
+  );
+
+  app.get(
+    "/api/execution/ops/writeback-guard-readiness",
+    { schema: { response: { 200: ExecutionWritebackGuardReadinessResponseSchema } } },
+    async () => toExecutionWritebackGuardReadinessDTO(executionOpsService.getWritebackGuardReadiness()),
   );
 
   app.post(

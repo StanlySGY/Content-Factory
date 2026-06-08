@@ -1,4 +1,5 @@
 import { NotFoundError, ValidationError } from "../domain/errors.js";
+import { buildExecutionWritebackGuard, type ExecutionWritebackGuard } from "../domain/execution/writeback-guard.js";
 import type { Db } from "../infrastructure/db/client.js";
 import type { ExecutionWritebackRow } from "../infrastructure/db/schema.js";
 import * as writebackRepo from "../infrastructure/repositories/execution-writeback.repository.js";
@@ -11,6 +12,18 @@ export class ExecutionWritebackService {
     const row = await writebackRepo.getWriteback(this.db, id);
     if (!row) throw new NotFoundError(`execution_writeback ${id} not found`);
     return row;
+  }
+
+  async getGuard(id: string): Promise<ExecutionWritebackGuard> {
+    const row = await this.getWriteback(id);
+    return buildExecutionWritebackGuard({
+      writebackId: row.id,
+      executionResultId: row.executionResultId,
+      executionJobId: row.executionJobId,
+      subjectType: row.subjectType,
+      subjectId: row.subjectId,
+      writebackStatus: row.status,
+    });
   }
 
   listByResult(resultId: string): Promise<ExecutionWritebackRow[]> {

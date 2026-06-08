@@ -926,6 +926,44 @@ export const ListExecutionWritebacksQuerySchema = Type.Object(
 );
 export type ListExecutionWritebacksQuery = Static<typeof ListExecutionWritebacksQuerySchema>;
 
+export const ExecutionWritebackGuardSchema = Type.Object(
+  {
+    writeback_id: Uuid(),
+    execution_result_id: Uuid(),
+    execution_job_id: Uuid(),
+    subject_type: Type.String(),
+    subject_id: Type.String(),
+    writeback_status: Type.String(),
+    mode: StringEnum(["disabled_fixture"] as const),
+    enabled: Type.Boolean(),
+    side_effect_allowed: Type.Boolean(),
+    supported_subject: Type.Boolean(),
+    decision: StringEnum(["blocked"] as const),
+    missing_requirements: Type.Array(Type.String()),
+    next_phase_requirements: Type.Array(Type.String()),
+  },
+  { additionalProperties: false },
+);
+export type ExecutionWritebackGuardDTO = Static<typeof ExecutionWritebackGuardSchema>;
+
+export const ExecutionWritebackGuardReadinessResponseSchema = Type.Object(
+  {
+    mode: StringEnum(["disabled_fixture"] as const),
+    enabled: Type.Boolean(),
+    side_effect_allowed: Type.Boolean(),
+    supported_subject_types: Type.Array(StringEnum(["workflow_stage_run"] as const)),
+    real_writeback_registered: Type.Boolean(),
+    control_plane_write_enabled: Type.Boolean(),
+    audit_write_enabled: Type.Boolean(),
+    missing_requirements: Type.Array(Type.String()),
+    next_phase_requirements: Type.Array(Type.String()),
+  },
+  { additionalProperties: false },
+);
+export type ExecutionWritebackGuardReadinessResponse = Static<
+  typeof ExecutionWritebackGuardReadinessResponseSchema
+>;
+
 // ---- Execution Ops (S5 Phase 1.10；运维健康观测 + 恢复控制，仅 execution plane) ----
 export const ExecutionSystemHealthSchema = Type.Object(
   {

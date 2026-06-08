@@ -7,6 +7,7 @@ import {
   ExecutionResultSchema,
   ExecutionResultsResponseSchema,
   ExecutionResultSummarySchema,
+  ExecutionWritebackGuardSchema,
   ExecutionWritebackSchema,
   ExecutionWritebacksResponseSchema,
   IdParamSchema,
@@ -29,6 +30,7 @@ import {
   toExecutionJobDTO,
   toExecutionResultDTO,
   toExecutionResultSummaryDTO,
+  toExecutionWritebackGuardDTO,
   toExecutionWritebackDTO,
   toOutboxEventDTO,
 } from "../../../application/mappers.js";
@@ -137,6 +139,13 @@ export const executionRoutes: FastifyPluginAsyncTypebox<ExecutionRoutesOptions> 
     "/api/execution/writebacks/:id",
     { schema: { params: IdParamSchema, response: { 200: ExecutionWritebackSchema } } },
     async (request) => toExecutionWritebackDTO(await executionWritebackService.getWriteback(request.params.id)),
+  );
+
+  // 单条 writeback 的真实回写前 guard：disabled fixture，只读，不写控制面。
+  app.get(
+    "/api/execution/writebacks/:id/guard",
+    { schema: { params: IdParamSchema, response: { 200: ExecutionWritebackGuardSchema } } },
+    async (request) => toExecutionWritebackGuardDTO(await executionWritebackService.getGuard(request.params.id)),
   );
 
   app.get(

@@ -13,6 +13,8 @@ import type {
   ExecutionJobDTO,
   ExecutionResultDTO,
   ExecutionWritebackDTO,
+  ExecutionWritebackGuardDTO,
+  ExecutionWritebackGuardReadinessResponse,
   ExecutionResultSummaryDTO,
   ExecutionSystemHealthDTO,
   McpServerDTO,
@@ -57,6 +59,7 @@ import type {
   WorkflowRunRow,
 } from "../infrastructure/db/schema.js";
 import type { ExecutionResultSummary } from "../domain/execution/result.js";
+import type { ExecutionWritebackGuard, ExecutionWritebackGuardReadiness } from "../domain/execution/writeback-guard.js";
 import type { RuntimeSafetyPolicy } from "../domain/execution/runtime-safety.js";
 import type { RuntimeResponse } from "../domain/execution/runtime-contract.js";
 import type { RuntimeAdapterDescriptor, RuntimeAdapterMode } from "./runtime/adapter-registry.js";
@@ -452,6 +455,40 @@ export function toExecutionWritebackDTO(r: ExecutionWritebackRow): ExecutionWrit
     error: r.error,
     created_at: r.createdAt.toISOString(),
     updated_at: r.updatedAt.toISOString(),
+  };
+}
+
+export function toExecutionWritebackGuardDTO(g: ExecutionWritebackGuard): ExecutionWritebackGuardDTO {
+  return {
+    writeback_id: g.writebackId,
+    execution_result_id: g.executionResultId,
+    execution_job_id: g.executionJobId,
+    subject_type: g.subjectType,
+    subject_id: g.subjectId,
+    writeback_status: g.writebackStatus,
+    mode: g.mode,
+    enabled: g.enabled,
+    side_effect_allowed: g.sideEffectAllowed,
+    supported_subject: g.supportedSubject,
+    decision: g.decision,
+    missing_requirements: g.missingRequirements,
+    next_phase_requirements: g.nextPhaseRequirements,
+  };
+}
+
+export function toExecutionWritebackGuardReadinessDTO(
+  r: ExecutionWritebackGuardReadiness,
+): ExecutionWritebackGuardReadinessResponse {
+  return {
+    mode: r.mode,
+    enabled: r.enabled,
+    side_effect_allowed: r.sideEffectAllowed,
+    supported_subject_types: r.supportedSubjectTypes,
+    real_writeback_registered: r.realWritebackRegistered,
+    control_plane_write_enabled: r.controlPlaneWriteEnabled,
+    audit_write_enabled: r.auditWriteEnabled,
+    missing_requirements: r.missingRequirements,
+    next_phase_requirements: r.nextPhaseRequirements,
   };
 }
 

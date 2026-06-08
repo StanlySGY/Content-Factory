@@ -2,6 +2,10 @@ import { randomUUID } from "node:crypto";
 import { EXECUTION_OUTBOX_EVENTS } from "@cf/shared";
 import { ConflictError, NotFoundError, ValidationError } from "../domain/errors.js";
 import {
+  buildExecutionWritebackGuardReadiness,
+  type ExecutionWritebackGuardReadiness,
+} from "../domain/execution/writeback-guard.js";
+import {
   buildRuntimeExecutionContext,
   type RuntimeCredentialRef,
   type RuntimeSafetyPolicy,
@@ -405,6 +409,10 @@ export class ExecutionOpsService {
       runtimeMode: this.config.runtimeSafetyPolicy.mode,
       blockedRealAdapterReason: "no real adapter registered",
     };
+  }
+
+  getWritebackGuardReadiness(): ExecutionWritebackGuardReadiness {
+    return buildExecutionWritebackGuardReadiness();
   }
 
   async dryRunRuntimeAdapter(input: {
