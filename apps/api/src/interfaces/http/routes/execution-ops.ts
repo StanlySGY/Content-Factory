@@ -39,6 +39,8 @@ import {
   SecretInjectionPreflightReadinessResponseSchema,
   SecretResolverReadinessResponseSchema,
   StagingSmokePlanResponseSchema,
+  StagingSmokeReadinessResponseSchema,
+  StagingSmokeReportResponseSchema,
   ProviderQuotaCostPreflightReadinessResponseSchema,
 } from "@cf/shared";
 import type { ExecutionOpsService } from "../../../application/execution-ops.service.js";
@@ -73,6 +75,8 @@ import {
   toRuntimeSafetyPolicyDTO,
   toSecretInjectionPreflightReadinessDTO,
   toStagingSmokePlanDTO,
+  toStagingSmokeReadinessDTO,
+  toStagingSmokeReportDTO,
 } from "../../../application/mappers.js";
 
 export interface ExecutionOpsRoutesOptions {
@@ -168,6 +172,18 @@ export const executionOpsRoutes: FastifyPluginAsyncTypebox<ExecutionOpsRoutesOpt
     "/api/execution/ops/staging-smoke-plan",
     { schema: { response: { 200: StagingSmokePlanResponseSchema } } },
     async () => toStagingSmokePlanDTO(executionOpsService.getStagingSmokePlan()),
+  );
+
+  app.get(
+    "/api/execution/ops/staging-smoke-readiness",
+    { schema: { response: { 200: StagingSmokeReadinessResponseSchema } } },
+    async () => toStagingSmokeReadinessDTO(executionOpsService.getStagingSmokeReadiness()),
+  );
+
+  app.post(
+    "/api/execution/ops/staging-smoke-runs",
+    { schema: { response: { 200: StagingSmokeReportResponseSchema } } },
+    async () => toStagingSmokeReportDTO(await executionOpsService.runStagingSmoke()),
   );
 
   app.get(

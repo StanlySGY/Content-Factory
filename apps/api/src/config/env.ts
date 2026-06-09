@@ -40,6 +40,9 @@ export interface Env {
   executionAlertOutboxBacklogThreshold: number;
   executionAlertWritebackFailedThreshold: number;
   executionAlertRateLimitedThreshold: number;
+  executionStagingSmokeEnabled: boolean;
+  executionStagingSmokeRuntimeMode: "mock_only";
+  executionStagingSmokeMaxJobs: number;
   agentOpenAICompatibleEndpoint: string | null;
   outboxRelayEnabled: boolean;
   outboxRelayIntervalMs: number;
@@ -79,6 +82,12 @@ function monitoringExporterFormat(value: string | undefined): Env["executionMoni
   if (value === undefined || value === "") return "prometheus_text";
   if (value === "prometheus_text") return value;
   throw new Error(`invalid EXECUTION_MONITORING_EXPORTER_FORMAT: ${value}`);
+}
+
+function stagingSmokeRuntimeMode(value: string | undefined): Env["executionStagingSmokeRuntimeMode"] {
+  if (value === undefined || value === "") return "mock_only";
+  if (value === "mock_only") return value;
+  throw new Error(`invalid EXECUTION_STAGING_SMOKE_RUNTIME_MODE: ${value}`);
 }
 
 function csv(value: string | undefined): string[] {
@@ -163,6 +172,13 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
       source.EXECUTION_ALERT_RATE_LIMITED_THRESHOLD,
       1,
       "EXECUTION_ALERT_RATE_LIMITED_THRESHOLD",
+    ),
+    executionStagingSmokeEnabled: bool(source.EXECUTION_STAGING_SMOKE_ENABLED, false),
+    executionStagingSmokeRuntimeMode: stagingSmokeRuntimeMode(source.EXECUTION_STAGING_SMOKE_RUNTIME_MODE),
+    executionStagingSmokeMaxJobs: nonNegativeInt(
+      source.EXECUTION_STAGING_SMOKE_MAX_JOBS,
+      1,
+      "EXECUTION_STAGING_SMOKE_MAX_JOBS",
     ),
     agentOpenAICompatibleEndpoint: source.AGENT_OPENAI_COMPATIBLE_ENDPOINT ?? null,
     outboxRelayEnabled: bool(source.OUTBOX_RELAY_ENABLED, false),

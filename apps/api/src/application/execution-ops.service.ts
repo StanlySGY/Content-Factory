@@ -55,6 +55,15 @@ import {
   type ExecutionMonitoringThresholds,
 } from "../domain/execution/monitoring.js";
 import {
+  buildStagingSmokePlan,
+  buildStagingSmokeReadiness,
+  buildStagingSmokeReport,
+  validateStagingSmokeRunRequest,
+  type StagingSmokeReadiness,
+  type StagingSmokeReport,
+  type StagingSmokeRuntimeMode,
+} from "../domain/execution/staging-smoke.js";
+import {
   buildRuntimeExecutionContext,
   type RuntimeCredentialRef,
   type RuntimeSafetyPolicy,
@@ -111,6 +120,7 @@ import {
 } from "./runtime/production-activation-preflight.js";
 import type { ProviderQuotaLimits } from "./runtime/provider-quota-enforcer.js";
 import type { OutboxRelay } from "./outbox-relay.js";
+import type { ExecutionWorker } from "./execution-worker.js";
 
 // 运维健康只读聚合（camelCase；mapper → snake_case DTO）。仅聚合 execution plane 表，不 join 业务表/不读 audit。
 export interface ExecutionSystemHealth {
@@ -151,6 +161,9 @@ export interface ExecutionOpsConfig {
   monitoringEnabled: boolean;
   monitoringExporterFormat: "prometheus_text";
   monitoringThresholds: ExecutionMonitoringThresholds;
+  stagingSmokeEnabled: boolean;
+  stagingSmokeRuntimeMode: StagingSmokeRuntimeMode;
+  stagingSmokeMaxJobs: number;
   writebackExecutorEnabled: boolean;
 }
 
@@ -301,6 +314,8 @@ export interface ProductionReadinessP1 {
   };
   smoke: {
     endpoint: "/api/execution/ops/staging-smoke-plan";
+    readinessEndpoint: "/api/execution/ops/staging-smoke-readiness";
+    runEndpoint: "/api/execution/ops/staging-smoke-runs";
     externalCallPerformed: false;
     lowPrivilegeKeyRequired: true;
   };
@@ -330,14 +345,6 @@ export interface ExecutionMonitoringSnapshot {
   metrics: ExecutionMonitoringMetric[];
 }
 
-export interface StagingSmokePlan {
-  mode: "staging_smoke_plan";
-  externalCallPerformed: false;
-  requiresManualExecution: true;
-  steps: string[];
-  rollbackFlags: string[];
-}
-
 function envNameFromKeyRef(keyRef: string): string | null {
   if (!keyRef.startsWith("env://")) return null;
   return keyRef.slice("env://".length);
@@ -350,6 +357,7 @@ export class ExecutionOpsService {
     private readonly db: Db,
     private readonly relay: OutboxRelay,
     private readonly config: ExecutionOpsConfig,
+    private readonly worker: ExecutionWorker,
   ) {}
 
   async getHealth(): Promise<ExecutionSystemHealth> {
@@ -654,32 +662,85 @@ export class ExecutionOpsService {
       },
       smoke: {
         endpoint: "/api/execution/ops/staging-smoke-plan",
+        readinessEndpoint: "/api/execution/ops/staging-smoke-readiness",
+        runEndpoint: "/api/execution/ops/staging-smoke-runs",
         externalCallPerformed: false,
         lowPrivilegeKeyRequired: true,
       },
     };
   }
 
-  getStagingSmokePlan(): StagingSmokePlan {
-    return {
-      mode: "staging_smoke_plan",
-      externalCallPerformed: false,
-      requiresManualExecution: true,
-      steps: [
-        "verify production-readiness-p1 ready=true",
-        "create workflow_stage_run bridge job with low-privilege key",
-        "tick agent job once",
-        "process outbox batch",
-        "verify execution_results, outbox_events and execution_writebacks",
-      ],
-      rollbackFlags: [
-        "EXECUTION_RUNTIME_MODE=mock",
-        "EXECUTION_RUNTIME_ADAPTER_MODE=mock",
-        "EXECUTION_ALLOW_REAL_RUNTIME=false",
-        "EXECUTION_ALLOW_NETWORK=false",
-        "EXECUTION_WRITEBACK_EXECUTOR_ENABLED=false",
-      ],
-    };
+  getStagingSmokePlan() {
+    return buildStagingSmokePlan({ automated: this.config.stagingSmokeEnabled });
+  }
+
+  getStagingSmokeReadiness(): StagingSmokeReadiness {
+    return buildStagingSmokeReadiness({
+      enabled: this.config.stagingSmokeEnabled,
+      runtimeMode: this.config.stagingSmokeRuntimeMode,
+      maxJobs: this.config.stagingSmokeMaxJobs,
+    });
+  }
+
+  async runStagingSmoke(): Promise<StagingSmokeReport> {
+    const readiness = this.getStagingSmokeReadiness();
+    if (!readiness.ready) throw new ConflictError("staging smoke automation is not ready");
+    validateStagingSmokeRunRequest({
+      runtimeMode: this.config.stagingSmokeRuntimeMode,
+      maxJobs: this.config.stagingSmokeMaxJobs,
+    });
+
+    const idempotencyKey = `staging-smoke-${randomUUID()}`;
+    const job = await this.db.transaction(async (tx) => {
+      const created = await jobRepo.createJob(tx, {
+        type: "agent",
+        idempotency_key: idempotencyKey,
+        max_attempts: 1,
+        payload: {
+          schema_version: 1,
+          subject: {
+            type: "agent_profile",
+            id: "staging-smoke",
+            project_id: null,
+            metadata: { purpose: "staging_smoke" },
+          },
+          input: {
+            mockStatus: "success",
+            mockDelayMs: 0,
+            smoke: true,
+          },
+        },
+      });
+      await outboxRepo.createOutboxEvent(tx, {
+        aggregate_type: "execution_job",
+        aggregate_id: created.id,
+        event_type: EXECUTION_OUTBOX_EVENTS.created,
+        payload: { type: created.type, subject: "staging_smoke", idempotency_key: created.idempotencyKey },
+      });
+      return created;
+    });
+
+    const ticked = await this.worker.tickJob(job.id);
+    const resultSummary = await resultRepo.summarizeResultsByJob(this.db, job.id);
+    const outboxEvents = await outboxRepo.listOutboxEventsByAggregateId(this.db, job.id);
+    const writebackCounts = await writebackRepo.countWritebacksByJobStatus(this.db, job.id);
+
+    return buildStagingSmokeReport({
+      runtimeMode: this.config.stagingSmokeRuntimeMode,
+      jobId: job.id,
+      jobType: ticked.type as "agent",
+      jobStatus: ticked.status as StagingSmokeReport["jobStatus"],
+      resultSummary,
+      outboxEventCount: outboxEvents.length,
+      writebackStatusCounts: {
+        planned: writebackCounts.planned ?? 0,
+        applied: writebackCounts.applied ?? 0,
+        skipped: writebackCounts.skipped ?? 0,
+        failed: writebackCounts.failed ?? 0,
+      },
+      warnings: [],
+      completedAt: ticked.finishedAt ?? new Date(),
+    });
   }
 
   getProviderQuotaCostPreflightReadiness(): ProviderQuotaCostPreflightReadiness {

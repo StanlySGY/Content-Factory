@@ -2068,6 +2068,8 @@ export const ProductionReadinessP1ResponseSchema = Type.Object(
     smoke: Type.Object(
       {
         endpoint: Type.String(),
+        readiness_endpoint: Type.String(),
+        run_endpoint: Type.String(),
         external_call_performed: Type.Boolean(),
         low_privilege_key_required: Type.Boolean(),
       },
@@ -2089,6 +2091,60 @@ export const StagingSmokePlanResponseSchema = Type.Object(
   { additionalProperties: false },
 );
 export type StagingSmokePlanResponse = Static<typeof StagingSmokePlanResponseSchema>;
+
+export const StagingSmokeReadinessResponseSchema = Type.Object(
+  {
+    mode: StringEnum(["staging_smoke_readiness"] as const),
+    ready: Type.Boolean(),
+    status: StringEnum(["ready", "blocked"] as const),
+    enabled: Type.Boolean(),
+    runtime_mode: StringEnum(["mock_only"] as const),
+    max_jobs: Type.Integer(),
+    external_call_performed: Type.Boolean(),
+    network_push_enabled: Type.Boolean(),
+    run_endpoint: Type.String(),
+    missing_requirements: Type.Array(Type.String()),
+    warnings: Type.Array(Type.String()),
+  },
+  { additionalProperties: false },
+);
+export type StagingSmokeReadinessResponse = Static<typeof StagingSmokeReadinessResponseSchema>;
+
+export const StagingSmokeReportResponseSchema = Type.Object(
+  {
+    mode: StringEnum(["staging_smoke_report"] as const),
+    enabled: Type.Boolean(),
+    external_call_performed: Type.Boolean(),
+    runtime_mode: StringEnum(["mock_only"] as const),
+    job_id: Uuid(),
+    job_type: ExecutionJobTypeSchema,
+    job_status: ExecutionJobStatusSchema,
+    result_summary: Type.Object(
+      {
+        attempts: Type.Integer(),
+        latest_status: Nullable(ExecutionResultStatusSchema),
+        latest_error_type: Nullable(RuntimeErrorTypeSchema),
+        latest_retryable: Nullable(Type.Boolean()),
+        total_duration_ms: Type.Integer(),
+      },
+      { additionalProperties: false },
+    ),
+    outbox_event_count: Type.Integer(),
+    writeback_status_counts: Type.Object(
+      {
+        planned: Type.Integer(),
+        applied: Type.Integer(),
+        skipped: Type.Integer(),
+        failed: Type.Integer(),
+      },
+      { additionalProperties: false },
+    ),
+    warnings: Type.Array(Type.String()),
+    completed_at: Type.String({ format: "date-time" }),
+  },
+  { additionalProperties: false },
+);
+export type StagingSmokeReportResponse = Static<typeof StagingSmokeReportResponseSchema>;
 
 export const AgentRealProviderConfigPreflightResponseSchema = Type.Object(
   {

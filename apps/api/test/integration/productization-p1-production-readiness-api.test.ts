@@ -122,6 +122,8 @@ describe("Productization-P1 production readiness controls", () => {
       },
       smoke: {
         endpoint: "/api/execution/ops/staging-smoke-plan",
+        readiness_endpoint: "/api/execution/ops/staging-smoke-readiness",
+        run_endpoint: "/api/execution/ops/staging-smoke-runs",
         external_call_performed: false,
         low_privilege_key_required: true,
       },
@@ -143,9 +145,9 @@ describe("Productization-P1 production readiness controls", () => {
       requires_manual_execution: true,
       steps: [
         "verify production-readiness-p1 ready=true",
-        "create workflow_stage_run bridge job with low-privilege key",
+        "check staging-smoke-readiness ready=true",
+        "POST staging-smoke-runs to create one mock-only execution job",
         "tick agent job once",
-        "process outbox batch",
         "verify execution_results, outbox_events and execution_writebacks",
       ],
     });

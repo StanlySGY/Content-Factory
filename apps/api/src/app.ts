@@ -191,8 +191,11 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
       writebackFailed: env.executionAlertWritebackFailedThreshold,
       rateLimited: env.executionAlertRateLimitedThreshold,
     },
+    stagingSmokeEnabled: env.executionStagingSmokeEnabled,
+    stagingSmokeRuntimeMode: env.executionStagingSmokeRuntimeMode,
+    stagingSmokeMaxJobs: env.executionStagingSmokeMaxJobs,
     writebackExecutorEnabled: env.executionWritebackExecutorEnabled,
-  });
+  }, executionWorker);
   const agentProfileService = new AgentProfileService(db);
   const agentRuntimeService = new AgentRuntimeMockService(db);
   const mcpServerService = new McpServerService(db);

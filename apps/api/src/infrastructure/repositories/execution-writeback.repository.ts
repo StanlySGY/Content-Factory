@@ -115,3 +115,15 @@ export async function countFailedOrSkippedWritebacks(db: Db): Promise<number> {
     .where(or(eq(executionWritebacks.status, "failed"), eq(executionWritebacks.status, "skipped")));
   return Number(row?.c ?? 0);
 }
+
+/** 单 job writeback 状态计数（staging smoke report；仅查 execution_writebacks，不 join 业务表）*/
+export async function countWritebacksByJobStatus(db: Db, jobId: string): Promise<Record<string, number>> {
+  const rows = await db
+    .select({ status: executionWritebacks.status, c: count() })
+    .from(executionWritebacks)
+    .where(eq(executionWritebacks.executionJobId, jobId))
+    .groupBy(executionWritebacks.status);
+  const out: Record<string, number> = { planned: 0, applied: 0, skipped: 0, failed: 0 };
+  for (const r of rows) out[r.status] = Number(r.c);
+  return out;
+}

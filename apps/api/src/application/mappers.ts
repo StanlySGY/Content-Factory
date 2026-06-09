@@ -49,6 +49,8 @@ import type {
   SecretManagerReadinessResponse,
   SecretResolverReadinessResponse,
   StagingSmokePlanResponse,
+  StagingSmokeReadinessResponse,
+  StagingSmokeReportResponse,
   RuntimeSafetyPolicyDTO,
   StageRunDTO,
   ToolInvocationDTO,
@@ -111,8 +113,8 @@ import type {
   SecretManagerReadiness,
   SecretInjectionPreflightReadiness,
   SecretResolverReadiness,
-  StagingSmokePlan,
 } from "./execution-ops.service.js";
+import type { StagingSmokePlan, StagingSmokeReadiness, StagingSmokeReport } from "../domain/execution/staging-smoke.js";
 import type { ProviderQuotaCostPreflightReadiness } from "./runtime/provider-quota-cost-preflight.js";
 import type { AgentRealAdapterRegistrationGuard } from "./runtime/agent-real-adapter-registration-guard.js";
 import type { AgentRealProviderConfigPreflight } from "./runtime/agent-real-provider-config-preflight.js";
@@ -1252,6 +1254,8 @@ export function toProductionReadinessP1DTO(s: ProductionReadinessP1): Production
     },
     smoke: {
       endpoint: s.smoke.endpoint,
+      readiness_endpoint: s.smoke.readinessEndpoint,
+      run_endpoint: s.smoke.runEndpoint,
       external_call_performed: s.smoke.externalCallPerformed,
       low_privilege_key_required: s.smoke.lowPrivilegeKeyRequired,
     },
@@ -1303,6 +1307,45 @@ export function toStagingSmokePlanDTO(s: StagingSmokePlan): StagingSmokePlanResp
     requires_manual_execution: s.requiresManualExecution,
     steps: s.steps,
     rollback_flags: s.rollbackFlags,
+  };
+}
+
+export function toStagingSmokeReadinessDTO(s: StagingSmokeReadiness): StagingSmokeReadinessResponse {
+  return {
+    mode: s.mode,
+    ready: s.ready,
+    status: s.status,
+    enabled: s.enabled,
+    runtime_mode: s.runtimeMode,
+    max_jobs: s.maxJobs,
+    external_call_performed: s.externalCallPerformed,
+    network_push_enabled: s.networkPushEnabled,
+    run_endpoint: s.runEndpoint,
+    missing_requirements: s.missingRequirements,
+    warnings: s.warnings,
+  };
+}
+
+export function toStagingSmokeReportDTO(s: StagingSmokeReport): StagingSmokeReportResponse {
+  return {
+    mode: s.mode,
+    enabled: s.enabled,
+    external_call_performed: s.externalCallPerformed,
+    runtime_mode: s.runtimeMode,
+    job_id: s.jobId,
+    job_type: s.jobType,
+    job_status: s.jobStatus,
+    result_summary: {
+      attempts: s.resultSummary.attempts,
+      latest_status: s.resultSummary.latestStatus as StagingSmokeReportResponse["result_summary"]["latest_status"],
+      latest_error_type: s.resultSummary.latestErrorType as StagingSmokeReportResponse["result_summary"]["latest_error_type"],
+      latest_retryable: s.resultSummary.latestRetryable,
+      total_duration_ms: s.resultSummary.totalDurationMs,
+    },
+    outbox_event_count: s.outboxEventCount,
+    writeback_status_counts: s.writebackStatusCounts,
+    warnings: s.warnings,
+    completed_at: s.completedAt.toISOString(),
   };
 }
 

@@ -4,6 +4,7 @@
 > 目标：不继续追加 Phase 2.x；在默认 fail-closed、不默认外部调用、不改 Sprint-4 Control Plane 的前提下，提供 DB-backed provider quota/cost ledger、Secret Store readiness、监控告警快照和 staging smoke plan。
 > P1.1 补充：新增 `external_registry` Secret Manager contract adapter；仍不连接真实云 Secret Manager / Vault / KMS。
 > P1.2 补充：新增 pull-based Prometheus text metrics exporter 与 monitoring readiness；仍不接真实 Grafana / PagerDuty / Alertmanager。
+> P1.3 补充：新增默认关闭、mock-only 的 staging smoke automation；仍不触发真实 Agent / MCP / Publisher。
 
 ---
 
@@ -13,7 +14,7 @@
 |---|---|
 | 阶段名 | Productization-P1 |
 | 是否继续 Phase 2.x | 否 |
-| 作用范围 | provider quota/cost ledger、secret readiness、ops alerts、staging smoke plan |
+| 作用范围 | provider quota/cost ledger、secret readiness、ops alerts、staging smoke plan/automation |
 | 默认外部调用 | 不打开 |
 | 默认控制面回写 | 不打开 |
 | DB 迁移 | `0025_provider_quota_ledger.js` |
@@ -40,11 +41,19 @@ GET /api/execution/ops/production-readiness-p1
      - secret registry/material readiness without returning material
      - DB quota ledger readiness
      - monitoring readiness + alert rule snapshot
-     - staging smoke plan pointer
+     - staging smoke readiness/run pointers
 
 GET /api/execution/ops/staging-smoke-plan
-  -> static manual plan
+  -> smoke plan
   -> external_call_performed=false
+
+GET /api/execution/ops/staging-smoke-readiness
+  -> fail-closed readiness
+
+POST /api/execution/ops/staging-smoke-runs
+  -> one mock-only execution job
+  -> one worker tick
+  -> execution_results/outbox/writeback report
 
 GET /api/execution/ops/metrics
   -> prometheus_text metrics from execution plane tables only
@@ -62,7 +71,8 @@ GET /api/execution/ops/metrics
 | `apps/api/src/application/runtime/provider-quota-enforcer.ts` | 新增 `DbProviderQuotaEnforcer`；保留 `InMemoryProviderQuotaEnforcer` |
 | `apps/api/src/application/runtime/agent-real-runtime.ts` | HTTP fetch 前 await quota decision；throttle 时 `networkUsed=false` |
 | `apps/api/src/domain/execution/monitoring.ts` | P1.2 monitoring metrics / alert rule contract |
-| `apps/api/src/application/execution-ops.service.ts` | P1 readiness、monitoring readiness、metrics 与 staging smoke plan |
+| `apps/api/src/domain/execution/staging-smoke.ts` | P1.3 staging smoke readiness/report contract |
+| `apps/api/src/application/execution-ops.service.ts` | P1 readiness、monitoring readiness、metrics 与 staging smoke plan/run |
 | `apps/api/src/interfaces/http/routes/execution-ops.ts` | 新增 P1 ops endpoints |
 | `packages/shared/src/schemas.ts` | P1 DTO schema |
 | `apps/api/test/integration/productization-p1-production-readiness-api.test.ts` | P1 集成测试 |
@@ -134,6 +144,8 @@ EXECUTION_EXTERNAL_SECRET_REGISTRY=secret://llm/openai=env://CONTENT_FACTORY_OPE
 ```text
 GET /api/execution/ops/production-readiness-p1
 GET /api/execution/ops/staging-smoke-plan
+GET /api/execution/ops/staging-smoke-readiness
+POST /api/execution/ops/staging-smoke-runs
 GET /api/execution/ops/secret-manager-readiness
 ```
 
@@ -147,9 +159,9 @@ GET /api/execution/ops/secret-manager-readiness
 | `secret_store` | registry/material readiness，不含 secret value |
 | `quota_ledger` | DB-backed ledger readiness 与限额配置 |
 | `alerts.rules` | 建议接入的监控指标和阈值 |
-| `smoke` | staging smoke plan 指针 |
+| `smoke` | staging smoke plan/readiness/run 指针 |
 
-`staging-smoke-plan` 只返回人工执行计划，`external_call_performed=false`，不会触发外部 LLM 或 writeback。
+`staging-smoke-runs` 默认关闭；开启后只创建并执行一个 mock-only execution job，`external_call_performed=false`，不会触发真实 LLM / MCP / Publisher。
 
 ---
 
@@ -177,21 +189,30 @@ P1.2 暴露规则：
 
 ---
 
-## 8. Staging Smoke Plan
+## 8. Staging Smoke Automation
 
-建议流程：
+P1.3 新增：
 
 ```text
-1. GET /api/execution/ops/production-readiness-p1，确认 ready=true
-2. 使用低权限 key 和低限额创建 workflow_stage_run bridge job
-3. tick agent job 一次
-4. process outbox batch
-5. 验证 execution_results / outbox_events / execution_writebacks
+EXECUTION_STAGING_SMOKE_ENABLED=false
+EXECUTION_STAGING_SMOKE_RUNTIME_MODE=mock_only
+EXECUTION_STAGING_SMOKE_MAX_JOBS=1
+```
+
+运行流程：
+
+```text
+1. GET /api/execution/ops/staging-smoke-readiness，确认 ready=true
+2. POST /api/execution/ops/staging-smoke-runs
+3. service 创建 1 个 idempotency_key=staging-smoke-* 的 agent job
+4. worker tickJob(job_id) 触发 MockRuntimeAdapter
+5. report 汇总 execution_results / outbox_events / execution_writebacks
 ```
 
 回滚 flags：
 
 ```text
+EXECUTION_STAGING_SMOKE_ENABLED=false
 EXECUTION_RUNTIME_MODE=mock
 EXECUTION_RUNTIME_ADAPTER_MODE=mock
 EXECUTION_ALLOW_REAL_RUNTIME=false
@@ -213,6 +234,9 @@ pnpm --dir apps/api exec vitest run \
 pnpm --dir apps/api exec vitest run \
   test/unit/execution-monitoring.test.ts \
   test/integration/productization-p1-2-monitoring-api.test.ts
+pnpm --dir apps/api exec vitest run \
+  test/integration/productization-p1-3-staging-smoke-api.test.ts \
+  test/integration/productization-p1-production-readiness-api.test.ts
 ```
 
 覆盖：
@@ -220,6 +244,7 @@ pnpm --dir apps/api exec vitest run \
 - P1 readiness 返回 ready、secret readiness、quota ledger、alert snapshot 和 smoke pointer。
 - P1.1 secret-manager-readiness 返回 `env_registry` / `external_registry` readiness，且不泄漏 secret material。
 - P1.2 monitoring-readiness / metrics endpoint 返回 Prometheus text，并且不泄漏 secret material。
+- P1.3 staging-smoke-readiness fail-closed，run API 只执行 mock-only job，并返回脱敏 report。
 - readiness / smoke 响应不包含 API key / Bearer。
 - DB-backed ledger 首次请求成功并累加用量。
 - 第二次请求在 request limit 下被 `rate_limited` 阻断，`networkUsed=false`。
@@ -233,7 +258,7 @@ pnpm --dir apps/api exec vitest run \
 - 不实现云 Secret Manager / Vault / KMS（P1.1 只做本地契约适配）。
 - 不实现 key rotation 自动化。
 - 不接真实 Grafana / PagerDuty / Alertmanager；P1.2 只提供 pull-based Prometheus text endpoint。
-- 不自动执行 staging smoke test。
+- 不执行真实 provider staging smoke；P1.3 仅执行 mock-only smoke job。
 - 不引入 Redis / MQ / BullMQ。
 - 不改 Workflow / Review / Agent / MCP 状态机。
 - 不支持 MCP real runtime。
@@ -250,6 +275,6 @@ pnpm --dir apps/api exec vitest run \
 | P1.1 | Secret Manager contract adapter | 已完成；真实云 adapter 仍需扩 scope |
 | P1.2 | 真实 Secret Manager adapter | 选型完成，定义最小权限、rotation、审计策略 |
 | P1.2 | Monitoring exporter/readiness | 已完成；真实告警平台接入仍需扩 scope |
-| P1.3 | Staging smoke 自动化 | 有低权限真实 provider key 与隔离 staging 环境 |
+| P1.3 | Staging smoke 自动化 | 已完成 mock-only；真实 provider smoke 仍需低权限 key 与隔离 staging 环境 |
 | P2 | MCP real runtime | 独立 transport、tool allowlist、权限确认、审计 |
 | P2 | Publisher real release | 审批、预览、回滚、平台幂等策略 |

@@ -7,6 +7,7 @@
 > Productization-P1 已提供 DB-backed provider quota/cost ledger、P1 readiness、alert snapshot 和 staging smoke plan。
 > Productization-P1.1 已提供 `external_registry` Secret Manager contract adapter；当前只做本地契约映射，不连接真实云 Secret Manager / Vault / KMS。
 > Productization-P1.2 已提供 pull-based Prometheus text metrics exporter 与 monitoring readiness；当前不接真实 Grafana / PagerDuty / Alertmanager。
+> Productization-P1.3 已提供默认关闭、mock-only 的 staging smoke automation；当前不触发真实 provider。
 > Productization-1 已提供显式 `agent` OpenAI-compatible HTTP transport；只有显式 real runtime/network/secret gate 全部满足时才会调用外部 LLM。
 > Productization-2 已把 `workflow_stage_run` writeback handler 接入 app 装配，但仍由 `EXECUTION_WRITEBACK_EXECUTOR_ENABLED=true` 显式开启。
 
@@ -219,6 +220,8 @@ GET /api/execution/ops/secret-manager-readiness
 GET /api/execution/ops/monitoring-readiness
 GET /api/execution/ops/metrics
 GET /api/execution/ops/staging-smoke-plan
+GET /api/execution/ops/staging-smoke-readiness
+POST /api/execution/ops/staging-smoke-runs
 ```
 
 P1 已将产品化 Agent runtime 的 quota/cost enforcement 切到 `execution_provider_quota_ledger`：
@@ -231,8 +234,9 @@ P1 已将产品化 Agent runtime 的 quota/cost enforcement 切到 `execution_pr
 | secret 输出 | readiness 只返回 key ref/material availability，不返回 secret value |
 | monitoring | pull-based Prometheus text；不 push、不发网络 |
 | alert snapshot | 暴露 rate_limited、failed_jobs、outbox backlog、writeback failed/skipped 规则 |
+| staging smoke | 默认关闭；开启后创建 1 个 mock-only execution job 并汇总 report |
 
-`staging-smoke-plan` 只返回人工冒烟步骤，`external_call_performed=false`，不会自动触发真实 LLM。
+`staging-smoke-plan` 返回当前 smoke 步骤，`staging-smoke-runs` 仅在 `EXECUTION_STAGING_SMOKE_ENABLED=true` 时可用，且 `external_call_performed=false`，不会触发真实 LLM / MCP / Publisher。
 
 P1.1 external registry contract adapter：
 
@@ -280,6 +284,23 @@ content_factory_execution_latest_result_timestamp_seconds
 ```
 
 这些指标只基于 `execution_jobs` / `outbox_events` / `execution_results` / `execution_writebacks` 聚合，不读取 control plane 业务表或 `audit_events`。endpoint 是 pull-based，不调用外部监控系统。
+
+P1.3 staging smoke automation：
+
+```text
+EXECUTION_STAGING_SMOKE_ENABLED=true
+EXECUTION_STAGING_SMOKE_RUNTIME_MODE=mock_only
+EXECUTION_STAGING_SMOKE_MAX_JOBS=1
+```
+
+执行：
+
+```text
+GET  /api/execution/ops/staging-smoke-readiness
+POST /api/execution/ops/staging-smoke-runs
+```
+
+返回报告只包含 job id/status、`execution_results` summary、outbox event count 和 writeback status counts；不返回 payload、prompt、secret material、Bearer 或 API key。disabled 时 POST 返回 409。
 
 启用条件：
 
@@ -435,7 +456,7 @@ pnpm --dir apps/api exec vitest run test/integration/productization-agent-writeb
 - 默认不做真实外部 LLM 调用；只有 Productization-1 显式 gate 满足时才允许 `agent` 外部 LLM 调用。
 - P1.1 只实现 Secret Manager contract adapter，不实现云 Secret Manager / Vault / KMS。
 - P1.2 只实现 pull-based metrics exporter，不接 Grafana / PagerDuty / Alertmanager，不做 push metrics。
-- 不自动执行 staging smoke。
+- P1.3 staging smoke 只执行 mock-only job，不调用真实 provider。
 - 不连接生产 MCP server、不真实发布。
 - 不引入 Redis/MQ/BullMQ（纯 DB 轮询）。
 - 不改 Workflow/Review/Agent/MCP 状态机、不做 UI。
