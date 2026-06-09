@@ -3,6 +3,7 @@ import {
   CreateBridgeJobSchema,
   CreateExecutionJobSchema,
   CreateExecutionResultEvaluationSchema,
+  ExecutionEvaluationAnalyticsSchema,
   ExecutionJobSchema,
   ExecutionJobsResponseSchema,
   ExecutionResultEvaluationResponseSchema,
@@ -22,6 +23,8 @@ import {
   ListExecutionJobsQuerySchema,
   ListExecutionWritebacksQuerySchema,
   ListOutboxEventsQuerySchema,
+  LowQualityEvaluationsQuerySchema,
+  LowQualityEvaluationsResponseSchema,
   OutboxEventSchema,
   OutboxEventsResponseSchema,
   ProcessOutboxEventResponseSchema,
@@ -39,6 +42,7 @@ import type { Env } from "../../../config/env.js";
 import { isOutboxProcessed } from "../../../domain/execution/outbox.js";
 import {
   toExecutionJobDTO,
+  toExecutionEvaluationAnalyticsDTO,
   toExecutionResultEvaluationDTO,
   toExecutionResultEvaluationSummaryDTO,
   toExecutionResultDTO,
@@ -50,6 +54,7 @@ import {
   toExecutionWritebackTransactionPrototypeDTO,
   toExecutionWritebackDTO,
   toOutboxEventDTO,
+  toLowQualityEvaluationsResponse,
   toRuleEvaluationBatchResponse,
 } from "../../../application/mappers.js";
 
@@ -151,6 +156,26 @@ export const executionRoutes: FastifyPluginAsyncTypebox<ExecutionRoutesOptions> 
           { projectId: "execution", actorId: env.defaultUserId, requestId: request.id },
           request.params.id,
         ),
+      ),
+  );
+
+  app.get(
+    "/api/execution/evaluations/analytics",
+    { schema: { response: { 200: ExecutionEvaluationAnalyticsSchema } } },
+    async () => toExecutionEvaluationAnalyticsDTO(await executionResultEvaluationService.analytics()),
+  );
+
+  app.get(
+    "/api/execution/evaluations/low-quality",
+    {
+      schema: {
+        querystring: LowQualityEvaluationsQuerySchema,
+        response: { 200: LowQualityEvaluationsResponseSchema },
+      },
+    },
+    async (request) =>
+      toLowQualityEvaluationsResponse(
+        await executionResultEvaluationService.listLowQuality(request.query.threshold, request.query.limit),
       ),
   );
 

@@ -2,10 +2,14 @@ import type { CreateExecutionResultEvaluationBody } from "@cf/shared";
 import { ConflictError, NotFoundError, ValidationError } from "../domain/errors.js";
 import {
   buildRuleEvaluation,
+  listLowQualityEvaluations,
   normalizeEvaluationTags,
+  summarizeEvaluationAnalytics,
   summarizeEvaluations,
+  type ExecutionEvaluationAnalytics,
   validateExecutionResultEvaluation,
   type ExecutionResultEvaluationSummary,
+  type LowQualityEvaluationList,
 } from "../domain/execution/evaluation.js";
 import type { Db } from "../infrastructure/db/client.js";
 import type { ExecutionResultEvaluationRow } from "../infrastructure/db/schema.js";
@@ -86,6 +90,14 @@ export class ExecutionResultEvaluationService {
 
   async summaryByJob(jobId: string): Promise<ExecutionResultEvaluationSummary> {
     return summarizeEvaluations(jobId, await evaluationRepo.listEvaluationsByJob(this.db, jobId));
+  }
+
+  async analytics(): Promise<ExecutionEvaluationAnalytics> {
+    return summarizeEvaluationAnalytics(await evaluationRepo.listAllEvaluations(this.db));
+  }
+
+  async listLowQuality(threshold = 60, limit = 20): Promise<LowQualityEvaluationList> {
+    return listLowQualityEvaluations(await evaluationRepo.listAllEvaluations(this.db), threshold, limit);
   }
 
   private requireActor(ctx: RequestContext): string {

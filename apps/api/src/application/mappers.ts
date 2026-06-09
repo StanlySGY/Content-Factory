@@ -30,6 +30,7 @@ import type {
   ExecutionWritebackTransactionPrototypeDTO,
   ExecutionWritebackTransactionPrototypeReadinessResponse,
   ExecutionMonitoringReadinessResponse,
+  ExecutionEvaluationAnalyticsDTO,
   ExecutionResultEvaluationDTO,
   ExecutionResultEvaluationSummaryDTO,
   ExecutionResultSummaryDTO,
@@ -38,6 +39,7 @@ import type {
   KnowledgeEntryDTO,
   KnowledgeSearchItemDTO,
   KnowledgeSourceDTO,
+  LowQualityEvaluationsResponse,
   McpMarketplaceEntryDTO,
   McpMarketplaceInstallationDTO,
   McpServerDTO,
@@ -106,7 +108,11 @@ import type {
   WorkflowRunRow,
 } from "../infrastructure/db/schema.js";
 import type { ExecutionResultSummary } from "../domain/execution/result.js";
-import type { ExecutionResultEvaluationSummary } from "../domain/execution/evaluation.js";
+import type {
+  ExecutionEvaluationAnalytics,
+  ExecutionResultEvaluationSummary,
+  LowQualityEvaluationList,
+} from "../domain/execution/evaluation.js";
 import type {
   ExecutionWritebackApplyGuard,
   ExecutionWritebackApplyGuardReadiness,
@@ -1136,6 +1142,44 @@ export function toRuleEvaluationBatchResponse(input: {
     skipped_count: input.skippedResultIds.length,
     evaluations: input.created.map(toExecutionResultEvaluationDTO),
     skipped_result_ids: input.skippedResultIds,
+  };
+}
+
+export function toExecutionEvaluationAnalyticsDTO(
+  analytics: ExecutionEvaluationAnalytics,
+): ExecutionEvaluationAnalyticsDTO {
+  return {
+    evaluation_count: analytics.evaluationCount,
+    result_count: analytics.resultCount,
+    job_count: analytics.jobCount,
+    average_quality_score: analytics.averageQualityScore,
+    average_cost_score: analytics.averageCostScore,
+    average_latency_score: analytics.averageLatencyScore,
+    low_quality_count: analytics.lowQualityCount,
+    evaluator_type_counts: analytics.evaluatorTypeCounts,
+    latest_evaluated_at: iso(analytics.latestEvaluatedAt),
+  };
+}
+
+export function toLowQualityEvaluationsResponse(
+  input: LowQualityEvaluationList,
+): LowQualityEvaluationsResponse {
+  return {
+    threshold: input.threshold,
+    limit: input.limit,
+    items: input.items.map((item) => ({
+      evaluation_id: item.evaluationId,
+      execution_result_id: item.executionResultId,
+      execution_job_id: item.executionJobId,
+      evaluator_type: item.evaluatorType,
+      quality_score: item.qualityScore,
+      cost_score: item.costScore,
+      latency_score: item.latencyScore,
+      lowest_score: item.lowestScore,
+      notes: item.notes,
+      tags: item.tags,
+      created_at: item.createdAt.toISOString(),
+    })),
   };
 }
 

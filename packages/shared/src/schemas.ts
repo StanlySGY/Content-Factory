@@ -1183,6 +1183,56 @@ export const RuleEvaluationBatchResponseSchema = Type.Object(
 );
 export type RuleEvaluationBatchResponse = Static<typeof RuleEvaluationBatchResponseSchema>;
 
+export const ExecutionEvaluationAnalyticsSchema = Type.Object(
+  {
+    evaluation_count: Type.Integer(),
+    result_count: Type.Integer(),
+    job_count: Type.Integer(),
+    average_quality_score: Nullable(Type.Number()),
+    average_cost_score: Nullable(Type.Number()),
+    average_latency_score: Nullable(Type.Number()),
+    low_quality_count: Type.Integer(),
+    evaluator_type_counts: Type.Record(Type.String(), Type.Integer()),
+    latest_evaluated_at: Nullable(Type.String({ format: "date-time" })),
+  },
+  { additionalProperties: false },
+);
+export type ExecutionEvaluationAnalyticsDTO = Static<typeof ExecutionEvaluationAnalyticsSchema>;
+
+export const LowQualityEvaluationItemSchema = Type.Object(
+  {
+    evaluation_id: Uuid(),
+    execution_result_id: Uuid(),
+    execution_job_id: Uuid(),
+    evaluator_type: ExecutionResultEvaluatorTypeSchema,
+    quality_score: Type.Integer(),
+    cost_score: Type.Integer(),
+    latency_score: Type.Integer(),
+    lowest_score: Type.Integer(),
+    notes: Nullable(Type.String()),
+    tags: Type.Array(Type.String()),
+    created_at: Type.String({ format: "date-time" }),
+  },
+  { additionalProperties: false },
+);
+export const LowQualityEvaluationsResponseSchema = Type.Object(
+  {
+    threshold: Type.Integer(),
+    limit: Type.Integer(),
+    items: Type.Array(LowQualityEvaluationItemSchema),
+  },
+  { additionalProperties: false },
+);
+export type LowQualityEvaluationsResponse = Static<typeof LowQualityEvaluationsResponseSchema>;
+
+export const LowQualityEvaluationsQuerySchema = Type.Object(
+  {
+    threshold: Type.Optional(Type.Integer({ minimum: 0, maximum: 100 })),
+    limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
+  },
+  { additionalProperties: false },
+);
+
 export const ExecutionResultEvaluationResponseSchema = ExecutionResultEvaluationSchema;
 export const ExecutionResultEvaluationsResponseSchema = Type.Array(ExecutionResultEvaluationSchema);
 

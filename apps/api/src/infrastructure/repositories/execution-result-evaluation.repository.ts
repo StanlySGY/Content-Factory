@@ -72,3 +72,10 @@ export async function listEvaluationsByJob(
     .where(eq(executionResultEvaluations.executionJobId, jobId))
     .orderBy(asc(executionResultEvaluations.createdAt));
 }
+
+export async function listAllEvaluations(db: Db): Promise<ExecutionResultEvaluationRow[]> {
+  return db
+    .select()
+    .from(executionResultEvaluations)
+    .orderBy(asc(executionResultEvaluations.createdAt));
+}

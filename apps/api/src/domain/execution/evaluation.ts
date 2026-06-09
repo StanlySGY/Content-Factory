@@ -32,6 +32,38 @@ export interface ExecutionResultEvaluationRuleInput {
   durationMs: number;
 }
 
+export interface ExecutionEvaluationAnalytics {
+  evaluationCount: number;
+  resultCount: number;
+  jobCount: number;
+  averageQualityScore: number | null;
+  averageCostScore: number | null;
+  averageLatencyScore: number | null;
+  lowQualityCount: number;
+  evaluatorTypeCounts: Record<string, number>;
+  latestEvaluatedAt: Date | null;
+}
+
+export interface LowQualityEvaluationItem {
+  evaluationId: string;
+  executionResultId: string;
+  executionJobId: string;
+  evaluatorType: ExecutionResultEvaluatorType;
+  qualityScore: number;
+  costScore: number;
+  latencyScore: number;
+  lowestScore: number;
+  notes: string | null;
+  tags: string[];
+  createdAt: Date;
+}
+
+export interface LowQualityEvaluationList {
+  threshold: number;
+  limit: number;
+  items: LowQualityEvaluationItem[];
+}
+
 export function validateExecutionResultEvaluation(input: ExecutionResultEvaluationInput): void {
   if (!EXECUTION_RESULT_EVALUATOR_TYPES.includes(input.evaluator_type as ExecutionResultEvaluatorType))
     throw new ValidationError(`execution result evaluator_type is invalid: ${input.evaluator_type}`);
@@ -60,6 +92,89 @@ export function buildRuleEvaluation(input: ExecutionResultEvaluationRuleInput): 
       input.runtimeStatus === "success" ? "runtime-success" : `runtime-${input.runtimeStatus}`,
       input.errorType ? `error-${input.errorType}` : "",
     ]),
+  };
+}
+
+export function summarizeEvaluationAnalytics(
+  rows: Array<{
+    executionResultId: string;
+    executionJobId: string;
+    evaluatorType: string;
+    qualityScore: number;
+    costScore: number;
+    latencyScore: number;
+    createdAt: Date;
+  }>,
+  lowQualityThreshold = 60,
+): ExecutionEvaluationAnalytics {
+  if (rows.length === 0) {
+    return {
+      evaluationCount: 0,
+      resultCount: 0,
+      jobCount: 0,
+      averageQualityScore: null,
+      averageCostScore: null,
+      averageLatencyScore: null,
+      lowQualityCount: 0,
+      evaluatorTypeCounts: {},
+      latestEvaluatedAt: null,
+    };
+  }
+  const resultIds = new Set(rows.map((row) => row.executionResultId));
+  const jobIds = new Set(rows.map((row) => row.executionJobId));
+  const evaluatorTypeCounts: Record<string, number> = {};
+  for (const row of rows) evaluatorTypeCounts[row.evaluatorType] = (evaluatorTypeCounts[row.evaluatorType] ?? 0) + 1;
+  const latest = rows.reduce((current, row) => row.createdAt > current.createdAt ? row : current, rows[0]!);
+  return {
+    evaluationCount: rows.length,
+    resultCount: resultIds.size,
+    jobCount: jobIds.size,
+    averageQualityScore: average(rows.map((row) => row.qualityScore)),
+    averageCostScore: average(rows.map((row) => row.costScore)),
+    averageLatencyScore: average(rows.map((row) => row.latencyScore)),
+    lowQualityCount: rows.filter((row) => lowestScore(row) <= lowQualityThreshold).length,
+    evaluatorTypeCounts,
+    latestEvaluatedAt: latest.createdAt,
+  };
+}
+
+export function listLowQualityEvaluations(
+  rows: Array<{
+    id: string;
+    executionResultId: string;
+    executionJobId: string;
+    evaluatorType: string;
+    qualityScore: number;
+    costScore: number;
+    latencyScore: number;
+    notes: string | null;
+    tags: string[];
+    createdAt: Date;
+  }>,
+  threshold: number,
+  limit: number,
+): LowQualityEvaluationList {
+  return {
+    threshold,
+    limit,
+    items: rows
+      .map((row) => ({ row, score: lowestScore(row) }))
+      .filter(({ score }) => score <= threshold)
+      .sort((a, b) => a.score - b.score || b.row.createdAt.getTime() - a.row.createdAt.getTime())
+      .slice(0, limit)
+      .map(({ row, score }) => ({
+        evaluationId: row.id,
+        executionResultId: row.executionResultId,
+        executionJobId: row.executionJobId,
+        evaluatorType: row.evaluatorType as ExecutionResultEvaluatorType,
+        qualityScore: row.qualityScore,
+        costScore: row.costScore,
+        latencyScore: row.latencyScore,
+        lowestScore: score,
+        notes: row.notes,
+        tags: row.tags,
+        createdAt: row.createdAt,
+      })),
   };
 }
 
@@ -107,6 +222,10 @@ function validateScore(value: number, field: string): void {
 
 function average(values: number[]): number {
   return Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 100) / 100;
+}
+
+function lowestScore(input: { qualityScore: number; costScore: number; latencyScore: number }): number {
+  return Math.min(input.qualityScore, input.costScore, input.latencyScore);
 }
 
 function scoreLatency(durationMs: number): number {
