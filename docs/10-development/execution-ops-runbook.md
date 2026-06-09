@@ -1,9 +1,10 @@
-# Execution Ops Runbook（Sprint-10 + Productization-1）
+# Execution Ops Runbook（Sprint-10 + Productization-1/2）
 
 > execution layer（异步执行平面）运维手册。
 > 默认运行仍 fail-closed：worker / relay 均由 env 开关控制，默认 relay 使用 no-op handlers，不自动回写控制面。
 > Sprint-9 已提供显式 `workflow_stage_run` writeback handler；只有显式装配该 handler 时，terminal execution event 才会经同事务 audit 保护回写 `stage_runs`。
 > Productization-1 已提供显式 `agent` OpenAI-compatible HTTP transport；只有显式 real runtime/network/secret gate 全部满足时才会调用外部 LLM。
+> Productization-2 已把 `workflow_stage_run` writeback handler 接入 app 装配，但仍由 `EXECUTION_WRITEBACK_EXECUTOR_ENABLED=true` 显式开启。
 
 所有端点前缀 `/api/execution`。错误遵循统一结构（`{ error: { code, message, retryable }, request_id }`）。
 
@@ -146,7 +147,7 @@ pnpm --dir apps/api exec vitest run test/integration/sprint9-workflow-stage-writ
 | `failed_outbox_events > 0` | 事件无 handler / handler 抛错 | 查事件 `error`；确认 event_type 已注册 no-op handler |
 | `failed_jobs` 增多 | runtime 持续失败（mock 或将来真实） | 看 result `error_type`；瞬时类可 `retry`，确定性类修因 |
 | 某 job 卡 running 但不 stale | 仍在 lock_timeout 窗口内 | 等待或调小 lock timeout 后 recover |
-| terminal event 未回写 stage | 默认 no-op relay 未注册真实 handler | 确认是否为显式 Sprint-9 handler 装配场景 |
+| terminal event 未回写 stage | 默认 no-op relay 或 `EXECUTION_WRITEBACK_EXECUTOR_ENABLED=false` | 确认 env flag、subject 是否来自 bridge envelope、stage 当前是否 running |
 | writeback ledger `skipped` | subject 非 running / 不支持 subject / stage 不存在 | 读取 `execution_writebacks.error`，不要直接改 stage |
 | audit 失败导致无 stage 更新 | audit FK/RLS/hash chain 写入失败 | 修复 audit 写入条件后重试 terminal event；不得绕过 audit |
 
@@ -207,12 +208,75 @@ pnpm --dir apps/api exec vitest run \
 
 ---
 
-## 10. 非目标 / 边界
+## 10. Agent Result Writeback Relay（显式产品化闭环）
+
+Productization-2 支持把 agent terminal execution result 经 app relay 写回 `workflow_stage_run`。
+
+启用最小条件：
+
+```text
+EXECUTION_WRITEBACK_EXECUTOR_ENABLED=true
+```
+
+真实 Agent LLM + writeback 闭环还需要同时开启 Productization-1 的 real runtime/network/secret gates。
+
+推荐入口：
+
+```text
+POST /api/execution/bridge/jobs
+{
+  "subject_type": "workflow_stage_run",
+  "subject_id": "<stage_run_id>",
+  "project_id": "<project_id>",
+  "job_type": "agent",
+  "payload": {
+    "prompt": "Write a concise draft.",
+    "model": "gpt-4.1-mini",
+    "credential_ref": {
+      "provider": "openai_compatible",
+      "key_ref": "env://CONTENT_FACTORY_OPENAI_KEY",
+      "scope": "project"
+    }
+  },
+  "idempotency_key": "agent-writeback-demo-1"
+}
+```
+
+执行与投递：
+
+```text
+POST /api/execution/jobs/:id/tick
+POST /api/execution/ops/process-outbox-batch
+```
+
+预期结果：
+
+| runtime terminal | stage 前置状态 | writeback 结果 |
+| --- | --- | --- |
+| success | running | waiting_review |
+| failed | running | failed |
+| success/failed | 非 running | `execution_writebacks.skipped`，不改 stage |
+
+关键排查：
+
+- job payload 必须是 bridge envelope；legacy `/api/execution/jobs` flat payload 不提供 writeback subject。
+- `execution_writebacks` 是判断回写是否 applied/skipped/failed 的一手账本。
+- outbox event 已 processed 但无 writeback，通常说明 app relay 未开启 writeback executor。
+- stage 未处于 `running` 时不会强行回写。
+
+验证：
+
+```text
+pnpm --dir apps/api exec vitest run test/integration/productization-agent-writeback-relay-api.test.ts
+```
+
+---
+
+## 11. 非目标 / 边界
 
 - 默认不做真实外部 LLM 调用；只有 Productization-1 显式 gate 满足时才允许 `agent` 外部 LLM 调用。
 - 不连接生产 MCP server、不真实发布。
 - 不引入 Redis/MQ/BullMQ（纯 DB 轮询）。
 - 不改 Workflow/Review/Agent/MCP 状态机、不做 UI。
-- ops 默认不自动把 execution result 写回 stage_runs/assets/reviews。
-- `workflow_stage_run` writeback 是显式装配能力，不支持 assets/reviews/publisher targets。
+- writeback executor 默认不开启；开启后也仅支持 `workflow_stage_run`，不支持 assets/reviews/publisher targets。
 - 不删除/修改 execution_results 历史、不替代 audit_events / audit hash chain。

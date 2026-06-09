@@ -13,6 +13,7 @@ import { ExecutionBridgeService } from "./application/execution-bridge.service.j
 import { defaultExecutionOpsRuntimeRegistry, ExecutionOpsService } from "./application/execution-ops.service.js";
 import { ExecutionResultService } from "./application/execution-result.service.js";
 import { ExecutionWritebackService } from "./application/execution-writeback.service.js";
+import { createWorkflowStageRunWritebackHandler } from "./application/execution-writeback-executor.js";
 import { ExecutionWorker } from "./application/execution-worker.js";
 import { MockRuntimeAdapterFactory, type RuntimeAdapterFactory } from "./application/runtime/adapter-factory.js";
 import { AgentRealRuntime } from "./application/runtime/agent-real-runtime.js";
@@ -25,7 +26,7 @@ import { EnvRuntimeCredentialResolver } from "./application/runtime/credential-r
 import { McpRuntimeMockService } from "./application/mcp-runtime-mock.service.js";
 import { McpServerService } from "./application/mcp-server.service.js";
 import { McpToolService } from "./application/mcp-tool.service.js";
-import { OutboxRelay } from "./application/outbox-relay.js";
+import { defaultOutboxHandlers, OutboxRelay, type OutboxHandler } from "./application/outbox-relay.js";
 import { OutboxService } from "./application/outbox.service.js";
 import { ReviewService } from "./application/review.service.js";
 import { TaskService } from "./application/task.service.js";
@@ -96,6 +97,16 @@ function buildRuntimeAdapterFactory(env: Env, policy: RuntimeSafetyPolicy, opts:
   });
 }
 
+function buildOutboxHandlers(env: Env, db: ReturnType<typeof createDb>): OutboxHandler[] {
+  if (!env.executionWritebackExecutorEnabled) return defaultOutboxHandlers();
+  return [
+    ...defaultOutboxHandlers().filter((handler) =>
+      !["execution_job.success", "execution_job.failed"].includes(handler.eventType)
+    ),
+    createWorkflowStageRunWritebackHandler(db),
+  ];
+}
+
 /** 装配应用（分层组装 + 依赖注入）；返回 app 供 server 监听或测试 inject */
 export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<BuiltApp> {
   const appPool = createPool(env.databaseUrl);
@@ -131,7 +142,7 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
     runtimeSafetyPolicy,
   );
   const outboxService = new OutboxService(db);
-  const outboxRelay = new OutboxRelay(db, undefined, env.outboxRelayIntervalMs);
+  const outboxRelay = new OutboxRelay(db, buildOutboxHandlers(env, db), env.outboxRelayIntervalMs);
   const executionBridgeService = new ExecutionBridgeService(executionJobService);
   const executionResultService = new ExecutionResultService(db);
   const executionWritebackService = new ExecutionWritebackService(db);
