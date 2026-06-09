@@ -1,5 +1,6 @@
 import {
   EXECUTION_RESULT_EVALUATOR_TYPES,
+  type CreateExecutionResultEvaluationBody,
   type ExecutionResultEvaluatorType,
 } from "@cf/shared";
 import { ValidationError } from "../errors.js";
@@ -23,6 +24,14 @@ export interface ExecutionResultEvaluationSummary {
   latestEvaluatedAt: Date | null;
 }
 
+export interface ExecutionResultEvaluationRuleInput {
+  status: string;
+  runtimeStatus: string;
+  errorType: string | null;
+  retryable: boolean;
+  durationMs: number;
+}
+
 export function validateExecutionResultEvaluation(input: ExecutionResultEvaluationInput): void {
   if (!EXECUTION_RESULT_EVALUATOR_TYPES.includes(input.evaluator_type as ExecutionResultEvaluatorType))
     throw new ValidationError(`execution result evaluator_type is invalid: ${input.evaluator_type}`);
@@ -34,6 +43,24 @@ export function validateExecutionResultEvaluation(input: ExecutionResultEvaluati
   for (const tag of input.tags ?? []) {
     if (tag.trim().length === 0) throw new ValidationError("execution result evaluation tags cannot contain blank values");
   }
+}
+
+export function buildRuleEvaluation(input: ExecutionResultEvaluationRuleInput): CreateExecutionResultEvaluationBody {
+  const success = input.status === "success" && input.runtimeStatus === "success";
+  const retryableFailure = input.status === "failed" && input.retryable;
+  return {
+    evaluator_type: "rule",
+    quality_score: success ? 100 : retryableFailure ? 55 : 40,
+    cost_score: input.errorType === "rate_limited" ? 30 : 100,
+    latency_score: scoreLatency(input.durationMs),
+    notes: `deterministic rule evaluation: status=${input.status}; runtime_status=${input.runtimeStatus}; error_type=${input.errorType ?? "none"}; duration_ms=${input.durationMs}`,
+    tags: normalizeEvaluationTags([
+      "rule",
+      "deterministic",
+      input.runtimeStatus === "success" ? "runtime-success" : `runtime-${input.runtimeStatus}`,
+      input.errorType ? `error-${input.errorType}` : "",
+    ]),
+  };
 }
 
 export function normalizeEvaluationTags(tags: string[] | undefined): string[] {
@@ -80,4 +107,11 @@ function validateScore(value: number, field: string): void {
 
 function average(values: number[]): number {
   return Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 100) / 100;
+}
+
+function scoreLatency(durationMs: number): number {
+  if (durationMs <= 1000) return 100;
+  if (durationMs <= 5000) return 80;
+  if (durationMs <= 15000) return 60;
+  return 40;
 }

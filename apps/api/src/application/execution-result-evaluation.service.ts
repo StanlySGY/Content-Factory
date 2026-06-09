@@ -1,6 +1,7 @@
 import type { CreateExecutionResultEvaluationBody } from "@cf/shared";
 import { ConflictError, NotFoundError, ValidationError } from "../domain/errors.js";
 import {
+  buildRuleEvaluation,
   normalizeEvaluationTags,
   summarizeEvaluations,
   validateExecutionResultEvaluation,
@@ -49,6 +50,38 @@ export class ExecutionResultEvaluationService {
     const result = await resultRepo.getExecutionResult(this.db, resultId);
     if (!result) throw new NotFoundError(`execution_result ${resultId} not found`);
     return evaluationRepo.listEvaluationsByResult(this.db, resultId);
+  }
+
+  async evaluateResultWithRules(ctx: RequestContext, resultId: string): Promise<ExecutionResultEvaluationRow> {
+    const result = await resultRepo.getExecutionResult(this.db, resultId);
+    if (!result) throw new NotFoundError(`execution_result ${resultId} not found`);
+    const input = buildRuleEvaluation({
+      status: result.status,
+      runtimeStatus: result.runtimeStatus,
+      errorType: result.errorType,
+      retryable: result.retryable,
+      durationMs: result.durationMs,
+    });
+    return this.createEvaluation(ctx, resultId, input);
+  }
+
+  async evaluateJobWithRules(ctx: RequestContext, jobId: string): Promise<{
+    jobId: string;
+    created: ExecutionResultEvaluationRow[];
+    skippedResultIds: string[];
+  }> {
+    const results = await resultRepo.listResultsByJob(this.db, jobId);
+    const created: ExecutionResultEvaluationRow[] = [];
+    const skippedResultIds: string[] = [];
+    for (const result of results) {
+      const existing = await evaluationRepo.getEvaluationByResultAndType(this.db, result.id, "rule");
+      if (existing) {
+        skippedResultIds.push(result.id);
+        continue;
+      }
+      created.push(await this.evaluateResultWithRules(ctx, result.id));
+    }
+    return { jobId, created, skippedResultIds };
   }
 
   async summaryByJob(jobId: string): Promise<ExecutionResultEvaluationSummary> {

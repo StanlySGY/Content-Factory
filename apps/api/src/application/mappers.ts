@@ -57,6 +57,7 @@ import type {
   RuntimeAdapterDescriptorDTO,
   RuntimeAdapterDryRunResponse,
   RuntimeAdaptersResponse,
+  RuleEvaluationBatchResponse,
   ProviderHttpBoundaryResponse,
   ProviderQuotaCostPreflightReadinessResponse,
   ProviderSafetyResponse,
@@ -1121,6 +1122,20 @@ export function toExecutionResultEvaluationSummaryDTO(
     average_latency_score: s.averageLatencyScore,
     latest_evaluator_type: s.latestEvaluatorType,
     latest_evaluated_at: iso(s.latestEvaluatedAt),
+  };
+}
+
+export function toRuleEvaluationBatchResponse(input: {
+  jobId: string;
+  created: ExecutionResultEvaluationRow[];
+  skippedResultIds: string[];
+}): RuleEvaluationBatchResponse {
+  return {
+    job_id: input.jobId,
+    created_count: input.created.length,
+    skipped_count: input.skippedResultIds.length,
+    evaluations: input.created.map(toExecutionResultEvaluationDTO),
+    skipped_result_ids: input.skippedResultIds,
   };
 }
 

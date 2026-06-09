@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ValidationError } from "../../src/domain/errors.js";
 import {
+  buildRuleEvaluation,
   normalizeEvaluationTags,
   summarizeEvaluations,
   validateExecutionResultEvaluation,
@@ -68,6 +69,51 @@ describe("Execution result evaluation domain", () => {
 
   it("normalizes tags deterministically", () => {
     expect(normalizeEvaluationTags([" useful ", "release", "useful", ""])).toEqual(["useful", "release"]);
+  });
+
+  it("builds deterministic rule evaluations from execution result signals", () => {
+    expect(
+      buildRuleEvaluation({
+        status: "success",
+        runtimeStatus: "success",
+        errorType: null,
+        retryable: false,
+        durationMs: 1000,
+      }),
+    ).toMatchObject({
+      evaluator_type: "rule",
+      quality_score: 100,
+      cost_score: 100,
+      latency_score: 100,
+      tags: ["rule", "deterministic", "runtime-success"],
+    });
+    expect(
+      buildRuleEvaluation({
+        status: "failed",
+        runtimeStatus: "failed",
+        errorType: "rate_limited",
+        retryable: true,
+        durationMs: 5001,
+      }),
+    ).toMatchObject({
+      quality_score: 55,
+      cost_score: 30,
+      latency_score: 60,
+      tags: ["rule", "deterministic", "runtime-failed", "error-rate_limited"],
+    });
+    expect(
+      buildRuleEvaluation({
+        status: "failed",
+        runtimeStatus: "failed",
+        errorType: "provider_error",
+        retryable: false,
+        durationMs: 15001,
+      }),
+    ).toMatchObject({
+      quality_score: 40,
+      cost_score: 100,
+      latency_score: 40,
+    });
   });
 
   it("summarizes empty and populated evaluation rows", () => {

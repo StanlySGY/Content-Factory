@@ -25,6 +25,7 @@ import {
   OutboxEventSchema,
   OutboxEventsResponseSchema,
   ProcessOutboxEventResponseSchema,
+  RuleEvaluationBatchResponseSchema,
 } from "@cf/shared";
 import type { ExecutionBridgeService } from "../../../application/execution-bridge.service.js";
 import type { ExecutionJobService } from "../../../application/execution-job.service.js";
@@ -49,6 +50,7 @@ import {
   toExecutionWritebackTransactionPrototypeDTO,
   toExecutionWritebackDTO,
   toOutboxEventDTO,
+  toRuleEvaluationBatchResponse,
 } from "../../../application/mappers.js";
 
 export interface ExecutionRoutesOptions {
@@ -140,6 +142,18 @@ export const executionRoutes: FastifyPluginAsyncTypebox<ExecutionRoutesOptions> 
       ),
   );
 
+  app.post(
+    "/api/execution/jobs/:id/evaluate-rule",
+    { schema: { params: IdParamSchema, response: { 200: RuleEvaluationBatchResponseSchema } } },
+    async (request) =>
+      toRuleEvaluationBatchResponse(
+        await executionResultEvaluationService.evaluateJobWithRules(
+          { projectId: "execution", actorId: env.defaultUserId, requestId: request.id },
+          request.params.id,
+        ),
+      ),
+  );
+
   // 单条执行结果（404 不存在）
   app.get(
     "/api/execution/results/:id",
@@ -161,6 +175,24 @@ export const executionRoutes: FastifyPluginAsyncTypebox<ExecutionRoutesOptions> 
         { projectId: "execution", actorId: env.defaultUserId, requestId: request.id },
         request.params.id,
         request.body,
+      );
+      reply.code(201);
+      return toExecutionResultEvaluationDTO(evaluation);
+    },
+  );
+
+  app.post(
+    "/api/execution/results/:id/evaluate-rule",
+    {
+      schema: {
+        params: IdParamSchema,
+        response: { 201: ExecutionResultEvaluationResponseSchema },
+      },
+    },
+    async (request, reply) => {
+      const evaluation = await executionResultEvaluationService.evaluateResultWithRules(
+        { projectId: "execution", actorId: env.defaultUserId, requestId: request.id },
+        request.params.id,
       );
       reply.code(201);
       return toExecutionResultEvaluationDTO(evaluation);

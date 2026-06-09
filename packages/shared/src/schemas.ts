@@ -1171,6 +1171,18 @@ export const ExecutionResultEvaluationSummarySchema = Type.Object(
 );
 export type ExecutionResultEvaluationSummaryDTO = Static<typeof ExecutionResultEvaluationSummarySchema>;
 
+export const RuleEvaluationBatchResponseSchema = Type.Object(
+  {
+    job_id: Uuid(),
+    created_count: Type.Integer(),
+    skipped_count: Type.Integer(),
+    evaluations: Type.Array(ExecutionResultEvaluationSchema),
+    skipped_result_ids: Type.Array(Uuid()),
+  },
+  { additionalProperties: false },
+);
+export type RuleEvaluationBatchResponse = Static<typeof RuleEvaluationBatchResponseSchema>;
+
 export const ExecutionResultEvaluationResponseSchema = ExecutionResultEvaluationSchema;
 export const ExecutionResultEvaluationsResponseSchema = Type.Array(ExecutionResultEvaluationSchema);
 

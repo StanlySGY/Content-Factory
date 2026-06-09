@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import type { Db } from "../db/client.js";
 import {
   executionResultEvaluations,
@@ -44,6 +44,22 @@ export async function listEvaluationsByResult(
     .from(executionResultEvaluations)
     .where(eq(executionResultEvaluations.executionResultId, resultId))
     .orderBy(asc(executionResultEvaluations.createdAt));
+}
+
+export async function getEvaluationByResultAndType(
+  db: Db,
+  resultId: string,
+  evaluatorType: string,
+): Promise<ExecutionResultEvaluationRow | null> {
+  const [row] = await db
+    .select()
+    .from(executionResultEvaluations)
+    .where(and(
+      eq(executionResultEvaluations.executionResultId, resultId),
+      eq(executionResultEvaluations.evaluatorType, evaluatorType),
+    ))
+    .limit(1);
+  return row ?? null;
 }
 
 export async function listEvaluationsByJob(
