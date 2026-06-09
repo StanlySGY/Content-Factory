@@ -1,4 +1,4 @@
-import { asc, eq, and } from "drizzle-orm";
+import { asc, count, eq, and, or } from "drizzle-orm";
 import type {
   ExecutionWritebackRecord,
   ExecutionWritebackStatus,
@@ -105,4 +105,13 @@ export async function markWritebackSkipped(
   error: string,
 ): Promise<ExecutionWritebackRow | null> {
   return markWritebackStatus(db, id, "skipped", error);
+}
+
+/** failed/skipped writeback 计数（用于 monitoring；仅查 execution_writebacks，不 join 业务表）*/
+export async function countFailedOrSkippedWritebacks(db: Db): Promise<number> {
+  const [row] = await db
+    .select({ c: count() })
+    .from(executionWritebacks)
+    .where(or(eq(executionWritebacks.status, "failed"), eq(executionWritebacks.status, "skipped")));
+  return Number(row?.c ?? 0);
 }

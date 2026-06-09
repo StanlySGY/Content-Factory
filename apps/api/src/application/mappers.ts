@@ -29,6 +29,7 @@ import type {
   ExecutionWritebackTransactionPortReadinessResponse,
   ExecutionWritebackTransactionPrototypeDTO,
   ExecutionWritebackTransactionPrototypeReadinessResponse,
+  ExecutionMonitoringReadinessResponse,
   ExecutionResultSummaryDTO,
   ExecutionSystemHealthDTO,
   McpServerDTO,
@@ -99,6 +100,7 @@ import type {
 import type { ExecutionWritebackTransactionPortReadiness } from "./writeback/control-plane-transaction-port.js";
 import type { RuntimeSafetyPolicy } from "../domain/execution/runtime-safety.js";
 import type { RuntimeResponse } from "../domain/execution/runtime-contract.js";
+import type { ExecutionAlertRule, ExecutionMonitoringReadiness } from "../domain/execution/monitoring.js";
 import type { RuntimeAdapterDescriptor, RuntimeAdapterMode } from "./runtime/adapter-registry.js";
 import type {
   ExecutionSystemHealth,
@@ -118,6 +120,17 @@ import type { AgentRealProviderTransportDisabledHarness } from "./runtime/agent-
 import type { ProductionActivationPreflight } from "./runtime/production-activation-preflight.js";
 
 const iso = (d: Date | null): string | null => (d ? d.toISOString() : null);
+
+function toExecutionAlertRuleDTO(r: ExecutionAlertRule): ExecutionMonitoringReadinessResponse["rules"][number] {
+  return {
+    id: r.id,
+    metric: r.metric,
+    severity: r.severity,
+    threshold: r.threshold,
+    comparison: r.comparison,
+    enabled: r.enabled,
+  };
+}
 
 function snakeRuntimeValue(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(snakeRuntimeValue);
@@ -1232,13 +1245,33 @@ export function toProductionReadinessP1DTO(s: ProductionReadinessP1): Production
       estimated_cost_per_request_cents: s.quotaLedger.estimatedCostPerRequestCents,
     },
     alerts: {
-      rules: s.alerts.rules,
+      exporter_enabled: s.alerts.exporterEnabled,
+      exporter_format: s.alerts.exporterFormat,
+      network_push_enabled: s.alerts.networkPushEnabled,
+      rules: s.alerts.rules.map(toExecutionAlertRuleDTO),
     },
     smoke: {
       endpoint: s.smoke.endpoint,
       external_call_performed: s.smoke.externalCallPerformed,
       low_privilege_key_required: s.smoke.lowPrivilegeKeyRequired,
     },
+  };
+}
+
+export function toExecutionMonitoringReadinessDTO(
+  s: ExecutionMonitoringReadiness,
+): ExecutionMonitoringReadinessResponse {
+  return {
+    mode: s.mode,
+    ready: s.ready,
+    status: s.status,
+    exporter_enabled: s.exporterEnabled,
+    exporter_format: s.exporterFormat,
+    pull_based: s.pullBased,
+    network_push_enabled: s.networkPushEnabled,
+    missing_requirements: s.missingRequirements,
+    warnings: s.warnings,
+    rules: s.rules.map(toExecutionAlertRuleDTO),
   };
 }
 

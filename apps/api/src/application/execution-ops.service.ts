@@ -46,6 +46,15 @@ import {
   type ExecutionWritebackTransactionPortReadiness,
 } from "./writeback/control-plane-transaction-port.js";
 import {
+  buildExecutionMonitoringMetrics,
+  buildExecutionMonitoringReadiness,
+  serializePrometheusTextMetrics,
+  type ExecutionAlertRule,
+  type ExecutionMonitoringMetric,
+  type ExecutionMonitoringReadiness,
+  type ExecutionMonitoringThresholds,
+} from "../domain/execution/monitoring.js";
+import {
   buildRuntimeExecutionContext,
   type RuntimeCredentialRef,
   type RuntimeSafetyPolicy,
@@ -57,6 +66,7 @@ import * as jobRepo from "../infrastructure/repositories/execution-job.repositor
 import * as outboxRepo from "../infrastructure/repositories/outbox.repository.js";
 import * as resultRepo from "../infrastructure/repositories/execution-result.repository.js";
 import * as quotaRepo from "../infrastructure/repositories/provider-quota-ledger.repository.js";
+import * as writebackRepo from "../infrastructure/repositories/execution-writeback.repository.js";
 import {
   assertAdapterAllowedBySafetyPolicy,
   createDefaultRuntimeAdapterRegistry,
@@ -138,6 +148,9 @@ export interface ExecutionOpsConfig {
   credentialEnvSource: NodeJS.ProcessEnv | Record<string, string | undefined>;
   agentOpenAICompatibleEndpoint: string | null;
   providerQuotaLimits: ProviderQuotaLimits;
+  monitoringEnabled: boolean;
+  monitoringExporterFormat: "prometheus_text";
+  monitoringThresholds: ExecutionMonitoringThresholds;
   writebackExecutorEnabled: boolean;
 }
 
@@ -281,7 +294,10 @@ export interface ProductionReadinessP1 {
     estimatedCostPerRequestCents: number;
   };
   alerts: {
-    rules: Array<{ metric: string; severity: "warning" | "critical"; threshold: number }>;
+    exporterEnabled: boolean;
+    exporterFormat: "prometheus_text";
+    networkPushEnabled: false;
+    rules: ExecutionAlertRule[];
   };
   smoke: {
     endpoint: "/api/execution/ops/staging-smoke-plan";
@@ -307,6 +323,11 @@ export interface SecretManagerReadiness {
     materialSourceRef?: string;
     materialAvailable: boolean;
   }>;
+}
+
+export interface ExecutionMonitoringSnapshot {
+  readiness: ExecutionMonitoringReadiness;
+  metrics: ExecutionMonitoringMetric[];
 }
 
 export interface StagingSmokePlan {
@@ -554,6 +575,37 @@ export class ExecutionOpsService {
     };
   }
 
+  getMonitoringReadiness(): ExecutionMonitoringReadiness {
+    return buildExecutionMonitoringReadiness({
+      monitoringEnabled: this.config.monitoringEnabled,
+      exporterFormat: this.config.monitoringExporterFormat,
+      thresholds: this.config.monitoringThresholds,
+    });
+  }
+
+  async getMonitoringSnapshot(): Promise<ExecutionMonitoringSnapshot> {
+    const health = await this.getHealth();
+    return {
+      readiness: this.getMonitoringReadiness(),
+      metrics: buildExecutionMonitoringMetrics({
+        pendingJobs: health.pendingJobs,
+        runningJobs: health.runningJobs,
+        failedJobs: health.failedJobs,
+        staleRunningJobs: health.staleRunningJobs,
+        unprocessedOutboxEvents: health.unprocessedOutboxEvents,
+        failedOutboxEvents: health.failedOutboxEvents,
+        failedOrSkippedWritebacks: await writebackRepo.countFailedOrSkippedWritebacks(this.db),
+        rateLimitedResults: await resultRepo.countRateLimitedResults(this.db),
+        latestResultAt: health.latestResultAt,
+      }),
+    };
+  }
+
+  async getPrometheusMetricsText(): Promise<string> {
+    const snapshot = await this.getMonitoringSnapshot();
+    return serializePrometheusTextMetrics(snapshot.metrics);
+  }
+
   async getProductionReadinessP1(): Promise<ProductionReadinessP1> {
     const secretManager = this.getSecretManagerReadiness();
     const refs = this.config.secretRegistry.map((keyRef) => {
@@ -595,12 +647,10 @@ export class ExecutionOpsService {
         estimatedCostPerRequestCents: this.config.providerQuotaLimits.estimatedCostPerRequestCents,
       },
       alerts: {
-        rules: [
-          { metric: "execution_results.error_type.rate_limited", severity: "warning", threshold: 1 },
-          { metric: "execution_jobs.failed", severity: "critical", threshold: 1 },
-          { metric: "outbox_events.unprocessed", severity: "warning", threshold: 10 },
-          { metric: "execution_writebacks.failed_or_skipped", severity: "critical", threshold: 1 },
-        ],
+        exporterEnabled: this.config.monitoringEnabled,
+        exporterFormat: this.config.monitoringExporterFormat,
+        networkPushEnabled: false,
+        rules: this.getMonitoringReadiness().rules,
       },
       smoke: {
         endpoint: "/api/execution/ops/staging-smoke-plan",

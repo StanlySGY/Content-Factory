@@ -2002,12 +2002,32 @@ export type SecretManagerReadinessResponse = Static<typeof SecretManagerReadines
 
 const ProductionP1AlertRuleSchema = Type.Object(
   {
+    id: Type.String(),
     metric: Type.String(),
     severity: StringEnum(["warning", "critical"] as const),
     threshold: Type.Integer(),
+    comparison: StringEnum(["gt", "gte"] as const),
+    enabled: Type.Boolean(),
   },
   { additionalProperties: false },
 );
+
+export const ExecutionMonitoringReadinessResponseSchema = Type.Object(
+  {
+    mode: StringEnum(["execution_monitoring_readiness"] as const),
+    ready: Type.Boolean(),
+    status: StringEnum(["ready", "blocked"] as const),
+    exporter_enabled: Type.Boolean(),
+    exporter_format: StringEnum(["prometheus_text"] as const),
+    pull_based: Type.Boolean(),
+    network_push_enabled: Type.Boolean(),
+    missing_requirements: Type.Array(Type.String()),
+    warnings: Type.Array(Type.String()),
+    rules: Type.Array(ProductionP1AlertRuleSchema),
+  },
+  { additionalProperties: false },
+);
+export type ExecutionMonitoringReadinessResponse = Static<typeof ExecutionMonitoringReadinessResponseSchema>;
 
 export const ProductionReadinessP1ResponseSchema = Type.Object(
   {
@@ -2038,6 +2058,9 @@ export const ProductionReadinessP1ResponseSchema = Type.Object(
     ),
     alerts: Type.Object(
       {
+        exporter_enabled: Type.Boolean(),
+        exporter_format: StringEnum(["prometheus_text"] as const),
+        network_push_enabled: Type.Boolean(),
         rules: Type.Array(ProductionP1AlertRuleSchema),
       },
       { additionalProperties: false },

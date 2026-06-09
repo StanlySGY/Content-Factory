@@ -127,10 +127,10 @@ describe("Productization-P1 production readiness controls", () => {
       },
     });
     expect(readiness.json().alerts.rules.map((r: { metric: string }) => r.metric)).toEqual(expect.arrayContaining([
-      "execution_results.error_type.rate_limited",
-      "execution_jobs.failed",
-      "outbox_events.unprocessed",
-      "execution_writebacks.failed_or_skipped",
+      "content_factory_execution_results_rate_limited",
+      "content_factory_execution_jobs_failed",
+      "content_factory_execution_outbox_unprocessed",
+      "content_factory_execution_writebacks_failed_or_skipped",
     ]));
     expect(JSON.stringify(readiness.json())).not.toContain(apiKey);
     expect(JSON.stringify(readiness.json())).not.toContain("Bearer");

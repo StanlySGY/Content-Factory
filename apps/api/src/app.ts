@@ -183,6 +183,14 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
     credentialEnvSource: opts.credentialEnvSource ?? process.env,
     agentOpenAICompatibleEndpoint: env.agentOpenAICompatibleEndpoint,
     providerQuotaLimits: providerQuotaLimits(env),
+    monitoringEnabled: env.executionMonitoringEnabled,
+    monitoringExporterFormat: env.executionMonitoringExporterFormat,
+    monitoringThresholds: {
+      failedJobs: env.executionAlertFailedJobsThreshold,
+      outboxBacklog: env.executionAlertOutboxBacklogThreshold,
+      writebackFailed: env.executionAlertWritebackFailedThreshold,
+      rateLimited: env.executionAlertRateLimitedThreshold,
+    },
     writebackExecutorEnabled: env.executionWritebackExecutorEnabled,
   });
   const agentProfileService = new AgentProfileService(db);

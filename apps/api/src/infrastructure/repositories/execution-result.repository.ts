@@ -1,4 +1,4 @@
-import { asc, desc, eq, max } from "drizzle-orm";
+import { asc, count, desc, eq, max } from "drizzle-orm";
 import {
   summarizeExecutionResult,
   type ExecutionResultRecord,
@@ -70,4 +70,13 @@ export async function summarizeResultsByJob(
 export async function getLatestResultAt(db: Db): Promise<Date | null> {
   const [row] = await db.select({ m: max(executionResults.createdAt) }).from(executionResults);
   return row?.m ?? null;
+}
+
+/** rate_limited 结果计数（用于 monitoring；仅查 execution_results，不 join 业务表）*/
+export async function countRateLimitedResults(db: Db): Promise<number> {
+  const [row] = await db
+    .select({ c: count() })
+    .from(executionResults)
+    .where(eq(executionResults.errorType, "rate_limited"));
+  return Number(row?.c ?? 0);
 }

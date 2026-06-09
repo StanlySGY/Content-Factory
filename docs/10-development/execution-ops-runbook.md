@@ -6,6 +6,7 @@
 > Productization-P0 已提供生产启用预检、secret registry 校验和进程内 provider quota/cost 硬限制。
 > Productization-P1 已提供 DB-backed provider quota/cost ledger、P1 readiness、alert snapshot 和 staging smoke plan。
 > Productization-P1.1 已提供 `external_registry` Secret Manager contract adapter；当前只做本地契约映射，不连接真实云 Secret Manager / Vault / KMS。
+> Productization-P1.2 已提供 pull-based Prometheus text metrics exporter 与 monitoring readiness；当前不接真实 Grafana / PagerDuty / Alertmanager。
 > Productization-1 已提供显式 `agent` OpenAI-compatible HTTP transport；只有显式 real runtime/network/secret gate 全部满足时才会调用外部 LLM。
 > Productization-2 已把 `workflow_stage_run` writeback handler 接入 app 装配，但仍由 `EXECUTION_WRITEBACK_EXECUTOR_ENABLED=true` 显式开启。
 
@@ -215,6 +216,8 @@ P1 多实例启用前置检查：
 ```text
 GET /api/execution/ops/production-readiness-p1
 GET /api/execution/ops/secret-manager-readiness
+GET /api/execution/ops/monitoring-readiness
+GET /api/execution/ops/metrics
 GET /api/execution/ops/staging-smoke-plan
 ```
 
@@ -226,7 +229,8 @@ P1 已将产品化 Agent runtime 的 quota/cost enforcement 切到 `execution_pr
 | 并发控制 | DB row lock，fetch 前原子判定并消费额度 |
 | 达限行为 | `rate_limited`，`networkUsed=false`，不会调用 provider |
 | secret 输出 | readiness 只返回 key ref/material availability，不返回 secret value |
-| alert snapshot | 暴露 rate_limited、failed_jobs、outbox backlog、writeback failed/skipped 建议规则 |
+| monitoring | pull-based Prometheus text；不 push、不发网络 |
+| alert snapshot | 暴露 rate_limited、failed_jobs、outbox backlog、writeback failed/skipped 规则 |
 
 `staging-smoke-plan` 只返回人工冒烟步骤，`external_call_performed=false`，不会自动触发真实 LLM。
 
@@ -249,6 +253,33 @@ EXECUTION_SECRET_ROTATION_POLICY_ENABLED=true
 | registry 缺失/invalid | `ready=false` |
 | env material 缺失 | `ready=false` |
 | rotation policy 未配置 | warning，不返回 secret material |
+
+P1.2 monitoring exporter：
+
+```text
+EXECUTION_MONITORING_ENABLED=true
+EXECUTION_MONITORING_EXPORTER_FORMAT=prometheus_text
+EXECUTION_ALERT_FAILED_JOBS_THRESHOLD=1
+EXECUTION_ALERT_OUTBOX_BACKLOG_THRESHOLD=10
+EXECUTION_ALERT_WRITEBACK_FAILED_THRESHOLD=1
+EXECUTION_ALERT_RATE_LIMITED_THRESHOLD=1
+```
+
+`GET /api/execution/ops/metrics` 返回：
+
+```text
+content_factory_execution_jobs_pending
+content_factory_execution_jobs_running
+content_factory_execution_jobs_failed
+content_factory_execution_jobs_stale_running
+content_factory_execution_outbox_unprocessed
+content_factory_execution_outbox_failed
+content_factory_execution_writebacks_failed_or_skipped
+content_factory_execution_results_rate_limited
+content_factory_execution_latest_result_timestamp_seconds
+```
+
+这些指标只基于 `execution_jobs` / `outbox_events` / `execution_results` / `execution_writebacks` 聚合，不读取 control plane 业务表或 `audit_events`。endpoint 是 pull-based，不调用外部监控系统。
 
 启用条件：
 
@@ -402,7 +433,9 @@ pnpm --dir apps/api exec vitest run test/integration/productization-agent-writeb
 ## 12. 非目标 / 边界
 
 - 默认不做真实外部 LLM 调用；只有 Productization-1 显式 gate 满足时才允许 `agent` 外部 LLM 调用。
-- P1.1 只实现 Secret Manager contract adapter，不实现云 Secret Manager / Vault / KMS，也不自动执行 staging smoke。
+- P1.1 只实现 Secret Manager contract adapter，不实现云 Secret Manager / Vault / KMS。
+- P1.2 只实现 pull-based metrics exporter，不接 Grafana / PagerDuty / Alertmanager，不做 push metrics。
+- 不自动执行 staging smoke。
 - 不连接生产 MCP server、不真实发布。
 - 不引入 Redis/MQ/BullMQ（纯 DB 轮询）。
 - 不改 Workflow/Review/Agent/MCP 状态机、不做 UI。

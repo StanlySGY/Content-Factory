@@ -16,6 +16,7 @@ import {
   ExecutionWritebackTransactionPlanReadinessResponseSchema,
   ExecutionWritebackTransactionPortReadinessResponseSchema,
   ExecutionWritebackTransactionPrototypeReadinessResponseSchema,
+  ExecutionMonitoringReadinessResponseSchema,
   IdParamSchema,
   ManualRetryJobResponseSchema,
   ProcessOutboxBatchBodySchema,
@@ -59,6 +60,7 @@ import {
   toExecutionWritebackTransactionPlanReadinessDTO,
   toExecutionWritebackTransactionPortReadinessDTO,
   toExecutionWritebackTransactionPrototypeReadinessDTO,
+  toExecutionMonitoringReadinessDTO,
   toProductionActivationPreflightDTO,
   toProductionReadinessP1DTO,
   toRuntimeAdapterDryRunResponseDTO,
@@ -150,6 +152,17 @@ export const executionOpsRoutes: FastifyPluginAsyncTypebox<ExecutionOpsRoutesOpt
     { schema: { response: { 200: SecretManagerReadinessResponseSchema } } },
     async () => toSecretManagerReadinessDTO(executionOpsService.getSecretManagerReadiness()),
   );
+
+  app.get(
+    "/api/execution/ops/monitoring-readiness",
+    { schema: { response: { 200: ExecutionMonitoringReadinessResponseSchema } } },
+    async () => toExecutionMonitoringReadinessDTO(executionOpsService.getMonitoringReadiness()),
+  );
+
+  app.get("/api/execution/ops/metrics", async (_req, reply) => {
+    reply.header("content-type", "text/plain; version=0.0.4; charset=utf-8");
+    return executionOpsService.getPrometheusMetricsText();
+  });
 
   app.get(
     "/api/execution/ops/staging-smoke-plan",

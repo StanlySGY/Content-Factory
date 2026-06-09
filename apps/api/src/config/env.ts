@@ -34,6 +34,12 @@ export interface Env {
   executionProviderDailyRequestLimit: number | null;
   executionProviderDailyCostLimitCents: number | null;
   executionProviderEstimatedCostPerRequestCents: number;
+  executionMonitoringEnabled: boolean;
+  executionMonitoringExporterFormat: "prometheus_text";
+  executionAlertFailedJobsThreshold: number;
+  executionAlertOutboxBacklogThreshold: number;
+  executionAlertWritebackFailedThreshold: number;
+  executionAlertRateLimitedThreshold: number;
   agentOpenAICompatibleEndpoint: string | null;
   outboxRelayEnabled: boolean;
   outboxRelayIntervalMs: number;
@@ -67,6 +73,12 @@ function secretStoreKind(value: string | undefined): Env["executionSecretStoreKi
   if (value === undefined || value === "") return "env";
   if (value === "env" || value === "external_registry") return value;
   throw new Error(`invalid EXECUTION_SECRET_STORE_KIND: ${value}`);
+}
+
+function monitoringExporterFormat(value: string | undefined): Env["executionMonitoringExporterFormat"] {
+  if (value === undefined || value === "") return "prometheus_text";
+  if (value === "prometheus_text") return value;
+  throw new Error(`invalid EXECUTION_MONITORING_EXPORTER_FORMAT: ${value}`);
 }
 
 function csv(value: string | undefined): string[] {
@@ -129,6 +141,28 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
       source.EXECUTION_PROVIDER_ESTIMATED_COST_PER_REQUEST_CENTS,
       0,
       "EXECUTION_PROVIDER_ESTIMATED_COST_PER_REQUEST_CENTS",
+    ),
+    executionMonitoringEnabled: bool(source.EXECUTION_MONITORING_ENABLED, false),
+    executionMonitoringExporterFormat: monitoringExporterFormat(source.EXECUTION_MONITORING_EXPORTER_FORMAT),
+    executionAlertFailedJobsThreshold: nonNegativeInt(
+      source.EXECUTION_ALERT_FAILED_JOBS_THRESHOLD,
+      1,
+      "EXECUTION_ALERT_FAILED_JOBS_THRESHOLD",
+    ),
+    executionAlertOutboxBacklogThreshold: nonNegativeInt(
+      source.EXECUTION_ALERT_OUTBOX_BACKLOG_THRESHOLD,
+      10,
+      "EXECUTION_ALERT_OUTBOX_BACKLOG_THRESHOLD",
+    ),
+    executionAlertWritebackFailedThreshold: nonNegativeInt(
+      source.EXECUTION_ALERT_WRITEBACK_FAILED_THRESHOLD,
+      1,
+      "EXECUTION_ALERT_WRITEBACK_FAILED_THRESHOLD",
+    ),
+    executionAlertRateLimitedThreshold: nonNegativeInt(
+      source.EXECUTION_ALERT_RATE_LIMITED_THRESHOLD,
+      1,
+      "EXECUTION_ALERT_RATE_LIMITED_THRESHOLD",
     ),
     agentOpenAICompatibleEndpoint: source.AGENT_OPENAI_COMPATIBLE_ENDPOINT ?? null,
     outboxRelayEnabled: bool(source.OUTBOX_RELAY_ENABLED, false),

@@ -3,6 +3,7 @@
 > 范围：在 Sprint-10 冻结和 Productization-P0/1/2 之后，补齐生产启用基础能力。
 > 目标：不继续追加 Phase 2.x；在默认 fail-closed、不默认外部调用、不改 Sprint-4 Control Plane 的前提下，提供 DB-backed provider quota/cost ledger、Secret Store readiness、监控告警快照和 staging smoke plan。
 > P1.1 补充：新增 `external_registry` Secret Manager contract adapter；仍不连接真实云 Secret Manager / Vault / KMS。
+> P1.2 补充：新增 pull-based Prometheus text metrics exporter 与 monitoring readiness；仍不接真实 Grafana / PagerDuty / Alertmanager。
 
 ---
 
@@ -38,12 +39,15 @@ GET /api/execution/ops/production-readiness-p1
   -> ExecutionOpsService
      - secret registry/material readiness without returning material
      - DB quota ledger readiness
-     - alert rule snapshot
+     - monitoring readiness + alert rule snapshot
      - staging smoke plan pointer
 
 GET /api/execution/ops/staging-smoke-plan
   -> static manual plan
   -> external_call_performed=false
+
+GET /api/execution/ops/metrics
+  -> prometheus_text metrics from execution plane tables only
 ```
 
 ---
@@ -57,7 +61,8 @@ GET /api/execution/ops/staging-smoke-plan
 | `apps/api/src/infrastructure/repositories/provider-quota-ledger.repository.ts` | ledger 只读/加锁/更新仓储 |
 | `apps/api/src/application/runtime/provider-quota-enforcer.ts` | 新增 `DbProviderQuotaEnforcer`；保留 `InMemoryProviderQuotaEnforcer` |
 | `apps/api/src/application/runtime/agent-real-runtime.ts` | HTTP fetch 前 await quota decision；throttle 时 `networkUsed=false` |
-| `apps/api/src/application/execution-ops.service.ts` | P1 readiness 与 staging smoke plan |
+| `apps/api/src/domain/execution/monitoring.ts` | P1.2 monitoring metrics / alert rule contract |
+| `apps/api/src/application/execution-ops.service.ts` | P1 readiness、monitoring readiness、metrics 与 staging smoke plan |
 | `apps/api/src/interfaces/http/routes/execution-ops.ts` | 新增 P1 ops endpoints |
 | `packages/shared/src/schemas.ts` | P1 DTO schema |
 | `apps/api/test/integration/productization-p1-production-readiness-api.test.ts` | P1 集成测试 |
@@ -148,18 +153,27 @@ GET /api/execution/ops/secret-manager-readiness
 
 ---
 
-## 7. Alert Snapshot
+## 7. Monitoring / Alert Snapshot
 
-P1 暴露的建议规则：
+P1.2 将静态 alert snapshot 升级为 pull-based exporter + readiness：
+
+```text
+GET /api/execution/ops/monitoring-readiness
+GET /api/execution/ops/metrics
+```
+
+`/metrics` 返回 Prometheus text，不发网络、不 push。
+
+P1.2 暴露规则：
 
 | metric | severity | 目的 |
 |---|---|---|
-| `execution_results.error_type.rate_limited` | warning | 发现限额耗尽或配置过紧 |
-| `execution_jobs.failed` | critical | 发现作业失败堆积 |
-| `outbox_events.unprocessed` | warning | 发现 relay backlog |
-| `execution_writebacks.failed_or_skipped` | critical | 发现 writeback 未成功落地 |
+| `content_factory_execution_results_rate_limited` | warning | 发现限额耗尽或配置过紧 |
+| `content_factory_execution_jobs_failed` | critical | 发现作业失败堆积 |
+| `content_factory_execution_outbox_unprocessed` | warning | 发现 relay backlog |
+| `content_factory_execution_writebacks_failed_or_skipped` | critical | 发现 writeback 未成功落地 |
 
-当前只提供 API snapshot，不接 Prometheus / Grafana / PagerDuty。
+当前只提供 Prometheus pull endpoint 和 readiness，不接 Grafana / PagerDuty / Alertmanager。
 
 ---
 
@@ -196,12 +210,16 @@ pnpm --dir apps/api exec vitest run test/integration/productization-p1-productio
 pnpm --dir apps/api exec vitest run \
   test/unit/external-registry-credential-resolver.test.ts \
   test/integration/productization-p1-1-secret-manager-contract-api.test.ts
+pnpm --dir apps/api exec vitest run \
+  test/unit/execution-monitoring.test.ts \
+  test/integration/productization-p1-2-monitoring-api.test.ts
 ```
 
 覆盖：
 
 - P1 readiness 返回 ready、secret readiness、quota ledger、alert snapshot 和 smoke pointer。
 - P1.1 secret-manager-readiness 返回 `env_registry` / `external_registry` readiness，且不泄漏 secret material。
+- P1.2 monitoring-readiness / metrics endpoint 返回 Prometheus text，并且不泄漏 secret material。
 - readiness / smoke 响应不包含 API key / Bearer。
 - DB-backed ledger 首次请求成功并累加用量。
 - 第二次请求在 request limit 下被 `rate_limited` 阻断，`networkUsed=false`。
@@ -214,7 +232,7 @@ pnpm --dir apps/api exec vitest run \
 - 不默认开启真实 Agent / MCP / Publisher。
 - 不实现云 Secret Manager / Vault / KMS（P1.1 只做本地契约适配）。
 - 不实现 key rotation 自动化。
-- 不接 Prometheus / Grafana / PagerDuty。
+- 不接真实 Grafana / PagerDuty / Alertmanager；P1.2 只提供 pull-based Prometheus text endpoint。
 - 不自动执行 staging smoke test。
 - 不引入 Redis / MQ / BullMQ。
 - 不改 Workflow / Review / Agent / MCP 状态机。
@@ -231,7 +249,7 @@ pnpm --dir apps/api exec vitest run \
 |---|---|---|
 | P1.1 | Secret Manager contract adapter | 已完成；真实云 adapter 仍需扩 scope |
 | P1.2 | 真实 Secret Manager adapter | 选型完成，定义最小权限、rotation、审计策略 |
-| P1.2 | 监控系统接入 | 确定 Prometheus/Grafana/PagerDuty 或等效平台 |
+| P1.2 | Monitoring exporter/readiness | 已完成；真实告警平台接入仍需扩 scope |
 | P1.3 | Staging smoke 自动化 | 有低权限真实 provider key 与隔离 staging 环境 |
 | P2 | MCP real runtime | 独立 transport、tool allowlist、权限确认、审计 |
 | P2 | Publisher real release | 审批、预览、回滚、平台幂等策略 |
