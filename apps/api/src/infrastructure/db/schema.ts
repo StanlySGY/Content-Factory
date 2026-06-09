@@ -260,6 +260,33 @@ export const toolInvocations = pgTable("tool_invocations", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// Productization-P2.2 Publisher 发布记录（版本锚定；asset_version_id DB 触发器保证不可变）
+export const publishRecords = pgTable(
+  "publish_records",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    contentTaskId: uuid("content_task_id").notNull(),
+    contentAssetId: uuid("content_asset_id").notNull(),
+    assetVersionId: uuid("asset_version_id").notNull(),
+    executionJobId: uuid("execution_job_id"),
+    channel: varchar("channel", { length: 64 }).notNull(),
+    status: varchar("status", { length: 32 }).notNull().default("pending"),
+    externalRef: varchar("external_ref", { length: 255 }),
+    idempotencyKey: varchar("idempotency_key", { length: 200 }).notNull(),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    errorData: jsonb("error_data").$type<JsonRecord>(),
+    metadata: jsonb("metadata").$type<JsonRecord>().notNull().default({}),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("idx_publish_records_task_channel").on(t.contentTaskId, t.channel),
+    index("idx_publish_records_asset_version").on(t.assetVersionId),
+    index("idx_publish_records_status").on(t.status),
+    index("idx_publish_records_execution_job").on(t.executionJobId),
+  ],
+);
+
 // Sprint-5 执行层（独立异步骨架；execution_jobs 可变生命周期，无 project_id/无 FK）
 export const executionJobs = pgTable("execution_jobs", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -356,6 +383,7 @@ export type AgentSessionRow = typeof agentSessions.$inferSelect;
 export type McpServerRow = typeof mcpServers.$inferSelect;
 export type McpToolRow = typeof mcpTools.$inferSelect;
 export type ToolInvocationRow = typeof toolInvocations.$inferSelect;
+export type PublishRecordRow = typeof publishRecords.$inferSelect;
 export type ExecutionJobRow = typeof executionJobs.$inferSelect;
 export type OutboxEventRow = typeof outboxEvents.$inferSelect;
 export type ExecutionResultRow = typeof executionResults.$inferSelect;

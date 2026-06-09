@@ -190,6 +190,12 @@ export type McpRiskLevel = (typeof MCP_RISK_LEVELS)[number];
 export const TOOL_INVOCATION_STATUSES = ["success", "failed", "blocked"] as const;
 export type ToolInvocationStatus = (typeof TOOL_INVOCATION_STATUSES)[number];
 
+// ── Productization-P2.2 Publisher 发布记录 ──
+
+/** 发布记录状态（publish_records_status_chk；版本锚定，asset_version_id 不可变）*/
+export const PUBLISH_RECORD_STATUSES = ["pending", "publishing", "published", "failed", "withdrawn"] as const;
+export type PublishRecordStatus = (typeof PUBLISH_RECORD_STATUSES)[number];
+
 // ── Sprint-5 执行层值集（独立异步执行骨架；与控制平面状态机无关）──
 
 /** 执行作业类型（db execution_jobs_type_chk）*/

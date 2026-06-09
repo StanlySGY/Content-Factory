@@ -30,6 +30,7 @@ import type { ExecutionJobRow } from "../infrastructure/db/schema.js";
 import * as jobRepo from "../infrastructure/repositories/execution-job.repository.js";
 import * as outboxRepo from "../infrastructure/repositories/outbox.repository.js";
 import * as resultRepo from "../infrastructure/repositories/execution-result.repository.js";
+import * as publishRecordRepo from "../infrastructure/repositories/publish-record.repository.js";
 import {
   MockRuntimeAdapterFactory,
   type RuntimeAdapterFactory,
@@ -53,6 +54,16 @@ function runtimeCredentialRef(input: Record<string, unknown>): RuntimeCredential
   const keyRef = ref.keyRef ?? ref.key_ref;
   if (typeof ref.provider !== "string" || typeof keyRef !== "string" || typeof ref.scope !== "string") return null;
   return { provider: ref.provider, keyRef, scope: ref.scope as RuntimeCredentialRef["scope"] };
+}
+
+function publishRecordIdFrom(input: Record<string, unknown>): string | null {
+  const value = input.publishRecordId ?? input.publish_record_id;
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+}
+
+function externalRefFrom(output: Record<string, unknown>): string | null {
+  const value = output.externalRef ?? output.external_ref;
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
 }
 
 // ExecutionWorker：纯 DB 轮询 worker（无 Redis/MQ）。默认关闭（feature flag），可手动 tick 或定时 start。
@@ -164,8 +175,11 @@ export class ExecutionWorker {
   private async process(job: ExecutionJobRow): Promise<ExecutionJobRow> {
     // 解包 bridge envelope：input 交给 runtime，subject 透传到 RuntimeRequest.metadata、结果账本与 outbox payload
     const { input, subject } = unwrapExecutionPayload(job.payload);
+    const publishRecordId = job.type === "publisher" ? publishRecordIdFrom(input) : null;
     const subjectMeta = subject ? { subject } : {};
-    const { request, response } = await this.invoke(job, input, subject);
+    const { request, response } = publishRecordId
+      ? await this.preparePublisherRecord(job, input, subject, publishRecordId)
+      : await this.invoke(job, input, subject);
     const result = toExecutionResult(response);
     const snapshot = this.safeSnapshot(runtimeSnapshot(response));
     const outboxOutput = this.safeSnapshot(result.output);
@@ -187,6 +201,14 @@ export class ExecutionWorker {
           lockedAt: null,
         }))!;
         const ledger = await resultRepo.createExecutionResult(tx, record);
+        if (publishRecordId) {
+          await publishRecordRepo.markPublished(
+            tx,
+            publishRecordId,
+            job.id,
+            externalRefFrom(result.output) ?? job.id,
+          );
+        }
         await outboxRepo.createOutboxEvent(tx, {
           aggregate_type: "execution_job",
           aggregate_id: job.id,
@@ -209,6 +231,13 @@ export class ExecutionWorker {
           lockedAt: null,
         }))!;
         const ledger = await resultRepo.createExecutionResult(tx, record);
+        if (publishRecordId) {
+          await publishRecordRepo.markFailed(tx, publishRecordId, job.id, {
+            message: error,
+            error_type: result.errorType ?? null,
+            retryable: false,
+          });
+        }
         await outboxRepo.createOutboxEvent(tx, {
           aggregate_type: "execution_job",
           aggregate_id: job.id,
@@ -231,6 +260,13 @@ export class ExecutionWorker {
         lockedAt: null,
       }))!;
       const ledger = await resultRepo.createExecutionResult(tx, record);
+      if (publishRecordId && outcome.status === "failed") {
+        await publishRecordRepo.markFailed(tx, publishRecordId, job.id, {
+          message: outcome.lastError,
+          error_type: result.errorType ?? null,
+          retryable: true,
+        });
+      }
       await outboxRepo.createOutboxEvent(tx, {
         aggregate_type: "execution_job",
         aggregate_id: job.id,
@@ -239,6 +275,27 @@ export class ExecutionWorker {
       });
       return updated;
     });
+  }
+
+  private async preparePublisherRecord(
+    job: ExecutionJobRow,
+    input: Record<string, unknown>,
+    subject: ExecutionSubject | null,
+    publishRecordId: string,
+  ): Promise<{ request: RuntimeRequest; response: RuntimeResponse }> {
+    const marked = await publishRecordRepo.markPublishing(this.db, publishRecordId, job.id);
+    if (!marked) {
+      const request = this.assembleRequest(job, input, subject, this.runtimeTimeoutMs);
+      return {
+        request,
+        response: failedRuntimeResponse(
+          job.id,
+          "blocked",
+          `publish_record ${publishRecordId} is not pending or does not exist`,
+        ),
+      };
+    }
+    return this.invoke(job, input, subject);
   }
 
   private safeSnapshot<T>(value: T): T {

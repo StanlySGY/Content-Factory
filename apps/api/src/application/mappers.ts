@@ -39,6 +39,8 @@ import type {
   PendingReviewDTO,
   ProductionActivationPreflightResponse,
   ProductionReadinessP1Response,
+  PublishRecordDTO,
+  PublisherRealRuntimeReadinessResponse,
   ReviewRecordDTO,
   RuntimeAdapterDescriptorDTO,
   RuntimeAdapterDryRunResponse,
@@ -74,6 +76,7 @@ import type {
   McpServerRow,
   McpToolRow,
   OutboxEventRow,
+  PublishRecordRow,
   ReviewRecordRow,
   StageRunRow,
   ToolInvocationRow,
@@ -121,6 +124,7 @@ import type { AgentRealAdapterRegistrationGuard } from "./runtime/agent-real-ada
 import type { AgentRealProviderConfigPreflight } from "./runtime/agent-real-provider-config-preflight.js";
 import type { AgentRealProviderTransportDisabledHarness } from "./runtime/agent-real-provider-transport-disabled-harness.js";
 import type { McpRealRuntimeReadiness } from "./runtime/mcp-real-runtime.js";
+import type { PublisherRealRuntimeReadiness } from "./runtime/publisher-real-runtime.js";
 import type { ProductionActivationPreflight } from "./runtime/production-activation-preflight.js";
 
 const iso = (d: Date | null): string | null => (d ? d.toISOString() : null);
@@ -478,6 +482,25 @@ export function toOutboxEventDTO(r: OutboxEventRow): OutboxEventDTO {
     claimed_owner: r.claimedOwner,
     claim_expires_at: r.claimExpiresAt ? r.claimExpiresAt.toISOString() : null,
     created_at: r.createdAt.toISOString(),
+  };
+}
+
+export function toPublishRecordDTO(r: PublishRecordRow): PublishRecordDTO {
+  return {
+    id: r.id,
+    content_task_id: r.contentTaskId,
+    content_asset_id: r.contentAssetId,
+    asset_version_id: r.assetVersionId,
+    execution_job_id: r.executionJobId,
+    channel: r.channel,
+    status: r.status as PublishRecordDTO["status"],
+    external_ref: r.externalRef,
+    idempotency_key: r.idempotencyKey,
+    published_at: iso(r.publishedAt),
+    error_data: r.errorData ?? null,
+    metadata: r.metadata,
+    created_at: r.createdAt.toISOString(),
+    updated_at: r.updatedAt.toISOString(),
   };
 }
 
@@ -1339,6 +1362,25 @@ export function toMcpRealRuntimeReadinessDTO(
     transport_mode: s.transport_mode,
     endpoint_registry_count: s.endpoint_registry_count,
     tool_allowlist_count: s.tool_allowlist_count,
+    allow_network: s.allow_network,
+    allow_real_runtime: s.allow_real_runtime,
+    redact_snapshots: s.redact_snapshots,
+    network_allowlist: s.network_allowlist,
+    missing_requirements: s.missing_requirements,
+    warnings: s.warnings,
+  };
+}
+
+export function toPublisherRealRuntimeReadinessDTO(
+  s: PublisherRealRuntimeReadiness,
+): PublisherRealRuntimeReadinessResponse {
+  return {
+    mode: s.mode,
+    ready: s.ready,
+    status: s.status,
+    enabled: s.enabled,
+    endpoint_registry_count: s.endpoint_registry_count,
+    channel_allowlist_count: s.channel_allowlist_count,
     allow_network: s.allow_network,
     allow_real_runtime: s.allow_real_runtime,
     redact_snapshots: s.redact_snapshots,

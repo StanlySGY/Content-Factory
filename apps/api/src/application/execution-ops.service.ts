@@ -120,6 +120,10 @@ import {
   type McpRealRuntimeReadiness,
 } from "./runtime/mcp-real-runtime.js";
 import {
+  buildPublisherRealRuntimeReadiness,
+  type PublisherRealRuntimeReadiness,
+} from "./runtime/publisher-real-runtime.js";
+import {
   buildProductionActivationPreflight,
   type ProductionActivationPreflight,
 } from "./runtime/production-activation-preflight.js";
@@ -173,6 +177,9 @@ export interface ExecutionOpsConfig {
   mcpTransportMode: MCPTransportMode;
   mcpEndpointRegistry: string[];
   mcpToolAllowlist: string[];
+  publisherRealRuntimeEnabled: boolean;
+  publisherEndpointRegistry: string[];
+  publisherChannelAllowlist: string[];
   writebackExecutorEnabled: boolean;
 }
 
@@ -697,6 +704,16 @@ export class ExecutionOpsService {
       transportMode: this.config.mcpTransportMode,
       endpointRegistry: this.config.mcpEndpointRegistry,
       toolAllowlist: this.config.mcpToolAllowlist,
+      runtimeSafetyPolicy: this.config.runtimeSafetyPolicy,
+      networkAllowlist: this.config.networkAllowlist,
+    });
+  }
+
+  getPublisherRealRuntimeReadiness(): PublisherRealRuntimeReadiness {
+    return buildPublisherRealRuntimeReadiness({
+      enabled: this.config.publisherRealRuntimeEnabled,
+      endpointRegistry: this.config.publisherEndpointRegistry,
+      channelAllowlist: this.config.publisherChannelAllowlist,
       runtimeSafetyPolicy: this.config.runtimeSafetyPolicy,
       networkAllowlist: this.config.networkAllowlist,
     });

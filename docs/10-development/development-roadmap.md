@@ -494,8 +494,8 @@ MVP 后再进入：
 
 **已完成（Mock-only data plane，`fc001fb`→`32fd423`）**：execution skeleton + 可靠性（确定性退避重试 / 超时契约 / stale-lock 恢复）、outbox relay 骨架、Runtime Contract + Adapter Factory、Control Plane Bridge、只追加 result ledger、ops 运维控制面（health / recover-stale / process-batch / manual-retry）。与 Sprint-4 Control Plane 严格隔离（无 project_id / 无业务表 FK / 不 join / 不回写 / 不替代 audit 哈希链）。证据见 `docs/reviews/sprint-5-execution-phase1-release-gate.md`（裁决 GO）。
 
-**Phase 2 下一主线：Real Adapter spike**——替换 `RuntimeAdapterFactory`（Mock→Real：Agent LLM / MCP transport），结果经 relay 真实 handler 按 result_id/subject 幂等回写控制平面。准入清单见 `docs/reviews/sprint-5-phase2-real-adapter-entry-checklist.md`。
+**Productization 现状**——Agent Real LLM、workflow_stage_run writeback relay、MCP Streamable HTTP runtime、Publisher HTTP release runtime 均已进入默认关闭、显式 gate、可观测账本路径。真实执行证据统一进入 `execution_results` 与 `outbox_events`；控制面回写仅限显式开启的 workflow stage writeback。
 
-**Phase 2 之前必须完成的 gate**：Runtime 隔离（真实超时中断 / 资源限额 / 沙箱）、secret/credential 作用域化、真实错误映射、high-risk 工具确认闸门、kill switch、relay 真实回写 + 并发领取保护。
+**最终 RC 前必须完成的 gate**：汇总 production activation / P1 readiness / MCP readiness / Publisher readiness，确认默认关闭、kill switch、network allowlist、secret redaction、append-only result ledger、publish_records 版本不可变、writeback executor 默认关闭与回滚预案。
 
-> **Publisher 仍未交付**（publish_records 缺失），属独立产品线，**不得与 Real Adapter 混淆**；execution 的 `publisher` job 类型当前仅 Mock 占位。
+> **Publisher 已补齐最小产品化入口**：P2.2 新增 `publish_records`、`/api/publish-records`、`PublisherRealRuntime` 与 `/api/execution/ops/publisher-real-runtime-readiness`。它仍默认关闭，只支持最小 HTTP release，不代表完整公众号运营平台已完成。

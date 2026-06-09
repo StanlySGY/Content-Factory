@@ -23,6 +23,11 @@ import {
   parseMcpEndpointRegistry,
   parseMcpToolAllowlist,
 } from "./application/runtime/mcp-real-runtime.js";
+import {
+  parsePublisherEndpointRegistry,
+  PublisherRealRuntime,
+  PublisherReleaseHttpClient,
+} from "./application/runtime/publisher-real-runtime.js";
 import { DbProviderQuotaEnforcer, type ProviderQuotaLimits } from "./application/runtime/provider-quota-enforcer.js";
 import {
   FetchAgentProviderHttpTransport,
@@ -39,6 +44,7 @@ import { McpServerService } from "./application/mcp-server.service.js";
 import { McpToolService } from "./application/mcp-tool.service.js";
 import { defaultOutboxHandlers, OutboxRelay, type OutboxHandler } from "./application/outbox-relay.js";
 import { OutboxService } from "./application/outbox.service.js";
+import { PublishRecordService } from "./application/publish-record.service.js";
 import { ReviewService } from "./application/review.service.js";
 import { TaskService } from "./application/task.service.js";
 import { WorkflowDefinitionService } from "./application/workflow-definition.service.js";
@@ -54,6 +60,7 @@ import { editorRoutes } from "./interfaces/http/routes/editor.js";
 import { executionRoutes } from "./interfaces/http/routes/execution.js";
 import { executionOpsRoutes } from "./interfaces/http/routes/execution-ops.js";
 import { reviewRoutes } from "./interfaces/http/routes/reviews.js";
+import { publishRecordRoutes } from "./interfaces/http/routes/publish-records.js";
 import { stageRunRoutes } from "./interfaces/http/routes/stage-runs.js";
 import { taskRoutes } from "./interfaces/http/routes/tasks.js";
 import { agentRoutes } from "./interfaces/http/routes/agents.js";
@@ -98,6 +105,18 @@ function shouldAssembleProductizedMcpRuntime(env: Env): boolean {
     env.executionNetworkAllowlist.length > 0;
 }
 
+function shouldAssembleProductizedPublisherRuntime(env: Env): boolean {
+  return env.executionRuntimeMode === "real_enabled" &&
+    env.executionRuntimeAdapterMode === "real" &&
+    env.executionAllowRealRuntime &&
+    env.executionAllowNetwork &&
+    env.executionRedactSnapshots &&
+    env.executionPublisherRealRuntimeEnabled &&
+    env.executionPublisherEndpointRegistry.length > 0 &&
+    env.executionPublisherChannelAllowlist.length > 0 &&
+    env.executionNetworkAllowlist.length > 0;
+}
+
 function providerQuotaLimits(env: Env): ProviderQuotaLimits {
   return {
     dailyRequestLimit: env.executionProviderDailyRequestLimit,
@@ -110,7 +129,8 @@ function buildRuntimeAdapterFactory(env: Env, policy: RuntimeSafetyPolicy, opts:
   if (opts.runtimeAdapterFactory) return opts.runtimeAdapterFactory;
   const assembleAgent = shouldAssembleProductizedAgentRuntime(env);
   const assembleMcp = shouldAssembleProductizedMcpRuntime(env);
-  if (!assembleAgent && !assembleMcp)
+  const assemblePublisher = shouldAssembleProductizedPublisherRuntime(env);
+  if (!assembleAgent && !assembleMcp && !assemblePublisher)
     return new MockRuntimeAdapterFactory({ ...policy, adapterMode: env.executionRuntimeAdapterMode });
 
   const realAgentRuntime = assembleAgent ? (() => {
@@ -137,11 +157,20 @@ function buildRuntimeAdapterFactory(env: Env, policy: RuntimeSafetyPolicy, opts:
     networkAllowlist: env.executionNetworkAllowlist,
     transportMode: env.executionMcpTransportMode,
   }) : undefined;
+  const publisherRealRuntime = assemblePublisher ? new PublisherRealRuntime(
+    new PublisherReleaseHttpClient(opts.fetchImplementation),
+    {
+      endpointRegistry: parsePublisherEndpointRegistry(env.executionPublisherEndpointRegistry),
+      channelAllowlist: env.executionPublisherChannelAllowlist,
+      networkAllowlist: env.executionNetworkAllowlist,
+    },
+  ) : undefined;
   return new MockRuntimeAdapterFactory({
     ...policy,
     adapterMode: "real",
     realAgentRuntime,
     mcpRealRuntime,
+    publisherRealRuntime,
   });
 }
 
@@ -194,6 +223,7 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
   const executionBridgeService = new ExecutionBridgeService(executionJobService);
   const executionResultService = new ExecutionResultService(db);
   const executionWritebackService = new ExecutionWritebackService(db);
+  const publishRecordService = new PublishRecordService(db);
   const executionOpsService = new ExecutionOpsService(db, outboxRelay, {
     workerEnabled: env.executionWorkerEnabled,
     relayEnabled: env.outboxRelayEnabled,
@@ -229,6 +259,9 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
     mcpTransportMode: env.executionMcpTransportMode,
     mcpEndpointRegistry: env.executionMcpEndpointRegistry,
     mcpToolAllowlist: env.executionMcpToolAllowlist,
+    publisherRealRuntimeEnabled: env.executionPublisherRealRuntimeEnabled,
+    publisherEndpointRegistry: env.executionPublisherEndpointRegistry,
+    publisherChannelAllowlist: env.executionPublisherChannelAllowlist,
     writebackExecutorEnabled: env.executionWritebackExecutorEnabled,
   }, executionWorker);
   const agentProfileService = new AgentProfileService(db);
@@ -258,6 +291,7 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
   await app.register(contextPackRoutes, { env, contextService });
   await app.register(assetRoutes, { env, assetService });
   await app.register(reviewRoutes, { env, reviewService });
+  await app.register(publishRecordRoutes, { publishRecordService });
   await app.register(dashboardRoutes, { env, dashboardService });
   await app.register(editorRoutes, { env, editorQueryService });
   await app.register(executionRoutes, {

@@ -24,6 +24,7 @@ import {
   ProcessOutboxBatchResponseSchema,
   ProductionActivationPreflightResponseSchema,
   ProductionReadinessP1ResponseSchema,
+  PublisherRealRuntimeReadinessResponseSchema,
   ProviderHttpBoundaryResponseSchema,
   ProviderSafetyResponseSchema,
   RecoverStaleJobsBodySchema,
@@ -67,6 +68,7 @@ import {
   toMcpRealRuntimeReadinessDTO,
   toProductionActivationPreflightDTO,
   toProductionReadinessP1DTO,
+  toPublisherRealRuntimeReadinessDTO,
   toRuntimeAdapterDryRunResponseDTO,
   toRuntimeAdaptersResponseDTO,
   toProviderHttpBoundaryDTO,
@@ -186,6 +188,12 @@ export const executionOpsRoutes: FastifyPluginAsyncTypebox<ExecutionOpsRoutesOpt
     "/api/execution/ops/mcp-real-runtime-readiness",
     { schema: { response: { 200: McpRealRuntimeReadinessResponseSchema } } },
     async () => toMcpRealRuntimeReadinessDTO(executionOpsService.getMcpRealRuntimeReadiness()),
+  );
+
+  app.get(
+    "/api/execution/ops/publisher-real-runtime-readiness",
+    { schema: { response: { 200: PublisherRealRuntimeReadinessResponseSchema } } },
+    async () => toPublisherRealRuntimeReadinessDTO(executionOpsService.getPublisherRealRuntimeReadiness()),
   );
 
   app.post(

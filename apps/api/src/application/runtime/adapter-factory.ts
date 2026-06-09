@@ -18,6 +18,7 @@ import { throwAgentRealAdapterDisabledFixture } from "./agent-real-adapter-disab
 import type { AgentRealRuntime } from "./agent-real-runtime.js";
 import type { MCPRealRuntime } from "./mcp-real-runtime.js";
 import type { MCPSafetyRuntime } from "./mcp-safety-runtime.js";
+import type { PublisherRealRuntime } from "./publisher-real-runtime.js";
 import type { PublisherSafetyRuntime } from "./publisher-safety-runtime.js";
 import type { RuntimeAdapterMode } from "./adapter-registry.js";
 import {
@@ -40,6 +41,7 @@ export interface RuntimeAdapterFactoryOptions extends Partial<RuntimeSafetyPolic
   realAgentRuntime?: AgentRealRuntime;
   mcpRealRuntime?: MCPRealRuntime;
   mcpSafetyRuntime?: MCPSafetyRuntime;
+  publisherRealRuntime?: PublisherRealRuntime;
   publisherSafetyRuntime?: PublisherSafetyRuntime;
 }
 
@@ -64,6 +66,7 @@ export class MockRuntimeAdapterFactory implements RuntimeAdapterFactory {
   private readonly realAgentRuntime: AgentRealRuntime | null;
   private readonly mcpRealRuntime: MCPRealRuntime | null;
   private readonly mcpSafetyRuntime: MCPSafetyRuntime | null;
+  private readonly publisherRealRuntime: PublisherRealRuntime | null;
   private readonly publisherSafetyRuntime: PublisherSafetyRuntime | null;
 
   constructor(policy: RuntimeAdapterFactoryOptions = {}) {
@@ -72,6 +75,7 @@ export class MockRuntimeAdapterFactory implements RuntimeAdapterFactory {
       realAgentRuntime = null,
       mcpRealRuntime = null,
       mcpSafetyRuntime = null,
+      publisherRealRuntime = null,
       publisherSafetyRuntime = null,
       ...safetyPolicy
     } = policy;
@@ -79,6 +83,7 @@ export class MockRuntimeAdapterFactory implements RuntimeAdapterFactory {
     this.realAgentRuntime = realAgentRuntime;
     this.mcpRealRuntime = mcpRealRuntime;
     this.mcpSafetyRuntime = mcpSafetyRuntime;
+    this.publisherRealRuntime = publisherRealRuntime;
     this.publisherSafetyRuntime = publisherSafetyRuntime;
     this.policy = { ...DEFAULT_RUNTIME_SAFETY_POLICY, ...safetyPolicy };
     validateRuntimeSafetyPolicy(this.policy);
@@ -112,6 +117,12 @@ export class MockRuntimeAdapterFactory implements RuntimeAdapterFactory {
         if (policy.allowNetwork)
           throw new ValidationError("publisher safety adapter requires allowNetwork=false");
         return this.publisherSafetyRuntime;
+      }
+      if (type === "publisher" && this.publisherRealRuntime) {
+        if (policy.mode !== "real_enabled" || !policy.allowRealExecution)
+          throw new ValidationError("publisher real adapter requires real_enabled mode and allowRealExecution=true");
+        if (!policy.allowNetwork) throw new ValidationError("publisher real adapter requires allowNetwork=true");
+        return this.publisherRealRuntime;
       }
       if (type === "mcp") throw new ValidationError("mcp safety runtime requires explicit local harness registration");
       if (type === "publisher")

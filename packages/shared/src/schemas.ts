@@ -7,6 +7,7 @@ import {
   EXECUTOR_TYPES,
   MCP_RISK_LEVELS,
   MCP_SERVER_STATUSES,
+  PUBLISH_RECORD_STATUSES,
   REQUIREMENT_SCHEMA_VERSION,
   REVIEW_ACTIONS,
   REVIEW_STATUSES,
@@ -739,6 +740,56 @@ export const McpToolResponseSchema = McpToolSchema;
 export const McpToolsResponseSchema = Type.Array(McpToolSchema);
 export const ToolInvocationResponseSchema = ToolInvocationSchema;
 export const ToolInvocationsResponseSchema = Type.Array(ToolInvocationSchema);
+
+// ---- Publisher publish_records (Productization-P2.2；版本锚定的发布记录) ----
+export const PublishRecordStatusSchema = StringEnum(PUBLISH_RECORD_STATUSES);
+
+export const PublishRecordSchema = Type.Object(
+  {
+    id: Uuid(),
+    content_task_id: Uuid(),
+    content_asset_id: Uuid(),
+    asset_version_id: Uuid(),
+    execution_job_id: Nullable(Uuid()),
+    channel: Type.String(),
+    status: PublishRecordStatusSchema,
+    external_ref: Nullable(Type.String()),
+    idempotency_key: Type.String(),
+    published_at: Nullable(Type.String({ format: "date-time" })),
+    error_data: Nullable(JsonRecord()),
+    metadata: JsonRecord(),
+    created_at: Type.String({ format: "date-time" }),
+    updated_at: Type.String({ format: "date-time" }),
+  },
+  { additionalProperties: false },
+);
+export type PublishRecordDTO = Static<typeof PublishRecordSchema>;
+
+export const CreatePublishRecordSchema = Type.Object(
+  {
+    content_task_id: Uuid(),
+    content_asset_id: Uuid(),
+    asset_version_id: Uuid(),
+    channel: Type.String({ minLength: 1, maxLength: 64 }),
+    idempotency_key: Type.String({ minLength: 1, maxLength: 200 }),
+    metadata: Type.Optional(JsonRecord()),
+  },
+  { additionalProperties: false },
+);
+export type CreatePublishRecordBody = Static<typeof CreatePublishRecordSchema>;
+
+export const ListPublishRecordsQuerySchema = Type.Object(
+  {
+    task_id: Type.Optional(Uuid()),
+    status: Type.Optional(PublishRecordStatusSchema),
+    channel: Type.Optional(Type.String({ minLength: 1, maxLength: 64 })),
+  },
+  { additionalProperties: false },
+);
+export type ListPublishRecordsQuery = Static<typeof ListPublishRecordsQuerySchema>;
+
+export const PublishRecordResponseSchema = PublishRecordSchema;
+export const PublishRecordsResponseSchema = Type.Array(PublishRecordSchema);
 
 // ---- Execution Layer (S5 Phase 1；独立异步执行骨架) ----
 export const ExecutionJobTypeSchema = StringEnum(EXECUTION_JOB_TYPES);
@@ -2129,6 +2180,25 @@ export const McpRealRuntimeReadinessResponseSchema = Type.Object(
   { additionalProperties: false },
 );
 export type McpRealRuntimeReadinessResponse = Static<typeof McpRealRuntimeReadinessResponseSchema>;
+
+export const PublisherRealRuntimeReadinessResponseSchema = Type.Object(
+  {
+    mode: StringEnum(["publisher_real_runtime_readiness"] as const),
+    ready: Type.Boolean(),
+    status: StringEnum(["ready", "blocked"] as const),
+    enabled: Type.Boolean(),
+    endpoint_registry_count: Type.Integer(),
+    channel_allowlist_count: Type.Integer(),
+    allow_network: Type.Boolean(),
+    allow_real_runtime: Type.Boolean(),
+    redact_snapshots: Type.Boolean(),
+    network_allowlist: Type.Array(Type.String()),
+    missing_requirements: Type.Array(Type.String()),
+    warnings: Type.Array(Type.String()),
+  },
+  { additionalProperties: false },
+);
+export type PublisherRealRuntimeReadinessResponse = Static<typeof PublisherRealRuntimeReadinessResponseSchema>;
 
 export const StagingSmokeReportResponseSchema = Type.Object(
   {

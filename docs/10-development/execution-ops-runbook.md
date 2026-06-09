@@ -11,6 +11,7 @@
 > Productization-1 已提供显式 `agent` OpenAI-compatible HTTP transport；只有显式 real runtime/network/secret gate 全部满足时才会调用外部 LLM。
 > Productization-2 已把 `workflow_stage_run` writeback handler 接入 app 装配，但仍由 `EXECUTION_WRITEBACK_EXECUTOR_ENABLED=true` 显式开启。
 > Productization-P2.1 已提供显式 `mcp` Streamable HTTP / JSON-RPC runtime；只有 endpoint registry、tool allowlist、network allowlist 与 runtime safety gate 全部满足时才会调用外部 MCP endpoint。
+> Productization-P2.2 已提供显式 `publisher` HTTP release runtime 与 `publish_records` 控制表；只有发布审批、预览、endpoint registry、channel allowlist、network allowlist 与 runtime safety gate 全部满足时才会调用外部发布端点。
 
 所有端点前缀 `/api/execution`。错误遵循统一结构（`{ error: { code, message, retryable }, request_id }`）。
 
@@ -175,7 +176,7 @@ GET /api/execution/ops/production-activation-preflight
 | `missing_requirements` | 阻断项，非空时不得开启真实流量 |
 | `secret_refs` | 只返回 key ref 注册状态和 material 是否可用，不返回 secret 值 |
 | `quota` | 本进程 provider 请求/成本限额配置 |
-| `capabilities` | 当前仅 `agent_real_runtime` / `workflow_stage_writeback` 可产品化；MCP/Publisher 仍 false |
+| `capabilities` | `agent_real_runtime` / `workflow_stage_writeback` / `mcp_real_runtime` / `publisher_real_runtime` 分别由各自 readiness 与 env gates 控制 |
 
 P0 额外必需配置：
 
@@ -528,14 +529,105 @@ pnpm --dir apps/api exec vitest run \
 
 ---
 
-## 13. 非目标 / 边界
+## 13. Publisher Real Runtime（显式产品化入口）
+
+P2.2 支持 `publisher` execution job 调用真实发布端点。默认关闭。
+
+Readiness：
+
+```text
+GET /api/execution/ops/publisher-real-runtime-readiness
+```
+
+最小启用条件：
+
+```text
+EXECUTION_RUNTIME_MODE=real_enabled
+EXECUTION_RUNTIME_ADAPTER_MODE=real
+EXECUTION_ALLOW_REAL_RUNTIME=true
+EXECUTION_ALLOW_NETWORK=true
+EXECUTION_REDACT_SNAPSHOTS=true
+EXECUTION_NETWORK_ALLOWLIST=publisher.example.test
+EXECUTION_PUBLISHER_REAL_RUNTIME_ENABLED=true
+EXECUTION_PUBLISHER_ENDPOINT_REGISTRY=publisher://wechat=https://publisher.example.test/release
+EXECUTION_PUBLISHER_CHANNEL_ALLOWLIST=wechat_mp
+```
+
+创建发布记录：
+
+```text
+POST /api/publish-records
+{
+  "content_task_id": "<task_id>",
+  "content_asset_id": "<asset_id>",
+  "asset_version_id": "<asset_version_id>",
+  "channel": "wechat_mp",
+  "idempotency_key": "publish-record-demo-1"
+}
+```
+
+创建并执行 publisher job：
+
+```text
+POST /api/execution/jobs
+{
+  "type": "publisher",
+  "payload": {
+    "action": "publish",
+    "targetRef": "publisher://wechat",
+    "channel": "wechat_mp",
+    "publishRecordId": "<publish_record_id>",
+    "content": { "title": "hello" },
+    "preview": { "previewId": "preview-1", "checksum": "sha256:abc" },
+    "approved": true,
+    "approvalRef": "approval-1"
+  },
+  "idempotency_key": "publisher-real-demo-1",
+  "max_attempts": 1
+}
+
+POST /api/execution/jobs/:id/tick
+```
+
+状态联动：
+
+| runtime 结果 | publish_records 结果 |
+| --- | --- |
+| worker 领取 publisher job | `pending -> publishing` |
+| success 且外部返回 `externalRef` | `published`，写 `execution_job_id` / `external_ref` / `published_at` |
+| terminal failed | `failed`，写 `execution_job_id` / `error_data` |
+| retryable 且仍有 attempts | job 回退 `pending`，发布记录保持 `publishing` 等待终态 |
+
+关键排查：
+
+- readiness `ready=false` 时不要执行真实 publisher job；先看 `missing_requirements`。
+- `targetRef` 必须存在于 `EXECUTION_PUBLISHER_ENDPOINT_REGISTRY`。
+- `channel` 必须存在于 `EXECUTION_PUBLISHER_CHANNEL_ALLOWLIST`。
+- endpoint host 必须在 `EXECUTION_NETWORK_ALLOWLIST`。
+- payload 必须包含 `publishRecordId`、`preview`、`approved=true`、`approvalRef`。
+- `asset_version_id` 由 DB trigger 保证不可变，避免已发布版本漂移。
+- 真实发布证据在 `execution_results` append-only ledger，同时 `publish_records` 记录外部引用。
+
+验证：
+
+```text
+pnpm --dir apps/api exec vitest run \
+  test/unit/publish-record.test.ts \
+  test/unit/publisher-real-runtime.test.ts \
+  test/integration/productization-p2-2-publish-records-api.test.ts \
+  test/integration/productization-p2-2-publisher-real-runtime-api.test.ts
+```
+
+---
+
+## 14. 非目标 / 边界
 
 - 默认不做真实外部 LLM 调用；只有 Productization-1 显式 gate 满足时才允许 `agent` 外部 LLM 调用。
 - P1.1 只实现 Secret Manager contract adapter，不实现云 Secret Manager / Vault / KMS。
 - P1.2 只实现 pull-based metrics exporter，不接 Grafana / PagerDuty / Alertmanager，不做 push metrics。
 - P1.3 staging smoke 只执行 mock-only job，不调用真实 provider。
 - P2.1 MCP real runtime 默认关闭；开启后只支持 Streamable HTTP / JSON-RPC `tools/call`，不接 MCP SDK、不做 SSE/stdio、不写 `tool_invocations`。
-- 不真实发布。
+- P2.2 Publisher real runtime 默认关闭；开启后只支持最小 HTTP release endpoint，不做完整发布平台、素材管理、撤回执行或多渠道运营编排。
 - 不引入 Redis/MQ/BullMQ（纯 DB 轮询）。
 - 不改 Workflow/Review/Agent/MCP 状态机、不做 UI。
 - writeback executor 默认不开启；开启后也仅支持 `workflow_stage_run`，不支持 assets/reviews/publisher targets。

@@ -47,6 +47,9 @@ export interface Env {
   executionMcpTransportMode: "streamable_http";
   executionMcpEndpointRegistry: string[];
   executionMcpToolAllowlist: string[];
+  executionPublisherRealRuntimeEnabled: boolean;
+  executionPublisherEndpointRegistry: string[];
+  executionPublisherChannelAllowlist: string[];
   agentOpenAICompatibleEndpoint: string | null;
   outboxRelayEnabled: boolean;
   outboxRelayIntervalMs: number;
@@ -194,6 +197,9 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     executionMcpTransportMode: mcpTransportMode(source.EXECUTION_MCP_TRANSPORT_MODE),
     executionMcpEndpointRegistry: csv(source.EXECUTION_MCP_ENDPOINT_REGISTRY),
     executionMcpToolAllowlist: csv(source.EXECUTION_MCP_TOOL_ALLOWLIST),
+    executionPublisherRealRuntimeEnabled: bool(source.EXECUTION_PUBLISHER_REAL_RUNTIME_ENABLED, false),
+    executionPublisherEndpointRegistry: csv(source.EXECUTION_PUBLISHER_ENDPOINT_REGISTRY),
+    executionPublisherChannelAllowlist: csv(source.EXECUTION_PUBLISHER_CHANNEL_ALLOWLIST),
     agentOpenAICompatibleEndpoint: source.AGENT_OPENAI_COMPATIBLE_ENDPOINT ?? null,
     outboxRelayEnabled: bool(source.OUTBOX_RELAY_ENABLED, false),
     outboxRelayIntervalMs: Number(source.OUTBOX_RELAY_INTERVAL_MS ?? 5000),
