@@ -5,6 +5,7 @@ import {
   AgentRealProviderConfigPreflightResponseSchema,
   AgentRealProviderTransportDisabledHarnessResponseSchema,
   ExecutionSystemHealthSchema,
+  FinalRcProductionCandidateReadinessResponseSchema,
   ExecutionWritebackApplyGuardReadinessResponseSchema,
   ExecutionWritebackDryRunReadinessResponseSchema,
   ExecutionWritebackExecutorFeatureFlagReadinessResponseSchema,
@@ -53,6 +54,7 @@ import {
   toAgentRealProviderTransportDisabledHarnessDTO,
   toExecutionJobDTO,
   toExecutionSystemHealthDTO,
+  toFinalRcProductionCandidateReadinessDTO,
   toExecutionWritebackApplyGuardReadinessDTO,
   toExecutionWritebackDryRunReadinessDTO,
   toExecutionWritebackExecutorFeatureFlagReadinessDTO,
@@ -194,6 +196,15 @@ export const executionOpsRoutes: FastifyPluginAsyncTypebox<ExecutionOpsRoutesOpt
     "/api/execution/ops/publisher-real-runtime-readiness",
     { schema: { response: { 200: PublisherRealRuntimeReadinessResponseSchema } } },
     async () => toPublisherRealRuntimeReadinessDTO(executionOpsService.getPublisherRealRuntimeReadiness()),
+  );
+
+  app.get(
+    "/api/execution/ops/final-rc-readiness",
+    { schema: { response: { 200: FinalRcProductionCandidateReadinessResponseSchema } } },
+    async () =>
+      toFinalRcProductionCandidateReadinessDTO(
+        await executionOpsService.getFinalRcProductionCandidateReadiness(),
+      ),
   );
 
   app.post(

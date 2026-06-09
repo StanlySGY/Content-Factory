@@ -620,7 +620,51 @@ pnpm --dir apps/api exec vitest run \
 
 ---
 
-## 14. 非目标 / 边界
+## 14. Final RC Production Candidate Readiness
+
+Final RC 不再新增 P2.x。它只聚合 P0/P1/P2 readiness 与关键 DB 不变量，确认当前系统是否达到生产候选安全收口。
+
+```text
+GET /api/execution/ops/final-rc-readiness
+```
+
+通过时：
+
+```text
+{
+  "mode": "final_rc_production_candidate",
+  "candidate": true,
+  "status": "candidate",
+  "external_call_performed": false
+}
+```
+
+检查项：
+
+| gate | 说明 |
+| --- | --- |
+| production_activation_ready | P0 production activation preflight |
+| production_readiness_p1_ready | quota / secret / monitoring / smoke readiness |
+| agent_real_runtime_ready | Agent real runtime 显式 gate |
+| mcp_real_runtime_ready | MCP Streamable HTTP 显式 gate |
+| publisher_real_runtime_ready | Publisher HTTP release 显式 gate |
+| writeback_executor_default_closed | writeback executor 默认关闭、不可执行 |
+| execution_result_ledger_append_only | `execution_results` job+attempt 账本约束存在 |
+| publish_record_version_pinned | `publish_records.asset_version_id` immutable trigger 存在 |
+| network_allowlist_configured | 网络 allowlist 非空 |
+| secret_redaction_enabled | runtime snapshot redaction 开启 |
+
+该端点不 tick job、不处理 outbox、不创建 publish record、不发真实网络请求。若返回 `blocked`，先看 `missing_requirements`，不要直接打开真实 runtime。
+
+验证：
+
+```text
+pnpm --dir apps/api exec vitest run test/integration/final-rc-production-candidate-api.test.ts
+```
+
+---
+
+## 15. 非目标 / 边界
 
 - 默认不做真实外部 LLM 调用；只有 Productization-1 显式 gate 满足时才允许 `agent` 外部 LLM 调用。
 - P1.1 只实现 Secret Manager contract adapter，不实现云 Secret Manager / Vault / KMS。

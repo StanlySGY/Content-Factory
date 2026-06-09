@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { EXECUTION_OUTBOX_EVENTS } from "@cf/shared";
+import { sql } from "drizzle-orm";
 import { ConflictError, NotFoundError, ValidationError } from "../domain/errors.js";
 import {
   buildExecutionWritebackApplyGuardReadiness,
@@ -337,6 +338,42 @@ export interface ProductionReadinessP1 {
   };
 }
 
+export interface FinalRcProductionCandidateReadiness {
+  mode: "final_rc_production_candidate";
+  candidate: boolean;
+  status: "candidate" | "blocked";
+  externalCallPerformed: false;
+  missingRequirements: string[];
+  warnings: string[];
+  capabilities: {
+    agentRealRuntime: boolean;
+    mcpRealRuntime: boolean;
+    publisherRealRuntime: boolean;
+    workflowStageWriteback: false;
+  };
+  gates: {
+    productionActivationReady: boolean;
+    productionReadinessP1Ready: boolean;
+    agentRealRuntimeReady: boolean;
+    mcpRealRuntimeReady: boolean;
+    publisherRealRuntimeReady: boolean;
+    writebackExecutorDefaultClosed: boolean;
+    executionResultLedgerAppendOnly: boolean;
+    publishRecordVersionPinned: boolean;
+    killSwitchDefaultClosed: boolean;
+    networkAllowlistConfigured: boolean;
+    secretRedactionEnabled: boolean;
+  };
+  endpoints: {
+    productionActivation: "/api/execution/ops/production-activation-preflight";
+    productionReadinessP1: "/api/execution/ops/production-readiness-p1";
+    mcpRealRuntime: "/api/execution/ops/mcp-real-runtime-readiness";
+    publisherRealRuntime: "/api/execution/ops/publisher-real-runtime-readiness";
+    writebackExecutorRegistration: "/api/execution/ops/writeback-executor-registration-readiness";
+  };
+  nonGoals: string[];
+}
+
 export interface SecretManagerReadiness {
   mode: "secret_manager_readiness";
   ready: boolean;
@@ -359,6 +396,10 @@ export interface SecretManagerReadiness {
 export interface ExecutionMonitoringSnapshot {
   readiness: ExecutionMonitoringReadiness;
   metrics: ExecutionMonitoringMetric[];
+}
+
+interface ExistsRow {
+  exists: boolean;
 }
 
 function envNameFromKeyRef(keyRef: string): string | null {
@@ -717,6 +758,108 @@ export class ExecutionOpsService {
       runtimeSafetyPolicy: this.config.runtimeSafetyPolicy,
       networkAllowlist: this.config.networkAllowlist,
     });
+  }
+
+  private async hasExecutionResultLedgerInvariant(): Promise<boolean> {
+    const res = await this.db.execute(sql`
+      SELECT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'execution_results_job_attempt_uniq'
+      ) AS exists
+    `);
+    return ((res.rows as unknown as ExistsRow[])[0]?.exists) === true;
+  }
+
+  private async hasPublishRecordVersionPinTrigger(): Promise<boolean> {
+    const res = await this.db.execute(sql`
+      SELECT EXISTS (
+        SELECT 1
+        FROM pg_trigger
+        WHERE tgname = 'trg_publish_records_asset_version_immutable'
+          AND NOT tgisinternal
+      ) AS exists
+    `);
+    return ((res.rows as unknown as ExistsRow[])[0]?.exists) === true;
+  }
+
+  async getFinalRcProductionCandidateReadiness(): Promise<FinalRcProductionCandidateReadiness> {
+    const [productionActivation, productionReadinessP1, resultLedgerAppendOnly, publishVersionPinned] =
+      await Promise.all([
+        Promise.resolve(this.getProductionActivationPreflight()),
+        this.getProductionReadinessP1(),
+        this.hasExecutionResultLedgerInvariant(),
+        this.hasPublishRecordVersionPinTrigger(),
+      ]);
+    const mcp = this.getMcpRealRuntimeReadiness();
+    const publisher = this.getPublisherRealRuntimeReadiness();
+    const writebackRegistration = this.getWritebackExecutorRegistrationReadiness();
+    const writebackDefaultClosed =
+      writebackRegistration.registered === false &&
+      writebackRegistration.executable === false &&
+      writebackRegistration.controlPlaneWriteAllowed === false &&
+      writebackRegistration.auditWriteAllowed === false;
+    const gates: FinalRcProductionCandidateReadiness["gates"] = {
+      productionActivationReady: productionActivation.ready,
+      productionReadinessP1Ready: productionReadinessP1.ready,
+      agentRealRuntimeReady: productionActivation.capabilities.agentRealRuntime,
+      mcpRealRuntimeReady: mcp.ready,
+      publisherRealRuntimeReady: publisher.ready,
+      writebackExecutorDefaultClosed: writebackDefaultClosed,
+      executionResultLedgerAppendOnly: resultLedgerAppendOnly,
+      publishRecordVersionPinned: publishVersionPinned,
+      killSwitchDefaultClosed: true,
+      networkAllowlistConfigured: this.config.networkAllowlist.length > 0,
+      secretRedactionEnabled: this.config.runtimeSafetyPolicy.redactSnapshots,
+    };
+    const missingRequirements: string[] = [];
+    if (!gates.productionActivationReady) missingRequirements.push("production activation preflight must be ready");
+    if (!gates.productionReadinessP1Ready) missingRequirements.push("P1 production readiness must be ready");
+    if (!gates.agentRealRuntimeReady) missingRequirements.push("Agent real runtime readiness must be ready");
+    if (!gates.mcpRealRuntimeReady) missingRequirements.push("MCP real runtime readiness must be ready");
+    if (!gates.publisherRealRuntimeReady) missingRequirements.push("Publisher real runtime readiness must be ready");
+    if (!gates.writebackExecutorDefaultClosed)
+      missingRequirements.push("writeback executor must remain default-closed for Final RC");
+    if (!gates.executionResultLedgerAppendOnly)
+      missingRequirements.push("execution_results ledger invariant must be present");
+    if (!gates.publishRecordVersionPinned)
+      missingRequirements.push("publish_records asset_version_id immutable trigger must be present");
+    if (!gates.networkAllowlistConfigured) missingRequirements.push("execution network allowlist must be configured");
+    if (!gates.secretRedactionEnabled) missingRequirements.push("runtime snapshot redaction must be enabled");
+
+    const candidate = missingRequirements.length === 0;
+    return {
+      mode: "final_rc_production_candidate",
+      candidate,
+      status: candidate ? "candidate" : "blocked",
+      externalCallPerformed: false,
+      missingRequirements,
+      warnings: [
+        "workflow stage writeback executor remains fail-closed by design",
+        "Final RC does not perform external provider calls",
+        "MCP marketplace, full publisher platform, multi-tenant RBAC, RAG, and advanced evaluation remain separate product routes",
+      ],
+      capabilities: {
+        agentRealRuntime: gates.agentRealRuntimeReady,
+        mcpRealRuntime: gates.mcpRealRuntimeReady,
+        publisherRealRuntime: gates.publisherRealRuntimeReady,
+        workflowStageWriteback: false,
+      },
+      gates,
+      endpoints: {
+        productionActivation: "/api/execution/ops/production-activation-preflight",
+        productionReadinessP1: "/api/execution/ops/production-readiness-p1",
+        mcpRealRuntime: "/api/execution/ops/mcp-real-runtime-readiness",
+        publisherRealRuntime: "/api/execution/ops/publisher-real-runtime-readiness",
+        writebackExecutorRegistration: "/api/execution/ops/writeback-executor-registration-readiness",
+      },
+      nonGoals: [
+        "no additional Phase 2.x disabled harness",
+        "no real external calls during readiness checks",
+        "no automatic writeback to assets, reviews, or publisher targets",
+        "no Publisher UI or full channel operations platform",
+      ],
+    };
   }
 
   async runStagingSmoke(): Promise<StagingSmokeReport> {

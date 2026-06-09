@@ -32,6 +32,7 @@ import type {
   ExecutionMonitoringReadinessResponse,
   ExecutionResultSummaryDTO,
   ExecutionSystemHealthDTO,
+  FinalRcProductionCandidateReadinessResponse,
   McpServerDTO,
   McpToolDTO,
   McpRealRuntimeReadinessResponse,
@@ -111,6 +112,7 @@ import type { RuntimeAdapterDescriptor, RuntimeAdapterMode } from "./runtime/ada
 import type {
   ExecutionSystemHealth,
   AgentRealHttpAdapterReadiness,
+  FinalRcProductionCandidateReadiness,
   ProviderHttpBoundaryReadiness,
   ProviderSafetySummary,
   ProductionReadinessP1,
@@ -1387,6 +1389,46 @@ export function toPublisherRealRuntimeReadinessDTO(
     network_allowlist: s.network_allowlist,
     missing_requirements: s.missing_requirements,
     warnings: s.warnings,
+  };
+}
+
+export function toFinalRcProductionCandidateReadinessDTO(
+  s: FinalRcProductionCandidateReadiness,
+): FinalRcProductionCandidateReadinessResponse {
+  return {
+    mode: s.mode,
+    candidate: s.candidate,
+    status: s.status,
+    external_call_performed: s.externalCallPerformed,
+    missing_requirements: s.missingRequirements,
+    warnings: s.warnings,
+    capabilities: {
+      agent_real_runtime: s.capabilities.agentRealRuntime,
+      mcp_real_runtime: s.capabilities.mcpRealRuntime,
+      publisher_real_runtime: s.capabilities.publisherRealRuntime,
+      workflow_stage_writeback: s.capabilities.workflowStageWriteback,
+    },
+    gates: {
+      production_activation_ready: s.gates.productionActivationReady,
+      production_readiness_p1_ready: s.gates.productionReadinessP1Ready,
+      agent_real_runtime_ready: s.gates.agentRealRuntimeReady,
+      mcp_real_runtime_ready: s.gates.mcpRealRuntimeReady,
+      publisher_real_runtime_ready: s.gates.publisherRealRuntimeReady,
+      writeback_executor_default_closed: s.gates.writebackExecutorDefaultClosed,
+      execution_result_ledger_append_only: s.gates.executionResultLedgerAppendOnly,
+      publish_record_version_pinned: s.gates.publishRecordVersionPinned,
+      kill_switch_default_closed: s.gates.killSwitchDefaultClosed,
+      network_allowlist_configured: s.gates.networkAllowlistConfigured,
+      secret_redaction_enabled: s.gates.secretRedactionEnabled,
+    },
+    endpoints: {
+      production_activation: s.endpoints.productionActivation,
+      production_readiness_p1: s.endpoints.productionReadinessP1,
+      mcp_real_runtime: s.endpoints.mcpRealRuntime,
+      publisher_real_runtime: s.endpoints.publisherRealRuntime,
+      writeback_executor_registration: s.endpoints.writebackExecutorRegistration,
+    },
+    non_goals: s.nonGoals,
   };
 }
 

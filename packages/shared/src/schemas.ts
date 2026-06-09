@@ -2200,6 +2200,57 @@ export const PublisherRealRuntimeReadinessResponseSchema = Type.Object(
 );
 export type PublisherRealRuntimeReadinessResponse = Static<typeof PublisherRealRuntimeReadinessResponseSchema>;
 
+export const FinalRcProductionCandidateReadinessResponseSchema = Type.Object(
+  {
+    mode: StringEnum(["final_rc_production_candidate"] as const),
+    candidate: Type.Boolean(),
+    status: StringEnum(["candidate", "blocked"] as const),
+    external_call_performed: Type.Boolean(),
+    missing_requirements: Type.Array(Type.String()),
+    warnings: Type.Array(Type.String()),
+    capabilities: Type.Object(
+      {
+        agent_real_runtime: Type.Boolean(),
+        mcp_real_runtime: Type.Boolean(),
+        publisher_real_runtime: Type.Boolean(),
+        workflow_stage_writeback: Type.Boolean(),
+      },
+      { additionalProperties: false },
+    ),
+    gates: Type.Object(
+      {
+        production_activation_ready: Type.Boolean(),
+        production_readiness_p1_ready: Type.Boolean(),
+        agent_real_runtime_ready: Type.Boolean(),
+        mcp_real_runtime_ready: Type.Boolean(),
+        publisher_real_runtime_ready: Type.Boolean(),
+        writeback_executor_default_closed: Type.Boolean(),
+        execution_result_ledger_append_only: Type.Boolean(),
+        publish_record_version_pinned: Type.Boolean(),
+        kill_switch_default_closed: Type.Boolean(),
+        network_allowlist_configured: Type.Boolean(),
+        secret_redaction_enabled: Type.Boolean(),
+      },
+      { additionalProperties: false },
+    ),
+    endpoints: Type.Object(
+      {
+        production_activation: Type.String(),
+        production_readiness_p1: Type.String(),
+        mcp_real_runtime: Type.String(),
+        publisher_real_runtime: Type.String(),
+        writeback_executor_registration: Type.String(),
+      },
+      { additionalProperties: false },
+    ),
+    non_goals: Type.Array(Type.String()),
+  },
+  { additionalProperties: false },
+);
+export type FinalRcProductionCandidateReadinessResponse = Static<
+  typeof FinalRcProductionCandidateReadinessResponseSchema
+>;
+
 export const StagingSmokeReportResponseSchema = Type.Object(
   {
     mode: StringEnum(["staging_smoke_report"] as const),

@@ -496,6 +496,8 @@ MVP 后再进入：
 
 **Productization 现状**——Agent Real LLM、workflow_stage_run writeback relay、MCP Streamable HTTP runtime、Publisher HTTP release runtime 均已进入默认关闭、显式 gate、可观测账本路径。真实执行证据统一进入 `execution_results` 与 `outbox_events`；控制面回写仅限显式开启的 workflow stage writeback。
 
-**最终 RC 前必须完成的 gate**：汇总 production activation / P1 readiness / MCP readiness / Publisher readiness，确认默认关闭、kill switch、network allowlist、secret redaction、append-only result ledger、publish_records 版本不可变、writeback executor 默认关闭与回滚预案。
+**Final RC 已收口**：`GET /api/execution/ops/final-rc-readiness` 已汇总 production activation / P1 readiness / MCP readiness / Publisher readiness / writeback executor registration / result ledger / publish version pin 等 gate。该端点只读、不发外部调用、不写控制面，用于判断当前系统是否达到生产候选安全闭合。
 
 > **Publisher 已补齐最小产品化入口**：P2.2 新增 `publish_records`、`/api/publish-records`、`PublisherRealRuntime` 与 `/api/execution/ops/publisher-real-runtime-readiness`。它仍默认关闭，只支持最小 HTTP release，不代表完整公众号运营平台已完成。
+
+> **不再继续 P2.x**：后续剩余工作进入独立产品路线，例如 Publisher Platform、MCP Marketplace、多租户 RBAC、Knowledge/RAG、Agent Evaluation。
