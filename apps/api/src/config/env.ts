@@ -43,6 +43,10 @@ export interface Env {
   executionStagingSmokeEnabled: boolean;
   executionStagingSmokeRuntimeMode: "mock_only";
   executionStagingSmokeMaxJobs: number;
+  executionMcpRealRuntimeEnabled: boolean;
+  executionMcpTransportMode: "streamable_http";
+  executionMcpEndpointRegistry: string[];
+  executionMcpToolAllowlist: string[];
   agentOpenAICompatibleEndpoint: string | null;
   outboxRelayEnabled: boolean;
   outboxRelayIntervalMs: number;
@@ -88,6 +92,12 @@ function stagingSmokeRuntimeMode(value: string | undefined): Env["executionStagi
   if (value === undefined || value === "") return "mock_only";
   if (value === "mock_only") return value;
   throw new Error(`invalid EXECUTION_STAGING_SMOKE_RUNTIME_MODE: ${value}`);
+}
+
+function mcpTransportMode(value: string | undefined): Env["executionMcpTransportMode"] {
+  if (value === undefined || value === "") return "streamable_http";
+  if (value === "streamable_http") return value;
+  throw new Error(`invalid EXECUTION_MCP_TRANSPORT_MODE: ${value}`);
 }
 
 function csv(value: string | undefined): string[] {
@@ -180,6 +190,10 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
       1,
       "EXECUTION_STAGING_SMOKE_MAX_JOBS",
     ),
+    executionMcpRealRuntimeEnabled: bool(source.EXECUTION_MCP_REAL_RUNTIME_ENABLED, false),
+    executionMcpTransportMode: mcpTransportMode(source.EXECUTION_MCP_TRANSPORT_MODE),
+    executionMcpEndpointRegistry: csv(source.EXECUTION_MCP_ENDPOINT_REGISTRY),
+    executionMcpToolAllowlist: csv(source.EXECUTION_MCP_TOOL_ALLOWLIST),
     agentOpenAICompatibleEndpoint: source.AGENT_OPENAI_COMPATIBLE_ENDPOINT ?? null,
     outboxRelayEnabled: bool(source.OUTBOX_RELAY_ENABLED, false),
     outboxRelayIntervalMs: Number(source.OUTBOX_RELAY_INTERVAL_MS ?? 5000),

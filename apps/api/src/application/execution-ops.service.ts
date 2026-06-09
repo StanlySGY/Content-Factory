@@ -115,6 +115,11 @@ import {
   type AgentRealProviderTransportDisabledHarness,
 } from "./runtime/agent-real-provider-transport-disabled-harness.js";
 import {
+  buildMcpRealRuntimeReadiness,
+  type MCPTransportMode,
+  type McpRealRuntimeReadiness,
+} from "./runtime/mcp-real-runtime.js";
+import {
   buildProductionActivationPreflight,
   type ProductionActivationPreflight,
 } from "./runtime/production-activation-preflight.js";
@@ -164,6 +169,10 @@ export interface ExecutionOpsConfig {
   stagingSmokeEnabled: boolean;
   stagingSmokeRuntimeMode: StagingSmokeRuntimeMode;
   stagingSmokeMaxJobs: number;
+  mcpRealRuntimeEnabled: boolean;
+  mcpTransportMode: MCPTransportMode;
+  mcpEndpointRegistry: string[];
+  mcpToolAllowlist: string[];
   writebackExecutorEnabled: boolean;
 }
 
@@ -679,6 +688,17 @@ export class ExecutionOpsService {
       enabled: this.config.stagingSmokeEnabled,
       runtimeMode: this.config.stagingSmokeRuntimeMode,
       maxJobs: this.config.stagingSmokeMaxJobs,
+    });
+  }
+
+  getMcpRealRuntimeReadiness(): McpRealRuntimeReadiness {
+    return buildMcpRealRuntimeReadiness({
+      enabled: this.config.mcpRealRuntimeEnabled,
+      transportMode: this.config.mcpTransportMode,
+      endpointRegistry: this.config.mcpEndpointRegistry,
+      toolAllowlist: this.config.mcpToolAllowlist,
+      runtimeSafetyPolicy: this.config.runtimeSafetyPolicy,
+      networkAllowlist: this.config.networkAllowlist,
     });
   }
 

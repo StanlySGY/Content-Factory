@@ -34,6 +34,7 @@ import type {
   ExecutionSystemHealthDTO,
   McpServerDTO,
   McpToolDTO,
+  McpRealRuntimeReadinessResponse,
   OutboxEventDTO,
   PendingReviewDTO,
   ProductionActivationPreflightResponse,
@@ -119,6 +120,7 @@ import type { ProviderQuotaCostPreflightReadiness } from "./runtime/provider-quo
 import type { AgentRealAdapterRegistrationGuard } from "./runtime/agent-real-adapter-registration-guard.js";
 import type { AgentRealProviderConfigPreflight } from "./runtime/agent-real-provider-config-preflight.js";
 import type { AgentRealProviderTransportDisabledHarness } from "./runtime/agent-real-provider-transport-disabled-harness.js";
+import type { McpRealRuntimeReadiness } from "./runtime/mcp-real-runtime.js";
 import type { ProductionActivationPreflight } from "./runtime/production-activation-preflight.js";
 
 const iso = (d: Date | null): string | null => (d ? d.toISOString() : null);
@@ -1322,6 +1324,26 @@ export function toStagingSmokeReadinessDTO(s: StagingSmokeReadiness): StagingSmo
     network_push_enabled: s.networkPushEnabled,
     run_endpoint: s.runEndpoint,
     missing_requirements: s.missingRequirements,
+    warnings: s.warnings,
+  };
+}
+
+export function toMcpRealRuntimeReadinessDTO(
+  s: McpRealRuntimeReadiness,
+): McpRealRuntimeReadinessResponse {
+  return {
+    mode: s.mode,
+    ready: s.ready,
+    status: s.status,
+    enabled: s.enabled,
+    transport_mode: s.transport_mode,
+    endpoint_registry_count: s.endpoint_registry_count,
+    tool_allowlist_count: s.tool_allowlist_count,
+    allow_network: s.allow_network,
+    allow_real_runtime: s.allow_real_runtime,
+    redact_snapshots: s.redact_snapshots,
+    network_allowlist: s.network_allowlist,
+    missing_requirements: s.missing_requirements,
     warnings: s.warnings,
   };
 }

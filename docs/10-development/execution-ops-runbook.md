@@ -10,6 +10,7 @@
 > Productization-P1.3 已提供默认关闭、mock-only 的 staging smoke automation；当前不触发真实 provider。
 > Productization-1 已提供显式 `agent` OpenAI-compatible HTTP transport；只有显式 real runtime/network/secret gate 全部满足时才会调用外部 LLM。
 > Productization-2 已把 `workflow_stage_run` writeback handler 接入 app 装配，但仍由 `EXECUTION_WRITEBACK_EXECUTOR_ENABLED=true` 显式开启。
+> Productization-P2.1 已提供显式 `mcp` Streamable HTTP / JSON-RPC runtime；只有 endpoint registry、tool allowlist、network allowlist 与 runtime safety gate 全部满足时才会调用外部 MCP endpoint。
 
 所有端点前缀 `/api/execution`。错误遵循统一结构（`{ error: { code, message, retryable }, request_id }`）。
 
@@ -451,13 +452,90 @@ pnpm --dir apps/api exec vitest run test/integration/productization-agent-writeb
 
 ---
 
-## 12. 非目标 / 边界
+## 12. MCP Real Runtime（显式产品化入口）
+
+P2.1 支持 `mcp` execution job 调用真实 MCP endpoint 的 JSON-RPC `tools/call`。默认关闭。
+
+Readiness：
+
+```text
+GET /api/execution/ops/mcp-real-runtime-readiness
+```
+
+最小启用条件：
+
+```text
+EXECUTION_RUNTIME_MODE=real_enabled
+EXECUTION_RUNTIME_ADAPTER_MODE=real
+EXECUTION_ALLOW_REAL_RUNTIME=true
+EXECUTION_ALLOW_NETWORK=true
+EXECUTION_REDACT_SNAPSHOTS=true
+EXECUTION_NETWORK_ALLOWLIST=mcp.example.test
+EXECUTION_MCP_REAL_RUNTIME_ENABLED=true
+EXECUTION_MCP_TRANSPORT_MODE=streamable_http
+EXECUTION_MCP_ENDPOINT_REGISTRY=mcp://content-tools=https://mcp.example.test/rpc
+EXECUTION_MCP_TOOL_ALLOWLIST=mcp://content-tools#safe_lookup
+```
+
+创建并执行：
+
+```text
+POST /api/execution/jobs
+{
+  "type": "mcp",
+  "payload": {
+    "serverRef": "mcp://content-tools",
+    "toolName": "safe_lookup",
+    "input": { "query": "hello" }
+  },
+  "idempotency_key": "mcp-real-demo-1",
+  "max_attempts": 1
+}
+
+POST /api/execution/jobs/:id/tick
+```
+
+执行请求格式：
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": "<jobId>",
+  "method": "tools/call",
+  "params": {
+    "name": "<toolName>",
+    "arguments": "<input>"
+  }
+}
+```
+
+关键排查：
+
+- readiness `ready=false` 时不要执行真实 MCP job；先看 `missing_requirements`。
+- `serverRef` 必须存在于 `EXECUTION_MCP_ENDPOINT_REGISTRY`。
+- `toolName` 必须存在于 `EXECUTION_MCP_TOOL_ALLOWLIST`。
+- endpoint host 必须在 `EXECUTION_NETWORK_ALLOWLIST`。
+- `riskLevel=high` 或高风险 toolName 会在网络前 `blocked`。
+- 真实调用证据在 `execution_results` append-only ledger；P2.1 不写 `tool_invocations`。
+
+验证：
+
+```text
+pnpm --dir apps/api exec vitest run \
+  test/unit/mcp-real-runtime.test.ts \
+  test/integration/productization-p2-1-mcp-real-runtime-api.test.ts
+```
+
+---
+
+## 13. 非目标 / 边界
 
 - 默认不做真实外部 LLM 调用；只有 Productization-1 显式 gate 满足时才允许 `agent` 外部 LLM 调用。
 - P1.1 只实现 Secret Manager contract adapter，不实现云 Secret Manager / Vault / KMS。
 - P1.2 只实现 pull-based metrics exporter，不接 Grafana / PagerDuty / Alertmanager，不做 push metrics。
 - P1.3 staging smoke 只执行 mock-only job，不调用真实 provider。
-- 不连接生产 MCP server、不真实发布。
+- P2.1 MCP real runtime 默认关闭；开启后只支持 Streamable HTTP / JSON-RPC `tools/call`，不接 MCP SDK、不做 SSE/stdio、不写 `tool_invocations`。
+- 不真实发布。
 - 不引入 Redis/MQ/BullMQ（纯 DB 轮询）。
 - 不改 Workflow/Review/Agent/MCP 状态机、不做 UI。
 - writeback executor 默认不开启；开启后也仅支持 `workflow_stage_run`，不支持 assets/reviews/publisher targets。

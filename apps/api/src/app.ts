@@ -17,6 +17,12 @@ import { createWorkflowStageRunWritebackHandler } from "./application/execution-
 import { ExecutionWorker } from "./application/execution-worker.js";
 import { MockRuntimeAdapterFactory, type RuntimeAdapterFactory } from "./application/runtime/adapter-factory.js";
 import { AgentRealRuntime } from "./application/runtime/agent-real-runtime.js";
+import {
+  MCPJsonRpcHttpClient,
+  MCPRealRuntime,
+  parseMcpEndpointRegistry,
+  parseMcpToolAllowlist,
+} from "./application/runtime/mcp-real-runtime.js";
 import { DbProviderQuotaEnforcer, type ProviderQuotaLimits } from "./application/runtime/provider-quota-enforcer.js";
 import {
   FetchAgentProviderHttpTransport,
@@ -79,6 +85,19 @@ function shouldAssembleProductizedAgentRuntime(env: Env): boolean {
     env.agentOpenAICompatibleEndpoint.trim().length > 0;
 }
 
+function shouldAssembleProductizedMcpRuntime(env: Env): boolean {
+  return env.executionRuntimeMode === "real_enabled" &&
+    env.executionRuntimeAdapterMode === "real" &&
+    env.executionAllowRealRuntime &&
+    env.executionAllowNetwork &&
+    env.executionRedactSnapshots &&
+    env.executionMcpRealRuntimeEnabled &&
+    env.executionMcpTransportMode === "streamable_http" &&
+    env.executionMcpEndpointRegistry.length > 0 &&
+    env.executionMcpToolAllowlist.length > 0 &&
+    env.executionNetworkAllowlist.length > 0;
+}
+
 function providerQuotaLimits(env: Env): ProviderQuotaLimits {
   return {
     dailyRequestLimit: env.executionProviderDailyRequestLimit,
@@ -89,19 +108,19 @@ function providerQuotaLimits(env: Env): ProviderQuotaLimits {
 
 function buildRuntimeAdapterFactory(env: Env, policy: RuntimeSafetyPolicy, opts: BuildOptions, db: ReturnType<typeof createDb>): RuntimeAdapterFactory {
   if (opts.runtimeAdapterFactory) return opts.runtimeAdapterFactory;
-  if (!shouldAssembleProductizedAgentRuntime(env))
+  const assembleAgent = shouldAssembleProductizedAgentRuntime(env);
+  const assembleMcp = shouldAssembleProductizedMcpRuntime(env);
+  if (!assembleAgent && !assembleMcp)
     return new MockRuntimeAdapterFactory({ ...policy, adapterMode: env.executionRuntimeAdapterMode });
 
-  const endpoint = env.agentOpenAICompatibleEndpoint!;
-  const host = new URL(endpoint).hostname;
-  const allowedHosts = env.executionNetworkAllowlist.length > 0 ? env.executionNetworkAllowlist : [host];
-  const credentialResolver: IRuntimeCredentialResolver = env.executionSecretStoreKind === "external_registry"
-    ? new ExternalRegistryCredentialResolver(opts.credentialEnvSource ?? process.env, env.executionExternalSecretRegistry)
-    : new EnvRuntimeCredentialResolver(opts.credentialEnvSource ?? process.env, env.executionSecretRegistry);
-  return new MockRuntimeAdapterFactory({
-    ...policy,
-    adapterMode: "real",
-    realAgentRuntime: new AgentRealRuntime(new RealAgentProviderHttpClient(
+  const realAgentRuntime = assembleAgent ? (() => {
+    const endpoint = env.agentOpenAICompatibleEndpoint!;
+    const host = new URL(endpoint).hostname;
+    const allowedHosts = env.executionNetworkAllowlist.length > 0 ? env.executionNetworkAllowlist : [host];
+    const credentialResolver: IRuntimeCredentialResolver = env.executionSecretStoreKind === "external_registry"
+      ? new ExternalRegistryCredentialResolver(opts.credentialEnvSource ?? process.env, env.executionExternalSecretRegistry)
+      : new EnvRuntimeCredentialResolver(opts.credentialEnvSource ?? process.env, env.executionSecretRegistry);
+    return new AgentRealRuntime(new RealAgentProviderHttpClient(
       {
         realHttpEnabled: true,
         allowNetwork: true,
@@ -110,7 +129,19 @@ function buildRuntimeAdapterFactory(env: Env, policy: RuntimeSafetyPolicy, opts:
       },
       new FetchAgentProviderHttpTransport(opts.fetchImplementation),
       credentialResolver,
-    ), new DbProviderQuotaEnforcer(db, providerQuotaLimits(env))),
+    ), new DbProviderQuotaEnforcer(db, providerQuotaLimits(env)));
+  })() : undefined;
+  const mcpRealRuntime = assembleMcp ? new MCPRealRuntime(new MCPJsonRpcHttpClient(opts.fetchImplementation), {
+    endpointRegistry: parseMcpEndpointRegistry(env.executionMcpEndpointRegistry),
+    toolAllowlist: parseMcpToolAllowlist(env.executionMcpToolAllowlist),
+    networkAllowlist: env.executionNetworkAllowlist,
+    transportMode: env.executionMcpTransportMode,
+  }) : undefined;
+  return new MockRuntimeAdapterFactory({
+    ...policy,
+    adapterMode: "real",
+    realAgentRuntime,
+    mcpRealRuntime,
   });
 }
 
@@ -194,6 +225,10 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
     stagingSmokeEnabled: env.executionStagingSmokeEnabled,
     stagingSmokeRuntimeMode: env.executionStagingSmokeRuntimeMode,
     stagingSmokeMaxJobs: env.executionStagingSmokeMaxJobs,
+    mcpRealRuntimeEnabled: env.executionMcpRealRuntimeEnabled,
+    mcpTransportMode: env.executionMcpTransportMode,
+    mcpEndpointRegistry: env.executionMcpEndpointRegistry,
+    mcpToolAllowlist: env.executionMcpToolAllowlist,
     writebackExecutorEnabled: env.executionWritebackExecutorEnabled,
   }, executionWorker);
   const agentProfileService = new AgentProfileService(db);

@@ -16,6 +16,7 @@ import { AgentProviderRuntime } from "./agent-provider-runtime.js";
 import { AgentProviderPreflightRuntime } from "./provider-preflight-runtime.js";
 import { throwAgentRealAdapterDisabledFixture } from "./agent-real-adapter-disabled-fixture.js";
 import type { AgentRealRuntime } from "./agent-real-runtime.js";
+import type { MCPRealRuntime } from "./mcp-real-runtime.js";
 import type { MCPSafetyRuntime } from "./mcp-safety-runtime.js";
 import type { PublisherSafetyRuntime } from "./publisher-safety-runtime.js";
 import type { RuntimeAdapterMode } from "./adapter-registry.js";
@@ -37,6 +38,7 @@ export interface RuntimeAdapterFactory {
 export interface RuntimeAdapterFactoryOptions extends Partial<RuntimeSafetyPolicy> {
   adapterMode?: RuntimeAdapterMode;
   realAgentRuntime?: AgentRealRuntime;
+  mcpRealRuntime?: MCPRealRuntime;
   mcpSafetyRuntime?: MCPSafetyRuntime;
   publisherSafetyRuntime?: PublisherSafetyRuntime;
 }
@@ -60,6 +62,7 @@ export class MockRuntimeAdapterFactory implements RuntimeAdapterFactory {
   private readonly agentProviderRuntime = new AgentProviderRuntime();
   private readonly agentProviderPreflightRuntime = new AgentProviderPreflightRuntime();
   private readonly realAgentRuntime: AgentRealRuntime | null;
+  private readonly mcpRealRuntime: MCPRealRuntime | null;
   private readonly mcpSafetyRuntime: MCPSafetyRuntime | null;
   private readonly publisherSafetyRuntime: PublisherSafetyRuntime | null;
 
@@ -67,12 +70,14 @@ export class MockRuntimeAdapterFactory implements RuntimeAdapterFactory {
     const {
       adapterMode = "mock",
       realAgentRuntime = null,
+      mcpRealRuntime = null,
       mcpSafetyRuntime = null,
       publisherSafetyRuntime = null,
       ...safetyPolicy
     } = policy;
     this.adapterMode = adapterMode;
     this.realAgentRuntime = realAgentRuntime;
+    this.mcpRealRuntime = mcpRealRuntime;
     this.mcpSafetyRuntime = mcpSafetyRuntime;
     this.publisherSafetyRuntime = publisherSafetyRuntime;
     this.policy = { ...DEFAULT_RUNTIME_SAFETY_POLICY, ...safetyPolicy };
@@ -94,6 +99,12 @@ export class MockRuntimeAdapterFactory implements RuntimeAdapterFactory {
         if (!policy.allowProcessSpawn)
           throw new ValidationError("mcp safety adapter requires allowProcessSpawn=true");
         return this.mcpSafetyRuntime;
+      }
+      if (type === "mcp" && this.mcpRealRuntime) {
+        if (policy.mode !== "real_enabled" || !policy.allowRealExecution)
+          throw new ValidationError("mcp real adapter requires real_enabled mode and allowRealExecution=true");
+        if (!policy.allowNetwork) throw new ValidationError("mcp real adapter requires allowNetwork=true");
+        return this.mcpRealRuntime;
       }
       if (type === "publisher" && this.publisherSafetyRuntime) {
         if (policy.mode !== "real_enabled" || !policy.allowRealExecution)

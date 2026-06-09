@@ -2110,6 +2110,26 @@ export const StagingSmokeReadinessResponseSchema = Type.Object(
 );
 export type StagingSmokeReadinessResponse = Static<typeof StagingSmokeReadinessResponseSchema>;
 
+export const McpRealRuntimeReadinessResponseSchema = Type.Object(
+  {
+    mode: StringEnum(["mcp_real_runtime_readiness"] as const),
+    ready: Type.Boolean(),
+    status: StringEnum(["ready", "blocked"] as const),
+    enabled: Type.Boolean(),
+    transport_mode: StringEnum(["streamable_http"] as const),
+    endpoint_registry_count: Type.Integer(),
+    tool_allowlist_count: Type.Integer(),
+    allow_network: Type.Boolean(),
+    allow_real_runtime: Type.Boolean(),
+    redact_snapshots: Type.Boolean(),
+    network_allowlist: Type.Array(Type.String()),
+    missing_requirements: Type.Array(Type.String()),
+    warnings: Type.Array(Type.String()),
+  },
+  { additionalProperties: false },
+);
+export type McpRealRuntimeReadinessResponse = Static<typeof McpRealRuntimeReadinessResponseSchema>;
+
 export const StagingSmokeReportResponseSchema = Type.Object(
   {
     mode: StringEnum(["staging_smoke_report"] as const),

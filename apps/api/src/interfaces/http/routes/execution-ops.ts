@@ -19,6 +19,7 @@ import {
   ExecutionMonitoringReadinessResponseSchema,
   IdParamSchema,
   ManualRetryJobResponseSchema,
+  McpRealRuntimeReadinessResponseSchema,
   ProcessOutboxBatchBodySchema,
   ProcessOutboxBatchResponseSchema,
   ProductionActivationPreflightResponseSchema,
@@ -63,6 +64,7 @@ import {
   toExecutionWritebackTransactionPortReadinessDTO,
   toExecutionWritebackTransactionPrototypeReadinessDTO,
   toExecutionMonitoringReadinessDTO,
+  toMcpRealRuntimeReadinessDTO,
   toProductionActivationPreflightDTO,
   toProductionReadinessP1DTO,
   toRuntimeAdapterDryRunResponseDTO,
@@ -178,6 +180,12 @@ export const executionOpsRoutes: FastifyPluginAsyncTypebox<ExecutionOpsRoutesOpt
     "/api/execution/ops/staging-smoke-readiness",
     { schema: { response: { 200: StagingSmokeReadinessResponseSchema } } },
     async () => toStagingSmokeReadinessDTO(executionOpsService.getStagingSmokeReadiness()),
+  );
+
+  app.get(
+    "/api/execution/ops/mcp-real-runtime-readiness",
+    { schema: { response: { 200: McpRealRuntimeReadinessResponseSchema } } },
+    async () => toMcpRealRuntimeReadinessDTO(executionOpsService.getMcpRealRuntimeReadiness()),
   );
 
   app.post(
