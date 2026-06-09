@@ -35,6 +35,7 @@ import type {
   McpToolDTO,
   OutboxEventDTO,
   PendingReviewDTO,
+  ProductionActivationPreflightResponse,
   ReviewRecordDTO,
   RuntimeAdapterDescriptorDTO,
   RuntimeAdapterDryRunResponse,
@@ -108,6 +109,7 @@ import type { ProviderQuotaCostPreflightReadiness } from "./runtime/provider-quo
 import type { AgentRealAdapterRegistrationGuard } from "./runtime/agent-real-adapter-registration-guard.js";
 import type { AgentRealProviderConfigPreflight } from "./runtime/agent-real-provider-config-preflight.js";
 import type { AgentRealProviderTransportDisabledHarness } from "./runtime/agent-real-provider-transport-disabled-harness.js";
+import type { ProductionActivationPreflight } from "./runtime/production-activation-preflight.js";
 
 const iso = (d: Date | null): string | null => (d ? d.toISOString() : null);
 
@@ -1119,6 +1121,53 @@ export function toAgentRealAdapterRegistrationGuardDTO(
     fail_closed_error: {
       message: s.failClosedError.message,
       retryable: s.failClosedError.retryable,
+    },
+  };
+}
+
+export function toProductionActivationPreflightDTO(
+  s: ProductionActivationPreflight,
+): ProductionActivationPreflightResponse {
+  return {
+    mode: s.mode,
+    ready: s.ready,
+    status: s.status,
+    missing_requirements: s.missingRequirements,
+    warnings: s.warnings,
+    capabilities: {
+      agent_real_runtime: s.capabilities.agentRealRuntime,
+      workflow_stage_writeback: s.capabilities.workflowStageWriteback,
+      mcp_real_runtime: s.capabilities.mcpRealRuntime,
+      publisher_real_runtime: s.capabilities.publisherRealRuntime,
+    },
+    runtime: {
+      mode: s.runtime.mode,
+      adapter_mode: s.runtime.adapterMode,
+      allow_real_runtime: s.runtime.allowRealRuntime,
+      allow_network: s.runtime.allowNetwork,
+      redact_snapshots: s.runtime.redactSnapshots,
+      timeout_ms: s.runtime.timeoutMs,
+    },
+    network: {
+      allowlist: s.network.allowlist,
+      agent_endpoint_configured: s.network.agentEndpointConfigured,
+      agent_endpoint_host: s.network.agentEndpointHost,
+    },
+    secret_refs: s.secretRefs.map((ref) => ({
+      key_ref: ref.keyRef,
+      registered: ref.registered,
+      material_available: ref.materialAvailable,
+    })),
+    quota: {
+      distributed: s.quota.distributed,
+      daily_request_limit: s.quota.dailyRequestLimit,
+      daily_cost_limit_cents: s.quota.dailyCostLimitCents,
+      estimated_cost_per_request_cents: s.quota.estimatedCostPerRequestCents,
+    },
+    ops: {
+      worker_enabled: s.ops.workerEnabled,
+      relay_enabled: s.ops.relayEnabled,
+      writeback_executor_enabled: s.ops.writebackExecutorEnabled,
     },
   };
 }

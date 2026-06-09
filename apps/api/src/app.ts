@@ -17,6 +17,7 @@ import { createWorkflowStageRunWritebackHandler } from "./application/execution-
 import { ExecutionWorker } from "./application/execution-worker.js";
 import { MockRuntimeAdapterFactory, type RuntimeAdapterFactory } from "./application/runtime/adapter-factory.js";
 import { AgentRealRuntime } from "./application/runtime/agent-real-runtime.js";
+import { InMemoryProviderQuotaEnforcer, type ProviderQuotaLimits } from "./application/runtime/provider-quota-enforcer.js";
 import {
   FetchAgentProviderHttpTransport,
   RealAgentProviderHttpClient,
@@ -52,6 +53,7 @@ import { workflowRoutes } from "./interfaces/http/routes/workflows.js";
 
 export interface BuiltApp {
   app: FastifyInstance;
+  outboxRelay: OutboxRelay;
   close: () => Promise<void>;
 }
 
@@ -73,6 +75,14 @@ function shouldAssembleProductizedAgentRuntime(env: Env): boolean {
     env.agentOpenAICompatibleEndpoint.trim().length > 0;
 }
 
+function providerQuotaLimits(env: Env): ProviderQuotaLimits {
+  return {
+    dailyRequestLimit: env.executionProviderDailyRequestLimit,
+    dailyCostLimitCents: env.executionProviderDailyCostLimitCents,
+    estimatedCostPerRequestCents: env.executionProviderEstimatedCostPerRequestCents,
+  };
+}
+
 function buildRuntimeAdapterFactory(env: Env, policy: RuntimeSafetyPolicy, opts: BuildOptions): RuntimeAdapterFactory {
   if (opts.runtimeAdapterFactory) return opts.runtimeAdapterFactory;
   if (!shouldAssembleProductizedAgentRuntime(env))
@@ -92,8 +102,8 @@ function buildRuntimeAdapterFactory(env: Env, policy: RuntimeSafetyPolicy, opts:
         endpointMap: { "provider://openai-compatible/default": endpoint },
       },
       new FetchAgentProviderHttpTransport(opts.fetchImplementation),
-      new EnvRuntimeCredentialResolver(opts.credentialEnvSource ?? process.env),
-    )),
+      new EnvRuntimeCredentialResolver(opts.credentialEnvSource ?? process.env, env.executionSecretRegistry),
+    ), new InMemoryProviderQuotaEnforcer(providerQuotaLimits(env))),
   });
 }
 
@@ -159,6 +169,10 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
     networkAllowlist: env.executionNetworkAllowlist,
     secretStoreEnabled: env.executionSecretStoreEnabled,
     secretInjectionEnabled: env.executionSecretInjectionEnabled,
+    secretRegistry: env.executionSecretRegistry,
+    credentialEnvSource: opts.credentialEnvSource ?? process.env,
+    agentOpenAICompatibleEndpoint: env.agentOpenAICompatibleEndpoint,
+    providerQuotaLimits: providerQuotaLimits(env),
     writebackExecutorEnabled: env.executionWritebackExecutorEnabled,
   });
   const agentProfileService = new AgentProfileService(db);
@@ -213,5 +227,5 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
     await Promise.all([appPool.end(), auditPool.end()]);
   };
 
-  return { app, close };
+  return { app, outboxRelay, close };
 }

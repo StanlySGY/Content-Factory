@@ -161,10 +161,29 @@ function envNameFromKeyRef(keyRef: string): string | null {
 }
 
 export class EnvRuntimeCredentialResolver implements IRuntimeCredentialResolver {
-  constructor(private readonly source: NodeJS.ProcessEnv | Record<string, string | undefined> = process.env) {}
+  constructor(
+    private readonly source: NodeJS.ProcessEnv | Record<string, string | undefined> = process.env,
+    private readonly registry: string[] = [],
+  ) {}
 
   async resolve(ref: RuntimeCredentialRef): Promise<ResolvedRuntimeCredential> {
     validateRuntimeCredentialRef(ref);
+    if (this.registry.length > 0 && !this.registry.includes(ref.keyRef)) {
+      return {
+        provider: ref.provider,
+        scope: ref.scope,
+        keyRef: ref.keyRef,
+        resolved: false,
+        material: undefined,
+        metadata: {
+          resolver_kind: "env",
+          key_ref_scheme: ref.keyRef.includes("://") ? ref.keyRef.split("://", 1)[0] + "://" : "unknown",
+          failure_reason: "key_ref_not_registered",
+          secret_material_present: false,
+          secret_material_returned_to_transport: false,
+        },
+      };
+    }
     const envName = envNameFromKeyRef(ref.keyRef);
     if (!envName) {
       return {

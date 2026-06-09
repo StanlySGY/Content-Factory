@@ -1876,6 +1876,73 @@ export type AgentRealAdapterRegistrationGuardResponse = Static<
   typeof AgentRealAdapterRegistrationGuardResponseSchema
 >;
 
+export const ProductionActivationPreflightResponseSchema = Type.Object(
+  {
+    mode: StringEnum(["production_activation_preflight"] as const),
+    ready: Type.Boolean(),
+    status: StringEnum(["ready", "blocked"] as const),
+    missing_requirements: Type.Array(Type.String()),
+    warnings: Type.Array(Type.String()),
+    capabilities: Type.Object(
+      {
+        agent_real_runtime: Type.Boolean(),
+        workflow_stage_writeback: Type.Boolean(),
+        mcp_real_runtime: Type.Boolean(),
+        publisher_real_runtime: Type.Boolean(),
+      },
+      { additionalProperties: false },
+    ),
+    runtime: Type.Object(
+      {
+        mode: RuntimeModeSchema,
+        adapter_mode: RuntimeAdapterModeSchema,
+        allow_real_runtime: Type.Boolean(),
+        allow_network: Type.Boolean(),
+        redact_snapshots: Type.Boolean(),
+        timeout_ms: Type.Integer(),
+      },
+      { additionalProperties: false },
+    ),
+    network: Type.Object(
+      {
+        allowlist: Type.Array(Type.String()),
+        agent_endpoint_configured: Type.Boolean(),
+        agent_endpoint_host: Nullable(Type.String()),
+      },
+      { additionalProperties: false },
+    ),
+    secret_refs: Type.Array(Type.Object(
+      {
+        key_ref: Type.String(),
+        registered: Type.Boolean(),
+        material_available: Type.Boolean(),
+      },
+      { additionalProperties: false },
+    )),
+    quota: Type.Object(
+      {
+        distributed: Type.Boolean(),
+        daily_request_limit: Nullable(Type.Integer()),
+        daily_cost_limit_cents: Nullable(Type.Integer()),
+        estimated_cost_per_request_cents: Type.Integer(),
+      },
+      { additionalProperties: false },
+    ),
+    ops: Type.Object(
+      {
+        worker_enabled: Type.Boolean(),
+        relay_enabled: Type.Boolean(),
+        writeback_executor_enabled: Type.Boolean(),
+      },
+      { additionalProperties: false },
+    ),
+  },
+  { additionalProperties: false },
+);
+export type ProductionActivationPreflightResponse = Static<
+  typeof ProductionActivationPreflightResponseSchema
+>;
+
 export const ProviderQuotaCostPreflightReadinessResponseSchema = Type.Object(
   {
     mode: StringEnum(["provider_quota_cost_preflight"] as const),

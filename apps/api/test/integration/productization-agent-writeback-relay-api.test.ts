@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm";
 import type { FastifyInstance } from "fastify";
 import type pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { AUDIT_ACTIONS, AUDIT_SUBJECT_STAGE_RUN } from "@cf/shared";
+import { AUDIT_ACTIONS, AUDIT_SUBJECT_STAGE_RUN, EXECUTION_OUTBOX_EVENTS } from "@cf/shared";
 import { WorkflowDefinitionService, type CreateDefinitionInput } from "../../src/application/workflow-definition.service.js";
 import { WorkflowRunService } from "../../src/application/workflow-run.service.js";
 import type { RequestContext } from "../../src/application/task.service.js";
@@ -11,6 +11,7 @@ import { buildApp, type BuiltApp } from "../../src/app.js";
 import { DEFAULT_PROJECT_ID, DEFAULT_USER_ID, loadEnv } from "../../src/config/env.js";
 import { createDb, createPool, runInProject, type Db } from "../../src/infrastructure/db/client.js";
 import { auditEvents, contentTasks, executionWritebacks, stageRuns } from "../../src/infrastructure/db/schema.js";
+import * as outboxRepo from "../../src/infrastructure/repositories/outbox.repository.js";
 import * as stageRepo from "../../src/infrastructure/repositories/stage-run.repository.js";
 
 let built: BuiltApp;
@@ -58,6 +59,15 @@ async function runningStage(): Promise<string> {
   const stageId = initialStages[0]!.id;
   await runSvc.transitionStageStatus(ctx, stageId, "running");
   return stageId;
+}
+
+async function terminalOutboxEventId(jobId: string): Promise<string> {
+  const events = await outboxRepo.listOutboxEventsByAggregateId(db, jobId);
+  const terminal = events.find((event) =>
+    event.eventType === EXECUTION_OUTBOX_EVENTS.success || event.eventType === EXECUTION_OUTBOX_EVENTS.failed
+  );
+  expect(terminal).toBeDefined();
+  return terminal!.id;
 }
 
 beforeAll(async () => {
@@ -130,13 +140,7 @@ describe("Productization-2 agent result writeback relay", () => {
     const jobId = created.json().id as string;
 
     expect((await app.inject({ method: "POST", url: `/api/execution/jobs/${jobId}/tick` })).statusCode).toBe(200);
-    const processed = await app.inject({
-      method: "POST",
-      url: "/api/execution/ops/process-outbox-batch",
-      payload: { limit: 5 },
-    });
-
-    expect(processed.statusCode).toBe(200);
+    await built.outboxRelay.processEvent(await terminalOutboxEventId(jobId));
     expect((await stageRepo.getById(db, projectId, stageId))?.status).toBe("waiting_review");
 
     const writebacks = await db
@@ -185,11 +189,7 @@ describe("Productization-2 agent result writeback relay", () => {
       const jobId = created.json().id as string;
 
       expect((await disabled.app.inject({ method: "POST", url: `/api/execution/jobs/${jobId}/tick` })).statusCode).toBe(200);
-      expect((await disabled.app.inject({
-        method: "POST",
-        url: "/api/execution/ops/process-outbox-batch",
-        payload: { limit: 20 },
-      })).statusCode).toBe(200);
+      await disabled.outboxRelay.processEvent(await terminalOutboxEventId(jobId));
 
       expect((await stageRepo.getById(db, projectId, stageId))?.status).toBe("running");
       expect(await db

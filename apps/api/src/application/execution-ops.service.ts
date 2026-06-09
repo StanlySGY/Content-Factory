@@ -90,6 +90,11 @@ import {
   buildAgentRealProviderTransportDisabledHarness,
   type AgentRealProviderTransportDisabledHarness,
 } from "./runtime/agent-real-provider-transport-disabled-harness.js";
+import {
+  buildProductionActivationPreflight,
+  type ProductionActivationPreflight,
+} from "./runtime/production-activation-preflight.js";
+import type { ProviderQuotaLimits } from "./runtime/provider-quota-enforcer.js";
 import type { OutboxRelay } from "./outbox-relay.js";
 
 // 运维健康只读聚合（camelCase；mapper → snake_case DTO）。仅聚合 execution plane 表，不 join 业务表/不读 audit。
@@ -121,6 +126,10 @@ export interface ExecutionOpsConfig {
   networkAllowlist: string[];
   secretStoreEnabled: boolean;
   secretInjectionEnabled: boolean;
+  secretRegistry: string[];
+  credentialEnvSource: NodeJS.ProcessEnv | Record<string, string | undefined>;
+  agentOpenAICompatibleEndpoint: string | null;
+  providerQuotaLimits: ProviderQuotaLimits;
   writebackExecutorEnabled: boolean;
 }
 
@@ -391,6 +400,23 @@ export class ExecutionOpsService {
       networkAllowlist: this.config.networkAllowlist,
       secretStoreEnabled: this.config.secretStoreEnabled,
       secretInjectionEnabled: this.config.secretInjectionEnabled,
+    });
+  }
+
+  getProductionActivationPreflight(): ProductionActivationPreflight {
+    return buildProductionActivationPreflight({
+      runtimeSafetyPolicy: this.config.runtimeSafetyPolicy,
+      runtimeAdapterMode: this.config.runtimeAdapterMode,
+      networkAllowlist: this.config.networkAllowlist,
+      agentEndpoint: this.config.agentOpenAICompatibleEndpoint,
+      secretStoreEnabled: this.config.secretStoreEnabled,
+      secretInjectionEnabled: this.config.secretInjectionEnabled,
+      secretRegistry: this.config.secretRegistry,
+      credentialEnvSource: this.config.credentialEnvSource,
+      quotaLimits: this.config.providerQuotaLimits,
+      workerEnabled: this.config.workerEnabled,
+      relayEnabled: this.config.relayEnabled,
+      writebackExecutorEnabled: this.config.writebackExecutorEnabled,
     });
   }
 

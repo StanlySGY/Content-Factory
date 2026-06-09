@@ -23,10 +23,14 @@ export interface Env {
   executionNetworkAllowlist: string[];
   executionSecretStoreEnabled: boolean;
   executionSecretInjectionEnabled: boolean;
+  executionSecretRegistry: string[];
   executionWritebackExecutorEnabled: boolean;
   executionRequireCredentialRef: boolean;
   executionRedactSnapshots: boolean;
   executionRuntimeMaxTimeoutMs: number;
+  executionProviderDailyRequestLimit: number | null;
+  executionProviderDailyCostLimitCents: number | null;
+  executionProviderEstimatedCostPerRequestCents: number;
   agentOpenAICompatibleEndpoint: string | null;
   outboxRelayEnabled: boolean;
   outboxRelayIntervalMs: number;
@@ -61,6 +65,19 @@ function csv(value: string | undefined): string[] {
   return value.split(",").map((item) => item.trim()).filter((item) => item.length > 0);
 }
 
+function optionalNonNegativeInt(value: string | undefined, name: string): number | null {
+  if (value === undefined || value === "") return null;
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 0) throw new Error(`invalid ${name}: ${value}`);
+  return parsed;
+}
+
+function nonNegativeInt(value: string | undefined, fallback: number, name: string): number {
+  const parsed = value === undefined || value === "" ? fallback : Number(value);
+  if (!Number.isInteger(parsed) || parsed < 0) throw new Error(`invalid ${name}: ${value}`);
+  return parsed;
+}
+
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
   const databaseUrl = required("DATABASE_URL", source.DATABASE_URL);
   return {
@@ -83,10 +100,24 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     executionNetworkAllowlist: csv(source.EXECUTION_NETWORK_ALLOWLIST),
     executionSecretStoreEnabled: bool(source.EXECUTION_SECRET_STORE_ENABLED, false),
     executionSecretInjectionEnabled: bool(source.EXECUTION_SECRET_INJECTION_ENABLED, false),
+    executionSecretRegistry: csv(source.EXECUTION_SECRET_REGISTRY),
     executionWritebackExecutorEnabled: bool(source.EXECUTION_WRITEBACK_EXECUTOR_ENABLED, false),
     executionRequireCredentialRef: bool(source.EXECUTION_REQUIRE_CREDENTIAL_REF, true),
     executionRedactSnapshots: bool(source.EXECUTION_REDACT_SNAPSHOTS, true),
     executionRuntimeMaxTimeoutMs: Number(source.EXECUTION_RUNTIME_MAX_TIMEOUT_MS ?? 300000),
+    executionProviderDailyRequestLimit: optionalNonNegativeInt(
+      source.EXECUTION_PROVIDER_DAILY_REQUEST_LIMIT,
+      "EXECUTION_PROVIDER_DAILY_REQUEST_LIMIT",
+    ),
+    executionProviderDailyCostLimitCents: optionalNonNegativeInt(
+      source.EXECUTION_PROVIDER_DAILY_COST_LIMIT_CENTS,
+      "EXECUTION_PROVIDER_DAILY_COST_LIMIT_CENTS",
+    ),
+    executionProviderEstimatedCostPerRequestCents: nonNegativeInt(
+      source.EXECUTION_PROVIDER_ESTIMATED_COST_PER_REQUEST_CENTS,
+      0,
+      "EXECUTION_PROVIDER_ESTIMATED_COST_PER_REQUEST_CENTS",
+    ),
     agentOpenAICompatibleEndpoint: source.AGENT_OPENAI_COMPATIBLE_ENDPOINT ?? null,
     outboxRelayEnabled: bool(source.OUTBOX_RELAY_ENABLED, false),
     outboxRelayIntervalMs: Number(source.OUTBOX_RELAY_INTERVAL_MS ?? 5000),

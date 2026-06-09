@@ -20,6 +20,7 @@ import {
   ManualRetryJobResponseSchema,
   ProcessOutboxBatchBodySchema,
   ProcessOutboxBatchResponseSchema,
+  ProductionActivationPreflightResponseSchema,
   ProviderHttpBoundaryResponseSchema,
   ProviderSafetyResponseSchema,
   RecoverStaleJobsBodySchema,
@@ -55,6 +56,7 @@ import {
   toExecutionWritebackTransactionPlanReadinessDTO,
   toExecutionWritebackTransactionPortReadinessDTO,
   toExecutionWritebackTransactionPrototypeReadinessDTO,
+  toProductionActivationPreflightDTO,
   toRuntimeAdapterDryRunResponseDTO,
   toRuntimeAdaptersResponseDTO,
   toProviderHttpBoundaryDTO,
@@ -123,6 +125,12 @@ export const executionOpsRoutes: FastifyPluginAsyncTypebox<ExecutionOpsRoutesOpt
     "/api/execution/ops/agent-real-adapter-registration-guard",
     { schema: { response: { 200: AgentRealAdapterRegistrationGuardResponseSchema } } },
     async () => toAgentRealAdapterRegistrationGuardDTO(executionOpsService.getAgentRealAdapterRegistrationGuard()),
+  );
+
+  app.get(
+    "/api/execution/ops/production-activation-preflight",
+    { schema: { response: { 200: ProductionActivationPreflightResponseSchema } } },
+    async () => toProductionActivationPreflightDTO(executionOpsService.getProductionActivationPreflight()),
   );
 
   app.get(

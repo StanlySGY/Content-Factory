@@ -23,6 +23,7 @@ import {
 } from "./agent-real-provider-transport-disabled-harness.js";
 import { buildDefaultAgentRealProviderConfig } from "./agent-real-provider-config-preflight.js";
 import { buildAgentRealProductionTransportGateSnapshot } from "./agent-real-production-transport-gate.js";
+import type { ProviderQuotaEnforcer, ProviderQuotaDecision } from "./provider-quota-enforcer.js";
 import {
   buildMalformedOpenAICompatibleResponseEnvelope,
   normalizeOpenAICompatibleRawResponse,
@@ -62,14 +63,17 @@ function metadataFromPayload(payload: Record<string, unknown>): Record<string, u
 }
 
 export class AgentRealRuntime implements IAgentRuntime {
-  constructor(private readonly httpClient: IAgentProviderHttpClient = new RealAgentProviderHttpClient({
-    realHttpEnabled: true,
-    allowNetwork: true,
-    allowedHosts: ["api.openai.test"],
-    endpointMap: {
-      "provider://openai-compatible/default": "https://api.openai.test/v1/chat/completions",
-    },
-  })) {}
+  constructor(
+    private readonly httpClient: IAgentProviderHttpClient = new RealAgentProviderHttpClient({
+      realHttpEnabled: true,
+      allowNetwork: true,
+      allowedHosts: ["api.openai.test"],
+      endpointMap: {
+        "provider://openai-compatible/default": "https://api.openai.test/v1/chat/completions",
+      },
+    }),
+    private readonly quotaEnforcer: ProviderQuotaEnforcer | null = null,
+  ) {}
 
   async execute(request: RuntimeRequest, context?: RuntimeExecutionContext): Promise<RuntimeResponse> {
     const started = Date.now();
@@ -103,6 +107,9 @@ export class AgentRealRuntime implements IAgentRuntime {
         requestId: `${request.jobId}:${request.attemptCount}:real`,
       });
       requestSnapshot = redactRuntimeSnapshot(httpRequest);
+      const quotaDecision = this.quotaEnforcer?.checkAndConsume() ?? null;
+      if (quotaDecision?.status === "throttle")
+        return this.quotaFailure(request.jobId, quotaDecision, started, requestSnapshot);
       const raw = await this.httpClient.send(httpRequest, {
         timeoutMs: request.timeoutMs,
         signal: context.abortSignal,
@@ -182,8 +189,9 @@ export class AgentRealRuntime implements IAgentRuntime {
           secret_material_returned: false,
           realTransportInjected: this.httpClient.constructor.name !== "RealAgentProviderHttpClient",
           request: requestSnapshot,
+          ...(quotaDecision ? { quotaDecision } : {}),
           tokenUsage: normalized.rawMetadata.tokenUsage,
-          costEstimate: { source: "not_calculated", amount: null, currency: null },
+          costEstimate: quotaDecision?.costEstimate ?? { source: "not_calculated", amount: null, currency: null },
         },
       };
     } catch (e) {
@@ -237,6 +245,34 @@ export class AgentRealRuntime implements IAgentRuntime {
         secret_material_read: false,
         secret_material_returned: false,
         realTransportInjected: this.httpClient.constructor.name !== "RealAgentProviderHttpClient",
+      },
+    };
+  }
+
+  private quotaFailure(
+    jobId: string,
+    decision: ProviderQuotaDecision,
+    started: number,
+    requestSnapshot: unknown,
+  ): RuntimeResponse {
+    return {
+      ...failedRuntimeResponse(
+        jobId,
+        "rate_limited",
+        decision.reason ?? "provider quota throttled",
+        Math.max(0, Date.now() - started),
+      ),
+      metadata: {
+        adapterMode: "real",
+        providerKind: "openai_compatible",
+        quotaDecision: decision,
+        costEstimate: decision.costEstimate,
+        networkUsed: false,
+        processSpawned: false,
+        secret_material_read: false,
+        secret_material_returned: false,
+        realTransportInjected: this.httpClient.constructor.name !== "RealAgentProviderHttpClient",
+        ...(requestSnapshot ? { request: requestSnapshot } : {}),
       },
     };
   }

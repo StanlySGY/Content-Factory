@@ -1,8 +1,9 @@
-# Execution Ops Runbook（Sprint-10 + Productization-1/2）
+# Execution Ops Runbook（Sprint-10 + Productization-P0/1/2）
 
 > execution layer（异步执行平面）运维手册。
 > 默认运行仍 fail-closed：worker / relay 均由 env 开关控制，默认 relay 使用 no-op handlers，不自动回写控制面。
 > Sprint-9 已提供显式 `workflow_stage_run` writeback handler；只有显式装配该 handler 时，terminal execution event 才会经同事务 audit 保护回写 `stage_runs`。
+> Productization-P0 已提供生产启用预检、secret registry 校验和进程内 provider quota/cost 硬限制。
 > Productization-1 已提供显式 `agent` OpenAI-compatible HTTP transport；只有显式 real runtime/network/secret gate 全部满足时才会调用外部 LLM。
 > Productization-2 已把 `workflow_stage_run` writeback handler 接入 app 装配，但仍由 `EXECUTION_WRITEBACK_EXECUTOR_ENABLED=true` 显式开启。
 
@@ -154,6 +155,58 @@ pnpm --dir apps/api exec vitest run test/integration/sprint9-workflow-stage-writ
 ---
 
 ## 9. Agent Real LLM（显式产品化路径）
+
+生产启用前先运行 P0 预检：
+
+```text
+GET /api/execution/ops/production-activation-preflight
+```
+
+返回重点：
+
+| 字段 | 含义 |
+| --- | --- |
+| `ready` / `status` | 是否满足生产启用前置条件 |
+| `missing_requirements` | 阻断项，非空时不得开启真实流量 |
+| `secret_refs` | 只返回 key ref 注册状态和 material 是否可用，不返回 secret 值 |
+| `quota` | 本进程 provider 请求/成本限额配置 |
+| `capabilities` | 当前仅 `agent_real_runtime` / `workflow_stage_writeback` 可产品化；MCP/Publisher 仍 false |
+
+P0 额外必需配置：
+
+```text
+EXECUTION_SECRET_REGISTRY=env://CONTENT_FACTORY_OPENAI_KEY
+CONTENT_FACTORY_OPENAI_KEY=<provider api key>
+EXECUTION_PROVIDER_DAILY_REQUEST_LIMIT=<non-negative integer>
+EXECUTION_PROVIDER_DAILY_COST_LIMIT_CENTS=<non-negative integer>
+EXECUTION_PROVIDER_ESTIMATED_COST_PER_REQUEST_CENTS=<non-negative integer greater than 0>
+```
+
+硬边界：
+
+| 场景 | 行为 |
+| --- | --- |
+| `EXECUTION_SECRET_REGISTRY` 未包含 job 的 `credential_ref.key_ref` | resolver 不读取 env material，runtime 失败为 `permission_denied` |
+| request quota 已耗尽 | 在 fetch 前阻断，runtime 失败为 `rate_limited`，`networkUsed=false` |
+| cost quota 已耗尽 | 在 fetch 前阻断，runtime 失败为 `rate_limited`，`networkUsed=false` |
+| preflight `missing_requirements` 非空 | 不得切真实流量 |
+
+回滚步骤：
+
+```text
+EXECUTION_RUNTIME_MODE=mock
+EXECUTION_RUNTIME_ADAPTER_MODE=mock
+EXECUTION_ALLOW_REAL_RUNTIME=false
+EXECUTION_ALLOW_NETWORK=false
+EXECUTION_WRITEBACK_EXECUTOR_ENABLED=false
+```
+
+监控建议：
+
+- 定期检查 `GET /api/execution/ops/production-activation-preflight`，确认 `ready=true` 且 secret/cost/request 配置未漂移。
+- 结合 `GET /api/execution/ops/health` 观察 `failed_jobs`、`failed_outbox_events`、`unprocessed_outbox_events`。
+- 对 `execution_results.error_type=rate_limited` 建告警；这通常表示配额耗尽或限额配置过紧。
+- 当前 quota/cost enforcer 是进程内实现，不适合作为多实例全局成本账本。
 
 启用条件：
 
