@@ -321,6 +321,26 @@ export const publishRecords = pgTable(
   ],
 );
 
+// Product Gap 2：Publisher 渠道控制面（项目级配置；不代表真实发布执行）
+export const publisherChannels = pgTable(
+  "publisher_channels",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id").notNull(),
+    key: varchar("key", { length: 64 }).notNull(),
+    displayName: varchar("display_name", { length: 160 }).notNull(),
+    status: varchar("status", { length: 32 }).notNull().default("active"),
+    endpointRef: varchar("endpoint_ref", { length: 240 }),
+    config: jsonb("config").$type<JsonRecord>().notNull().default({}),
+    createdBy: uuid("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("idx_publisher_channels_project_status").on(t.projectId, t.status),
+  ],
+);
+
 // Sprint-5 执行层（独立异步骨架；execution_jobs 可变生命周期，无 project_id/无 FK）
 export const executionJobs = pgTable("execution_jobs", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -420,6 +440,7 @@ export type ToolInvocationRow = typeof toolInvocations.$inferSelect;
 export type McpMarketplaceEntryRow = typeof mcpMarketplaceEntries.$inferSelect;
 export type McpMarketplaceInstallationRow = typeof mcpMarketplaceInstallations.$inferSelect;
 export type PublishRecordRow = typeof publishRecords.$inferSelect;
+export type PublisherChannelRow = typeof publisherChannels.$inferSelect;
 export type ExecutionJobRow = typeof executionJobs.$inferSelect;
 export type OutboxEventRow = typeof outboxEvents.$inferSelect;
 export type ExecutionResultRow = typeof executionResults.$inferSelect;

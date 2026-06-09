@@ -9,6 +9,7 @@ import {
   MCP_MARKETPLACE_INSTALLATION_STATUSES,
   MCP_SERVER_STATUSES,
   PUBLISH_RECORD_STATUSES,
+  PUBLISHER_CHANNEL_STATUSES,
   REQUIREMENT_SCHEMA_VERSION,
   REVIEW_ACTIONS,
   REVIEW_STATUSES,
@@ -805,6 +806,54 @@ export const McpMarketplaceInstallationsResponseSchema = Type.Array(McpMarketpla
 
 // ---- Publisher publish_records (Productization-P2.2；版本锚定的发布记录) ----
 export const PublishRecordStatusSchema = StringEnum(PUBLISH_RECORD_STATUSES);
+export const PublisherChannelStatusSchema = StringEnum(PUBLISHER_CHANNEL_STATUSES);
+
+export const PublisherChannelSchema = Type.Object(
+  {
+    id: Uuid(),
+    project_id: Uuid(),
+    key: Type.String(),
+    display_name: Type.String(),
+    status: PublisherChannelStatusSchema,
+    endpoint_ref: Nullable(Type.String()),
+    config: JsonRecord(),
+    created_by: Uuid(),
+    created_at: Type.String({ format: "date-time" }),
+    updated_at: Type.String({ format: "date-time" }),
+  },
+  { additionalProperties: false },
+);
+export type PublisherChannelDTO = Static<typeof PublisherChannelSchema>;
+
+export const CreatePublisherChannelSchema = Type.Object(
+  {
+    key: Type.String({ minLength: 1, maxLength: 64, pattern: "^[a-z0-9][a-z0-9_:-]*$" }),
+    display_name: Type.String({ minLength: 1, maxLength: 160 }),
+    endpoint_ref: Type.Optional(Nullable(Type.String({ minLength: 1, maxLength: 240 }))),
+    config: Type.Optional(JsonRecord()),
+  },
+  { additionalProperties: false },
+);
+export type CreatePublisherChannelBody = Static<typeof CreatePublisherChannelSchema>;
+
+export const UpdatePublisherChannelSchema = Type.Object(
+  {
+    display_name: Type.Optional(Type.String({ minLength: 1, maxLength: 160 })),
+    endpoint_ref: Type.Optional(Nullable(Type.String({ minLength: 1, maxLength: 240 }))),
+    config: Type.Optional(JsonRecord()),
+    status: Type.Optional(PublisherChannelStatusSchema),
+  },
+  { additionalProperties: false, minProperties: 1 },
+);
+export type UpdatePublisherChannelBody = Static<typeof UpdatePublisherChannelSchema>;
+
+export const ListPublisherChannelsQuerySchema = Type.Object(
+  {
+    status: Type.Optional(PublisherChannelStatusSchema),
+  },
+  { additionalProperties: false },
+);
+export type ListPublisherChannelsQuery = Static<typeof ListPublisherChannelsQuerySchema>;
 
 export const PublishRecordSchema = Type.Object(
   {
@@ -852,6 +901,8 @@ export type ListPublishRecordsQuery = Static<typeof ListPublishRecordsQuerySchem
 
 export const PublishRecordResponseSchema = PublishRecordSchema;
 export const PublishRecordsResponseSchema = Type.Array(PublishRecordSchema);
+export const PublisherChannelResponseSchema = PublisherChannelSchema;
+export const PublisherChannelsResponseSchema = Type.Array(PublisherChannelSchema);
 
 // ---- Execution Layer (S5 Phase 1；独立异步执行骨架) ----
 export const ExecutionJobTypeSchema = StringEnum(EXECUTION_JOB_TYPES);

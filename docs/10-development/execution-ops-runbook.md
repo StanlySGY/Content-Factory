@@ -705,7 +705,45 @@ pnpm --dir apps/api exec vitest run test/integration/product-gap-1-mcp-marketpla
 
 ---
 
-## 16. 非目标 / 边界
+## 16. Publisher Platform Backend MVP
+
+Product Gap 2 提供项目级 Publisher 渠道控制面，并让发布准备记录绑定启用渠道。
+
+端点：
+
+| 方法 | 端点 | 说明 |
+| --- | --- | --- |
+| `POST` | `/api/publisher/channels` | 创建发布渠道 |
+| `GET` | `/api/publisher/channels?status=` | 查看渠道 |
+| `GET` | `/api/publisher/channels/:id` | 查看渠道详情 |
+| `PATCH` | `/api/publisher/channels/:id` | 更新渠道配置或状态 |
+| `POST` | `/api/publisher/channels/:id/disable` | 禁用渠道 |
+| `POST` | `/api/publisher/channels/:id/archive` | 归档渠道 |
+
+状态机：
+
+```text
+active -> disabled
+active -> archived
+disabled -> active
+disabled -> archived
+archived -> terminal
+```
+
+`POST /api/publish-records` 会校验 `channel` 对应当前项目的 `publisher_channels.key`，只有 `active` 渠道允许创建新的发布准备记录。迁移默认 seed `wechat_mp`，保持既有发布准备入口兼容。
+
+验证：
+
+```text
+pnpm --dir apps/api exec vitest run \
+  test/integration/product-gap-2-publisher-platform-api.test.ts \
+  test/integration/productization-p2-2-publish-records-api.test.ts \
+  test/integration/productization-p2-2-publisher-real-runtime-api.test.ts
+```
+
+---
+
+## 17. 非目标 / 边界
 
 - 默认不做真实外部 LLM 调用；只有 Productization-1 显式 gate 满足时才允许 `agent` 外部 LLM 调用。
 - P1.1 只实现 Secret Manager contract adapter，不实现云 Secret Manager / Vault / KMS。
@@ -716,5 +754,6 @@ pnpm --dir apps/api exec vitest run test/integration/product-gap-1-mcp-marketpla
 - 不引入 Redis/MQ/BullMQ（纯 DB 轮询）。
 - 不改 Workflow/Review/Agent/MCP 状态机、不做 UI。
 - MCP Marketplace Backend MVP 不做外部 marketplace 网络发现、SDK transport、SSE/stdio、热加载、不做 UI。
+- Publisher Platform Backend MVP 不做 Publisher UI、素材管理、撤回执行、失败告警或多渠道运营编排。
 - writeback executor 默认不开启；开启后也仅支持 `workflow_stage_run`，不支持 assets/reviews/publisher targets。
 - 不删除/修改 execution_results 历史、不替代 audit_events / audit hash chain。

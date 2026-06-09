@@ -43,6 +43,7 @@ import type {
   ProductionActivationPreflightResponse,
   ProductionReadinessP1Response,
   PublishRecordDTO,
+  PublisherChannelDTO,
   PublisherRealRuntimeReadinessResponse,
   ReviewRecordDTO,
   RuntimeAdapterDescriptorDTO,
@@ -82,6 +83,7 @@ import type {
   McpToolRow,
   OutboxEventRow,
   PublishRecordRow,
+  PublisherChannelRow,
   ReviewRecordRow,
   StageRunRow,
   ToolInvocationRow,
@@ -528,6 +530,21 @@ export function toPublishRecordDTO(r: PublishRecordRow): PublishRecordDTO {
     published_at: iso(r.publishedAt),
     error_data: r.errorData ?? null,
     metadata: r.metadata,
+    created_at: r.createdAt.toISOString(),
+    updated_at: r.updatedAt.toISOString(),
+  };
+}
+
+export function toPublisherChannelDTO(r: PublisherChannelRow): PublisherChannelDTO {
+  return {
+    id: r.id,
+    project_id: r.projectId,
+    key: r.key,
+    display_name: r.displayName,
+    status: r.status as PublisherChannelDTO["status"],
+    endpoint_ref: r.endpointRef,
+    config: r.config,
+    created_by: r.createdBy,
     created_at: r.createdAt.toISOString(),
     updated_at: r.updatedAt.toISOString(),
   };

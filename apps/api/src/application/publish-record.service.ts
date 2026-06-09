@@ -4,16 +4,19 @@ import { ConflictError, NotFoundError } from "../domain/errors.js";
 import type { Db } from "../infrastructure/db/client.js";
 import type { PublishRecordRow } from "../infrastructure/db/schema.js";
 import * as repo from "../infrastructure/repositories/publish-record.repository.js";
+import type { PublisherChannelService } from "./publisher-channel.service.js";
+import type { RequestContext } from "./task.service.js";
 
 function isUniqueViolation(e: unknown): boolean {
   return (e as { code?: string }).code === "23505";
 }
 
 export class PublishRecordService {
-  constructor(private readonly db: Db) {}
+  constructor(private readonly db: Db, private readonly publisherChannelService?: PublisherChannelService) {}
 
-  async create(input: CreatePublishRecordBody): Promise<PublishRecordRow> {
+  async create(ctx: RequestContext, input: CreatePublishRecordBody): Promise<PublishRecordRow> {
     validateCreatePublishRecord(input);
+    await this.publisherChannelService?.ensureActiveChannel(ctx, input.channel);
     try {
       return await repo.createPublishRecord(this.db, {
         content_task_id: input.content_task_id,

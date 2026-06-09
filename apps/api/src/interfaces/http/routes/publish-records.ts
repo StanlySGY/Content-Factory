@@ -8,20 +8,23 @@ import {
 } from "@cf/shared";
 import type { PublishRecordService } from "../../../application/publish-record.service.js";
 import { toPublishRecordDTO } from "../../../application/mappers.js";
+import type { Env } from "../../../config/env.js";
+import { buildContext } from "../context.js";
 
 export interface PublishRecordRoutesOptions {
+  env: Env;
   publishRecordService: PublishRecordService;
 }
 
 export const publishRecordRoutes: FastifyPluginAsyncTypebox<PublishRecordRoutesOptions> = async (
   app,
-  { publishRecordService },
+  { env, publishRecordService },
 ) => {
   app.post(
     "/api/publish-records",
     { schema: { body: CreatePublishRecordSchema, response: { 201: PublishRecordResponseSchema } } },
     async (request, reply) => {
-      const record = await publishRecordService.create(request.body);
+      const record = await publishRecordService.create(buildContext(env, request), request.body);
       reply.code(201);
       return toPublishRecordDTO(record);
     },

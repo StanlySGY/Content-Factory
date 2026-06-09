@@ -200,6 +200,10 @@ export type McpMarketplaceInstallationStatus = (typeof MCP_MARKETPLACE_INSTALLAT
 export const PUBLISH_RECORD_STATUSES = ["pending", "publishing", "published", "failed", "withdrawn"] as const;
 export type PublishRecordStatus = (typeof PUBLISH_RECORD_STATUSES)[number];
 
+/** Publisher 渠道配置状态（Product Gap 2；控制面配置，不代表真实发布执行）*/
+export const PUBLISHER_CHANNEL_STATUSES = ["active", "disabled", "archived"] as const;
+export type PublisherChannelStatus = (typeof PUBLISHER_CHANNEL_STATUSES)[number];
+
 // ── Sprint-5 执行层值集（独立异步执行骨架；与控制平面状态机无关）──
 
 /** 执行作业类型（db execution_jobs_type_chk）*/

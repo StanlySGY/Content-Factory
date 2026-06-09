@@ -46,6 +46,7 @@ import { McpToolService } from "./application/mcp-tool.service.js";
 import { defaultOutboxHandlers, OutboxRelay, type OutboxHandler } from "./application/outbox-relay.js";
 import { OutboxService } from "./application/outbox.service.js";
 import { PublishRecordService } from "./application/publish-record.service.js";
+import { PublisherChannelService } from "./application/publisher-channel.service.js";
 import { ReviewService } from "./application/review.service.js";
 import { TaskService } from "./application/task.service.js";
 import { WorkflowDefinitionService } from "./application/workflow-definition.service.js";
@@ -61,6 +62,7 @@ import { editorRoutes } from "./interfaces/http/routes/editor.js";
 import { executionRoutes } from "./interfaces/http/routes/execution.js";
 import { executionOpsRoutes } from "./interfaces/http/routes/execution-ops.js";
 import { reviewRoutes } from "./interfaces/http/routes/reviews.js";
+import { publisherChannelRoutes } from "./interfaces/http/routes/publisher-channels.js";
 import { publishRecordRoutes } from "./interfaces/http/routes/publish-records.js";
 import { stageRunRoutes } from "./interfaces/http/routes/stage-runs.js";
 import { taskRoutes } from "./interfaces/http/routes/tasks.js";
@@ -224,7 +226,8 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
   const executionBridgeService = new ExecutionBridgeService(executionJobService);
   const executionResultService = new ExecutionResultService(db);
   const executionWritebackService = new ExecutionWritebackService(db);
-  const publishRecordService = new PublishRecordService(db);
+  const publisherChannelService = new PublisherChannelService(db);
+  const publishRecordService = new PublishRecordService(db, publisherChannelService);
   const executionOpsService = new ExecutionOpsService(db, outboxRelay, {
     workerEnabled: env.executionWorkerEnabled,
     relayEnabled: env.outboxRelayEnabled,
@@ -293,7 +296,8 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
   await app.register(contextPackRoutes, { env, contextService });
   await app.register(assetRoutes, { env, assetService });
   await app.register(reviewRoutes, { env, reviewService });
-  await app.register(publishRecordRoutes, { publishRecordService });
+  await app.register(publisherChannelRoutes, { env, publisherChannelService });
+  await app.register(publishRecordRoutes, { env, publishRecordService });
   await app.register(dashboardRoutes, { env, dashboardService });
   await app.register(editorRoutes, { env, editorQueryService });
   await app.register(executionRoutes, {
