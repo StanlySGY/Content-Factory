@@ -10,6 +10,12 @@ import {
   MCP_SERVER_STATUSES,
   PUBLISH_RECORD_STATUSES,
   PUBLISHER_CHANNEL_STATUSES,
+  ORGANIZATION_MEMBER_ROLES,
+  ORGANIZATION_MEMBER_STATUSES,
+  ORGANIZATION_STATUSES,
+  PROJECT_MEMBER_ROLES,
+  PROJECT_MEMBERSHIP_STATUSES,
+  RBAC_PERMISSIONS,
   REQUIREMENT_SCHEMA_VERSION,
   REVIEW_ACTIONS,
   REVIEW_STATUSES,
@@ -903,6 +909,114 @@ export const PublishRecordResponseSchema = PublishRecordSchema;
 export const PublishRecordsResponseSchema = Type.Array(PublishRecordSchema);
 export const PublisherChannelResponseSchema = PublisherChannelSchema;
 export const PublisherChannelsResponseSchema = Type.Array(PublisherChannelSchema);
+
+// ---- RBAC Backend MVP (Product Gap 3) ----
+export const OrganizationStatusSchema = StringEnum(ORGANIZATION_STATUSES);
+export const OrganizationMemberRoleSchema = StringEnum(ORGANIZATION_MEMBER_ROLES);
+export const OrganizationMemberStatusSchema = StringEnum(ORGANIZATION_MEMBER_STATUSES);
+export const ProjectMemberRoleSchema = StringEnum(PROJECT_MEMBER_ROLES);
+export const ProjectMembershipStatusSchema = StringEnum(PROJECT_MEMBERSHIP_STATUSES);
+export const RbacPermissionSchema = StringEnum(RBAC_PERMISSIONS);
+
+export const OrganizationSchema = Type.Object(
+  {
+    id: Uuid(),
+    name: Type.String(),
+    status: OrganizationStatusSchema,
+    created_by: Uuid(),
+    created_at: Type.String({ format: "date-time" }),
+    updated_at: Type.String({ format: "date-time" }),
+  },
+  { additionalProperties: false },
+);
+export type OrganizationDTO = Static<typeof OrganizationSchema>;
+
+export const OrganizationMemberSchema = Type.Object(
+  {
+    id: Uuid(),
+    organization_id: Uuid(),
+    user_id: Uuid(),
+    role: OrganizationMemberRoleSchema,
+    status: OrganizationMemberStatusSchema,
+    invited_by: Uuid(),
+    created_at: Type.String({ format: "date-time" }),
+    updated_at: Type.String({ format: "date-time" }),
+  },
+  { additionalProperties: false },
+);
+export type OrganizationMemberDTO = Static<typeof OrganizationMemberSchema>;
+
+export const ProjectMembershipSchema = Type.Object(
+  {
+    id: Uuid(),
+    project_id: Uuid(),
+    organization_member_id: Uuid(),
+    role: ProjectMemberRoleSchema,
+    status: ProjectMembershipStatusSchema,
+    granted_by: Uuid(),
+    created_at: Type.String({ format: "date-time" }),
+    updated_at: Type.String({ format: "date-time" }),
+  },
+  { additionalProperties: false },
+);
+export type ProjectMembershipDTO = Static<typeof ProjectMembershipSchema>;
+
+export const CreateOrganizationSchema = Type.Object(
+  { name: Type.String({ minLength: 1, maxLength: 160 }) },
+  { additionalProperties: false },
+);
+export type CreateOrganizationBody = Static<typeof CreateOrganizationSchema>;
+
+export const AddOrganizationMemberSchema = Type.Object(
+  {
+    user_id: Uuid(),
+    role: OrganizationMemberRoleSchema,
+  },
+  { additionalProperties: false },
+);
+export type AddOrganizationMemberBody = Static<typeof AddOrganizationMemberSchema>;
+
+export const UpdateOrganizationMemberSchema = Type.Object(
+  {
+    role: Type.Optional(OrganizationMemberRoleSchema),
+    status: Type.Optional(OrganizationMemberStatusSchema),
+  },
+  { additionalProperties: false, minProperties: 1 },
+);
+export type UpdateOrganizationMemberBody = Static<typeof UpdateOrganizationMemberSchema>;
+
+export const GrantProjectMembershipSchema = Type.Object(
+  {
+    organization_member_id: Uuid(),
+    role: ProjectMemberRoleSchema,
+  },
+  { additionalProperties: false },
+);
+export type GrantProjectMembershipBody = Static<typeof GrantProjectMembershipSchema>;
+
+export const RbacProjectAccessQuerySchema = Type.Object(
+  {
+    user_id: Uuid(),
+    permission: RbacPermissionSchema,
+  },
+  { additionalProperties: false },
+);
+export type RbacProjectAccessQuery = Static<typeof RbacProjectAccessQuerySchema>;
+
+export const RbacProjectAccessResponseSchema = Type.Object(
+  {
+    allowed: Type.Boolean(),
+    role: Nullable(ProjectMemberRoleSchema),
+  },
+  { additionalProperties: false },
+);
+export type RbacProjectAccessResponse = Static<typeof RbacProjectAccessResponseSchema>;
+
+export const OrganizationResponseSchema = OrganizationSchema;
+export const OrganizationMembersResponseSchema = Type.Array(OrganizationMemberSchema);
+export const OrganizationMemberResponseSchema = OrganizationMemberSchema;
+export const ProjectMembershipResponseSchema = ProjectMembershipSchema;
+export const ProjectMembershipsResponseSchema = Type.Array(ProjectMembershipSchema);
 
 // ---- Execution Layer (S5 Phase 1；独立异步执行骨架) ----
 export const ExecutionJobTypeSchema = StringEnum(EXECUTION_JOB_TYPES);

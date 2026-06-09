@@ -38,9 +38,12 @@ import type {
   McpServerDTO,
   McpToolDTO,
   McpRealRuntimeReadinessResponse,
+  OrganizationDTO,
+  OrganizationMemberDTO,
   OutboxEventDTO,
   PendingReviewDTO,
   ProductionActivationPreflightResponse,
+  ProjectMembershipDTO,
   ProductionReadinessP1Response,
   PublishRecordDTO,
   PublisherChannelDTO,
@@ -81,7 +84,10 @@ import type {
   McpMarketplaceInstallationRow,
   McpServerRow,
   McpToolRow,
+  OrganizationMemberRow,
+  OrganizationRow,
   OutboxEventRow,
+  ProjectMembershipRow,
   PublishRecordRow,
   PublisherChannelRow,
   ReviewRecordRow,
@@ -545,6 +551,43 @@ export function toPublisherChannelDTO(r: PublisherChannelRow): PublisherChannelD
     endpoint_ref: r.endpointRef,
     config: r.config,
     created_by: r.createdBy,
+    created_at: r.createdAt.toISOString(),
+    updated_at: r.updatedAt.toISOString(),
+  };
+}
+
+export function toOrganizationDTO(r: OrganizationRow): OrganizationDTO {
+  return {
+    id: r.id,
+    name: r.name,
+    status: r.status as OrganizationDTO["status"],
+    created_by: r.createdBy,
+    created_at: r.createdAt.toISOString(),
+    updated_at: r.updatedAt.toISOString(),
+  };
+}
+
+export function toOrganizationMemberDTO(r: OrganizationMemberRow): OrganizationMemberDTO {
+  return {
+    id: r.id,
+    organization_id: r.organizationId,
+    user_id: r.userId,
+    role: r.role as OrganizationMemberDTO["role"],
+    status: r.status as OrganizationMemberDTO["status"],
+    invited_by: r.invitedBy,
+    created_at: r.createdAt.toISOString(),
+    updated_at: r.updatedAt.toISOString(),
+  };
+}
+
+export function toProjectMembershipDTO(r: ProjectMembershipRow): ProjectMembershipDTO {
+  return {
+    id: r.id,
+    project_id: r.projectId,
+    organization_member_id: r.organizationMemberId,
+    role: r.role as ProjectMembershipDTO["role"],
+    status: r.status as ProjectMembershipDTO["status"],
+    granted_by: r.grantedBy,
     created_at: r.createdAt.toISOString(),
     updated_at: r.updatedAt.toISOString(),
   };

@@ -341,6 +341,58 @@ export const publisherChannels = pgTable(
   ],
 );
 
+// Product Gap 3：Multi-tenant RBAC Backend MVP（仅控制面，不替换既有默认上下文）
+export const organizations = pgTable(
+  "organizations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: varchar("name", { length: 160 }).notNull(),
+    status: varchar("status", { length: 32 }).notNull().default("active"),
+    createdBy: uuid("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("idx_organizations_status").on(t.status),
+  ],
+);
+
+export const organizationMembers = pgTable(
+  "organization_members",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id").notNull(),
+    userId: uuid("user_id").notNull(),
+    role: varchar("role", { length: 32 }).notNull(),
+    status: varchar("status", { length: 32 }).notNull().default("active"),
+    invitedBy: uuid("invited_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("idx_organization_members_org_status").on(t.organizationId, t.status),
+    index("idx_organization_members_user").on(t.userId),
+  ],
+);
+
+export const projectMemberships = pgTable(
+  "project_memberships",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id").notNull(),
+    organizationMemberId: uuid("organization_member_id").notNull(),
+    role: varchar("role", { length: 32 }).notNull(),
+    status: varchar("status", { length: 32 }).notNull().default("active"),
+    grantedBy: uuid("granted_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("idx_project_memberships_project_status").on(t.projectId, t.status),
+    index("idx_project_memberships_member").on(t.organizationMemberId),
+  ],
+);
+
 // Sprint-5 执行层（独立异步骨架；execution_jobs 可变生命周期，无 project_id/无 FK）
 export const executionJobs = pgTable("execution_jobs", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -441,6 +493,9 @@ export type McpMarketplaceEntryRow = typeof mcpMarketplaceEntries.$inferSelect;
 export type McpMarketplaceInstallationRow = typeof mcpMarketplaceInstallations.$inferSelect;
 export type PublishRecordRow = typeof publishRecords.$inferSelect;
 export type PublisherChannelRow = typeof publisherChannels.$inferSelect;
+export type OrganizationRow = typeof organizations.$inferSelect;
+export type OrganizationMemberRow = typeof organizationMembers.$inferSelect;
+export type ProjectMembershipRow = typeof projectMemberships.$inferSelect;
 export type ExecutionJobRow = typeof executionJobs.$inferSelect;
 export type OutboxEventRow = typeof outboxEvents.$inferSelect;
 export type ExecutionResultRow = typeof executionResults.$inferSelect;

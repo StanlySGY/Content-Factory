@@ -204,6 +204,25 @@ export type PublishRecordStatus = (typeof PUBLISH_RECORD_STATUSES)[number];
 export const PUBLISHER_CHANNEL_STATUSES = ["active", "disabled", "archived"] as const;
 export type PublisherChannelStatus = (typeof PUBLISHER_CHANNEL_STATUSES)[number];
 
+// ── Product Gap 3：Multi-tenant RBAC Backend MVP ──
+export const ORGANIZATION_STATUSES = ["active", "archived"] as const;
+export type OrganizationStatus = (typeof ORGANIZATION_STATUSES)[number];
+
+export const ORGANIZATION_MEMBER_ROLES = ["owner", "admin", "member", "viewer"] as const;
+export type OrganizationMemberRole = (typeof ORGANIZATION_MEMBER_ROLES)[number];
+
+export const ORGANIZATION_MEMBER_STATUSES = ["active", "inactive"] as const;
+export type OrganizationMemberStatus = (typeof ORGANIZATION_MEMBER_STATUSES)[number];
+
+export const PROJECT_MEMBER_ROLES = ["owner", "editor", "viewer"] as const;
+export type ProjectMemberRole = (typeof PROJECT_MEMBER_ROLES)[number];
+
+export const PROJECT_MEMBERSHIP_STATUSES = ["active", "revoked"] as const;
+export type ProjectMembershipStatus = (typeof PROJECT_MEMBERSHIP_STATUSES)[number];
+
+export const RBAC_PERMISSIONS = ["project.read", "project.write", "project.admin"] as const;
+export type RbacPermission = (typeof RBAC_PERMISSIONS)[number];
+
 // ── Sprint-5 执行层值集（独立异步执行骨架；与控制平面状态机无关）──
 
 /** 执行作业类型（db execution_jobs_type_chk）*/
