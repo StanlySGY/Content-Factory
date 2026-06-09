@@ -664,7 +664,48 @@ pnpm --dir apps/api exec vitest run test/integration/final-rc-production-candida
 
 ---
 
-## 15. 非目标 / 边界
+## 15. MCP Marketplace Backend MVP
+
+Product Gap 1 提供本地 Marketplace 后端入口，用于把可信 manifest 安装为项目内 MCP 配置。
+
+端点：
+
+| 方法 | 端点 | 说明 |
+| --- | --- | --- |
+| `POST` | `/api/mcp/marketplace/entries` | 创建本地 marketplace entry |
+| `GET` | `/api/mcp/marketplace/entries` | 查看本地 entries |
+| `POST` | `/api/mcp/marketplace/entries/:id/install` | 安装到当前项目 |
+| `GET` | `/api/mcp/marketplace/installations?project_id=` | 查看当前项目安装历史 |
+| `POST` | `/api/mcp/marketplace/installations/:id/disable` | 禁用安装记录 |
+| `POST` | `/api/mcp/marketplace/installations/:id/uninstall` | 卸载安装记录 |
+
+Manifest 最小字段：
+
+```json
+{
+  "server_ref": "mcp://docs-search",
+  "display_name": "Docs Search",
+  "endpoint": "https://mcp.example.test/rpc",
+  "tools": [{ "name": "search_docs" }]
+}
+```
+
+运维边界：
+
+- entry 是本地 catalog，不做外部 marketplace 发现。
+- install 只创建或复用 `mcp_servers`，并从 manifest 写入 `mcp_tools`。
+- duplicate active install 返回 409；`disabled` 仍算 active install，`uninstalled` 后可重新安装。
+- 不写 `tool_invocations`，不 tick execution worker，不发网络请求。
+
+验证：
+
+```text
+pnpm --dir apps/api exec vitest run test/integration/product-gap-1-mcp-marketplace-api.test.ts
+```
+
+---
+
+## 16. 非目标 / 边界
 
 - 默认不做真实外部 LLM 调用；只有 Productization-1 显式 gate 满足时才允许 `agent` 外部 LLM 调用。
 - P1.1 只实现 Secret Manager contract adapter，不实现云 Secret Manager / Vault / KMS。
@@ -674,5 +715,6 @@ pnpm --dir apps/api exec vitest run test/integration/final-rc-production-candida
 - P2.2 Publisher real runtime 默认关闭；开启后只支持最小 HTTP release endpoint，不做完整发布平台、素材管理、撤回执行或多渠道运营编排。
 - 不引入 Redis/MQ/BullMQ（纯 DB 轮询）。
 - 不改 Workflow/Review/Agent/MCP 状态机、不做 UI。
+- MCP Marketplace Backend MVP 不做外部 marketplace 网络发现、SDK transport、SSE/stdio、热加载、不做 UI。
 - writeback executor 默认不开启；开启后也仅支持 `workflow_stage_run`，不支持 assets/reviews/publisher targets。
 - 不删除/修改 execution_results 历史、不替代 audit_events / audit hash chain。

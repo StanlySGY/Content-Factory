@@ -190,6 +190,10 @@ export type McpRiskLevel = (typeof MCP_RISK_LEVELS)[number];
 export const TOOL_INVOCATION_STATUSES = ["success", "failed", "blocked"] as const;
 export type ToolInvocationStatus = (typeof TOOL_INVOCATION_STATUSES)[number];
 
+/** MCP Marketplace 安装状态（产品缺口 1；安装记录不删除，uninstall 只做状态流转）*/
+export const MCP_MARKETPLACE_INSTALLATION_STATUSES = ["installed", "disabled", "uninstalled"] as const;
+export type McpMarketplaceInstallationStatus = (typeof MCP_MARKETPLACE_INSTALLATION_STATUSES)[number];
+
 // ── Productization-P2.2 Publisher 发布记录 ──
 
 /** 发布记录状态（publish_records_status_chk；版本锚定，asset_version_id 不可变）*/

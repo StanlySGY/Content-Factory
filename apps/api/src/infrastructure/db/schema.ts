@@ -260,6 +260,40 @@ export const toolInvocations = pgTable("tool_invocations", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// Product Gap 1：MCP Marketplace Backend MVP（本地 catalog + 项目级安装记录；无外部 marketplace 调用）
+export const mcpMarketplaceEntries = pgTable(
+  "mcp_marketplace_entries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    slug: varchar("slug", { length: 120 }).notNull(),
+    manifest: jsonb("manifest").$type<JsonRecord>().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("idx_mcp_marketplace_entries_created_at").on(t.createdAt),
+  ],
+);
+
+export const mcpMarketplaceInstallations = pgTable(
+  "mcp_marketplace_installations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id").notNull(),
+    entryId: uuid("entry_id").notNull(),
+    mcpServerId: uuid("mcp_server_id").notNull(),
+    status: varchar("status", { length: 32 }).notNull().default("installed"),
+    installedBy: uuid("installed_by").notNull(),
+    installedAt: timestamp("installed_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("idx_mcp_marketplace_installations_project").on(t.projectId, t.installedAt),
+    index("idx_mcp_marketplace_installations_entry").on(t.entryId),
+    index("idx_mcp_marketplace_installations_server").on(t.mcpServerId),
+  ],
+);
+
 // Productization-P2.2 Publisher 发布记录（版本锚定；asset_version_id DB 触发器保证不可变）
 export const publishRecords = pgTable(
   "publish_records",
@@ -383,6 +417,8 @@ export type AgentSessionRow = typeof agentSessions.$inferSelect;
 export type McpServerRow = typeof mcpServers.$inferSelect;
 export type McpToolRow = typeof mcpTools.$inferSelect;
 export type ToolInvocationRow = typeof toolInvocations.$inferSelect;
+export type McpMarketplaceEntryRow = typeof mcpMarketplaceEntries.$inferSelect;
+export type McpMarketplaceInstallationRow = typeof mcpMarketplaceInstallations.$inferSelect;
 export type PublishRecordRow = typeof publishRecords.$inferSelect;
 export type ExecutionJobRow = typeof executionJobs.$inferSelect;
 export type OutboxEventRow = typeof outboxEvents.$inferSelect;

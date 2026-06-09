@@ -500,4 +500,6 @@ MVP 后再进入：
 
 > **Publisher 已补齐最小产品化入口**：P2.2 新增 `publish_records`、`/api/publish-records`、`PublisherRealRuntime` 与 `/api/execution/ops/publisher-real-runtime-readiness`。它仍默认关闭，只支持最小 HTTP release，不代表完整公众号运营平台已完成。
 
+> **MCP Marketplace Backend MVP 已补齐**：Product Gap 1 新增本地 `mcp_marketplace_entries` / `mcp_marketplace_installations`、Manifest 校验、安装/禁用/卸载 API。安装只写本项目 MCP 配置（`mcp_servers` / `mcp_tools`），不调用外部 marketplace、不执行 tool invocation、不做 UI。证据见 `docs/reviews/product-gap-1-mcp-marketplace-backend-audit.md`。
+
 > **不再继续 P2.x**：后续剩余工作进入独立产品路线，例如 Publisher Platform、MCP Marketplace、多租户 RBAC、Knowledge/RAG、Agent Evaluation。

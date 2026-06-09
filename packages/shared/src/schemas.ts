@@ -6,6 +6,7 @@ import {
   DEPENDENCY_TYPES,
   EXECUTOR_TYPES,
   MCP_RISK_LEVELS,
+  MCP_MARKETPLACE_INSTALLATION_STATUSES,
   MCP_SERVER_STATUSES,
   PUBLISH_RECORD_STATUSES,
   REQUIREMENT_SCHEMA_VERSION,
@@ -631,6 +632,7 @@ export const AgentSessionsResponseSchema = Type.Array(AgentSessionSchema);
 export const McpServerStatusSchema = StringEnum(MCP_SERVER_STATUSES);
 export const McpRiskLevelSchema = StringEnum(MCP_RISK_LEVELS);
 export const ToolInvocationStatusSchema = StringEnum(TOOL_INVOCATION_STATUSES);
+export const McpMarketplaceInstallationStatusSchema = StringEnum(MCP_MARKETPLACE_INSTALLATION_STATUSES);
 
 export const McpServerSchema = Type.Object(
   {
@@ -679,6 +681,53 @@ export const ToolInvocationSchema = Type.Object(
 );
 export type ToolInvocationDTO = Static<typeof ToolInvocationSchema>;
 
+export const McpMarketplaceToolManifestSchema = Type.Object(
+  {
+    name: Type.String({ minLength: 1, maxLength: 160 }),
+    description: Type.Optional(Type.String({ maxLength: 1000 })),
+  },
+  { additionalProperties: true },
+);
+export type McpMarketplaceToolManifestDTO = Static<typeof McpMarketplaceToolManifestSchema>;
+
+export const McpMarketplaceManifestSchema = Type.Object(
+  {
+    server_ref: Type.String({ minLength: 7, maxLength: 240 }),
+    display_name: Type.String({ minLength: 1, maxLength: 160 }),
+    endpoint: Type.String({ minLength: 1 }),
+    tools: Type.Array(McpMarketplaceToolManifestSchema, { minItems: 1, maxItems: 100 }),
+  },
+  { additionalProperties: true },
+);
+export type McpMarketplaceManifestDTO = Static<typeof McpMarketplaceManifestSchema>;
+
+export const McpMarketplaceEntrySchema = Type.Object(
+  {
+    id: Uuid(),
+    slug: Type.String(),
+    manifest: McpMarketplaceManifestSchema,
+    created_at: Type.String({ format: "date-time" }),
+    updated_at: Type.String({ format: "date-time" }),
+  },
+  { additionalProperties: false },
+);
+export type McpMarketplaceEntryDTO = Static<typeof McpMarketplaceEntrySchema>;
+
+export const McpMarketplaceInstallationSchema = Type.Object(
+  {
+    id: Uuid(),
+    project_id: Uuid(),
+    entry_id: Uuid(),
+    mcp_server_id: Uuid(),
+    status: McpMarketplaceInstallationStatusSchema,
+    installed_by: Uuid(),
+    installed_at: Type.String({ format: "date-time" }),
+    updated_at: Type.String({ format: "date-time" }),
+  },
+  { additionalProperties: false },
+);
+export type McpMarketplaceInstallationDTO = Static<typeof McpMarketplaceInstallationSchema>;
+
 export const CreateMcpServerSchema = Type.Object(
   {
     name: Type.String({ minLength: 1, maxLength: 160 }),
@@ -689,6 +738,15 @@ export const CreateMcpServerSchema = Type.Object(
   { additionalProperties: false },
 );
 export type CreateMcpServerBody = Static<typeof CreateMcpServerSchema>;
+
+export const CreateMcpMarketplaceEntrySchema = Type.Object(
+  {
+    slug: Type.String({ minLength: 1, maxLength: 120, pattern: "^[a-z0-9][a-z0-9-]*$" }),
+    manifest: McpMarketplaceManifestSchema,
+  },
+  { additionalProperties: false },
+);
+export type CreateMcpMarketplaceEntryBody = Static<typeof CreateMcpMarketplaceEntrySchema>;
 
 export const UpdateMcpServerSchema = Type.Object(
   {
@@ -740,6 +798,10 @@ export const McpToolResponseSchema = McpToolSchema;
 export const McpToolsResponseSchema = Type.Array(McpToolSchema);
 export const ToolInvocationResponseSchema = ToolInvocationSchema;
 export const ToolInvocationsResponseSchema = Type.Array(ToolInvocationSchema);
+export const McpMarketplaceEntryResponseSchema = McpMarketplaceEntrySchema;
+export const McpMarketplaceEntriesResponseSchema = Type.Array(McpMarketplaceEntrySchema);
+export const McpMarketplaceInstallationResponseSchema = McpMarketplaceInstallationSchema;
+export const McpMarketplaceInstallationsResponseSchema = Type.Array(McpMarketplaceInstallationSchema);
 
 // ---- Publisher publish_records (Productization-P2.2；版本锚定的发布记录) ----
 export const PublishRecordStatusSchema = StringEnum(PUBLISH_RECORD_STATUSES);

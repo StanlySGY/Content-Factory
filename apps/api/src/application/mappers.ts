@@ -33,6 +33,8 @@ import type {
   ExecutionResultSummaryDTO,
   ExecutionSystemHealthDTO,
   FinalRcProductionCandidateReadinessResponse,
+  McpMarketplaceEntryDTO,
+  McpMarketplaceInstallationDTO,
   McpServerDTO,
   McpToolDTO,
   McpRealRuntimeReadinessResponse,
@@ -74,6 +76,8 @@ import type {
   ExecutionJobRow,
   ExecutionResultRow,
   ExecutionWritebackRow,
+  McpMarketplaceEntryRow,
+  McpMarketplaceInstallationRow,
   McpServerRow,
   McpToolRow,
   OutboxEventRow,
@@ -442,6 +446,29 @@ export function toToolInvocationDTO(r: ToolInvocationRow): ToolInvocationDTO {
     response_snapshot: r.responseSnapshot,
     created_by: r.createdBy,
     created_at: r.createdAt.toISOString(),
+  };
+}
+
+export function toMcpMarketplaceEntryDTO(r: McpMarketplaceEntryRow): McpMarketplaceEntryDTO {
+  return {
+    id: r.id,
+    slug: r.slug,
+    manifest: r.manifest as McpMarketplaceEntryDTO["manifest"],
+    created_at: r.createdAt.toISOString(),
+    updated_at: r.updatedAt.toISOString(),
+  };
+}
+
+export function toMcpMarketplaceInstallationDTO(r: McpMarketplaceInstallationRow): McpMarketplaceInstallationDTO {
+  return {
+    id: r.id,
+    project_id: r.projectId,
+    entry_id: r.entryId,
+    mcp_server_id: r.mcpServerId,
+    status: r.status as McpMarketplaceInstallationDTO["status"],
+    installed_by: r.installedBy,
+    installed_at: r.installedAt.toISOString(),
+    updated_at: r.updatedAt.toISOString(),
   };
 }
 

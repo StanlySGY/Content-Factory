@@ -1,8 +1,13 @@
 import type { FastifyPluginAsyncTypebox } from "@fastify/type-provider-typebox";
 import {
   CreateMcpServerSchema,
+  CreateMcpMarketplaceEntrySchema,
   CreateMcpToolSchema,
   IdParamSchema,
+  McpMarketplaceEntriesResponseSchema,
+  McpMarketplaceEntryResponseSchema,
+  McpMarketplaceInstallationResponseSchema,
+  McpMarketplaceInstallationsResponseSchema,
   McpHealthCheckResponseSchema,
   McpServerSchema,
   McpServersResponseSchema,
@@ -15,10 +20,13 @@ import {
   UpdateMcpToolSchema,
 } from "@cf/shared";
 import type { McpRuntimeMockService } from "../../../application/mcp-runtime-mock.service.js";
+import type { McpMarketplaceService } from "../../../application/mcp-marketplace.service.js";
 import type { McpServerService } from "../../../application/mcp-server.service.js";
 import type { McpToolService } from "../../../application/mcp-tool.service.js";
 import {
   toMcpHealthCheckDTO,
+  toMcpMarketplaceEntryDTO,
+  toMcpMarketplaceInstallationDTO,
   toMcpServerDTO,
   toMcpToolDTO,
   toToolInvocationDTO,
@@ -28,6 +36,7 @@ import { buildContext } from "../context.js";
 
 export interface McpRoutesOptions {
   env: Env;
+  mcpMarketplaceService: McpMarketplaceService;
   mcpServerService: McpServerService;
   mcpToolService: McpToolService;
   mcpRuntimeService: McpRuntimeMockService;
@@ -36,8 +45,72 @@ export interface McpRoutesOptions {
 // MCP 壳层端点（薄控制器：解析/调 Service/映射 DTO；状态机/校验/可用性判断归 Service/Domain，无真实 MCP 调用）
 export const mcpRoutes: FastifyPluginAsyncTypebox<McpRoutesOptions> = async (
   app,
-  { env, mcpServerService, mcpToolService, mcpRuntimeService },
+  { env, mcpMarketplaceService, mcpServerService, mcpToolService, mcpRuntimeService },
 ) => {
+  // ── MCP Marketplace（本地 catalog + 项目级安装；无外部 marketplace 调用）──
+  app.post(
+    "/api/mcp/marketplace/entries",
+    { schema: { body: CreateMcpMarketplaceEntrySchema, response: { 201: McpMarketplaceEntryResponseSchema } } },
+    async (request, reply) => {
+      const entry = await mcpMarketplaceService.createEntry(request.body);
+      reply.code(201);
+      return toMcpMarketplaceEntryDTO(entry);
+    },
+  );
+
+  app.get(
+    "/api/mcp/marketplace/entries",
+    { schema: { response: { 200: McpMarketplaceEntriesResponseSchema } } },
+    async () => (await mcpMarketplaceService.listEntries()).map(toMcpMarketplaceEntryDTO),
+  );
+
+  app.post(
+    "/api/mcp/marketplace/entries/:id/install",
+    { schema: { params: IdParamSchema, response: { 201: McpMarketplaceInstallationResponseSchema } } },
+    async (request, reply) => {
+      const installation = await mcpMarketplaceService.installEntry(buildContext(env, request), request.params.id);
+      reply.code(201);
+      return toMcpMarketplaceInstallationDTO(installation);
+    },
+  );
+
+  app.get(
+    "/api/mcp/marketplace/installations",
+    {
+      schema: {
+        querystring: {
+          type: "object",
+          properties: { project_id: { type: "string", format: "uuid" } },
+          additionalProperties: false,
+        },
+        response: { 200: McpMarketplaceInstallationsResponseSchema },
+      },
+    },
+    async (request) =>
+      (await mcpMarketplaceService.listInstallationsByProject(
+        buildContext(env, request),
+        (request.query as { project_id?: string }).project_id,
+      )).map(toMcpMarketplaceInstallationDTO),
+  );
+
+  app.post(
+    "/api/mcp/marketplace/installations/:id/disable",
+    { schema: { params: IdParamSchema, response: { 200: McpMarketplaceInstallationResponseSchema } } },
+    async (request) =>
+      toMcpMarketplaceInstallationDTO(
+        await mcpMarketplaceService.disableInstallation(buildContext(env, request), request.params.id),
+      ),
+  );
+
+  app.post(
+    "/api/mcp/marketplace/installations/:id/uninstall",
+    { schema: { params: IdParamSchema, response: { 200: McpMarketplaceInstallationResponseSchema } } },
+    async (request) =>
+      toMcpMarketplaceInstallationDTO(
+        await mcpMarketplaceService.uninstallInstallation(buildContext(env, request), request.params.id),
+      ),
+  );
+
   // ── MCP Server ──
   app.get(
     "/api/mcp/servers",

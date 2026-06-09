@@ -40,6 +40,7 @@ import {
   type IRuntimeCredentialResolver,
 } from "./application/runtime/credential-resolver.js";
 import { McpRuntimeMockService } from "./application/mcp-runtime-mock.service.js";
+import { McpMarketplaceService } from "./application/mcp-marketplace.service.js";
 import { McpServerService } from "./application/mcp-server.service.js";
 import { McpToolService } from "./application/mcp-tool.service.js";
 import { defaultOutboxHandlers, OutboxRelay, type OutboxHandler } from "./application/outbox-relay.js";
@@ -266,6 +267,7 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
   }, executionWorker);
   const agentProfileService = new AgentProfileService(db);
   const agentRuntimeService = new AgentRuntimeMockService(db);
+  const mcpMarketplaceService = new McpMarketplaceService(db);
   const mcpServerService = new McpServerService(db);
   const mcpToolService = new McpToolService(db);
   const mcpRuntimeService = new McpRuntimeMockService(db);
@@ -305,7 +307,7 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
   });
   await app.register(executionOpsRoutes, { executionOpsService });
   await app.register(agentRoutes, { env, agentProfileService, agentRuntimeService });
-  await app.register(mcpRoutes, { env, mcpServerService, mcpToolService, mcpRuntimeService });
+  await app.register(mcpRoutes, { env, mcpMarketplaceService, mcpServerService, mcpToolService, mcpRuntimeService });
 
   if (env.executionWorkerEnabled) executionWorker.start();
   if (env.outboxRelayEnabled) outboxRelay.start();
