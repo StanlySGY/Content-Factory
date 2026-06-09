@@ -33,6 +33,9 @@ import type {
   ExecutionResultSummaryDTO,
   ExecutionSystemHealthDTO,
   FinalRcProductionCandidateReadinessResponse,
+  KnowledgeEntryDTO,
+  KnowledgeSearchItemDTO,
+  KnowledgeSourceDTO,
   McpMarketplaceEntryDTO,
   McpMarketplaceInstallationDTO,
   McpServerDTO,
@@ -80,6 +83,8 @@ import type {
   ExecutionJobRow,
   ExecutionResultRow,
   ExecutionWritebackRow,
+  KnowledgeEntryRow,
+  KnowledgeSourceRow,
   McpMarketplaceEntryRow,
   McpMarketplaceInstallationRow,
   McpServerRow,
@@ -590,6 +595,46 @@ export function toProjectMembershipDTO(r: ProjectMembershipRow): ProjectMembersh
     granted_by: r.grantedBy,
     created_at: r.createdAt.toISOString(),
     updated_at: r.updatedAt.toISOString(),
+  };
+}
+
+export function toKnowledgeSourceDTO(r: KnowledgeSourceRow): KnowledgeSourceDTO {
+  return {
+    id: r.id,
+    project_id: r.projectId,
+    name: r.name,
+    source_type: r.sourceType as KnowledgeSourceDTO["source_type"],
+    uri: r.uri,
+    status: r.status as KnowledgeSourceDTO["status"],
+    metadata: r.metadata,
+    created_by: r.createdBy,
+    created_at: r.createdAt.toISOString(),
+    updated_at: r.updatedAt.toISOString(),
+  };
+}
+
+export function toKnowledgeEntryDTO(r: KnowledgeEntryRow): KnowledgeEntryDTO {
+  return {
+    id: r.id,
+    project_id: r.projectId,
+    source_id: r.sourceId,
+    title: r.title,
+    body: r.body,
+    tags: r.tags,
+    status: r.status as KnowledgeEntryDTO["status"],
+    metadata: r.metadata,
+    created_by: r.createdBy,
+    created_at: r.createdAt.toISOString(),
+    updated_at: r.updatedAt.toISOString(),
+  };
+}
+
+export function toKnowledgeSearchItemDTO(
+  r: KnowledgeEntryRow & { reason: string },
+): KnowledgeSearchItemDTO {
+  return {
+    ...toKnowledgeEntryDTO(r),
+    reason: r.reason,
   };
 }
 

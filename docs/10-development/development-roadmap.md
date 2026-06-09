@@ -486,7 +486,7 @@ MVP 后再进入：
 - MCP 市场安装与热加载。
 - Skill 质量门禁自动化。
 - 微信公众号真实发布集成。
-- 知识库检索与 RAG。
+- 知识库检索与 RAG：后端 MVP 已补齐 knowledge source / entry / keyword search / task candidates；尚未接 embedding、向量库、LLM rerank、context pack materialization 和 UI。
 - 多团队权限和审计：RBAC 后端 MVP 已具备，后续仍需全局 enforcement、auth/session 接入、RBAC audit hardening 与 UI。
 - Agent 效果评估和成本分析。
 
@@ -505,5 +505,7 @@ MVP 后再进入：
 > **Publisher Platform Backend MVP 已补齐**：Product Gap 2 新增项目级 `publisher_channels`、渠道创建/列表/详情/更新/禁用/归档 API，并让 `publish_records` 创建前校验渠道处于 active。它不新增真实发布网络行为、不做 UI、不代表完整多渠道运营平台已完成。证据见 `docs/reviews/product-gap-2-publisher-platform-backend-audit.md`。
 
 > **Multi-tenant RBAC Backend MVP 已补齐**：Product Gap 3 新增 `organizations` / `organization_members` / `project_memberships`、组织成员管理、项目成员授权/撤销、`project.read/write/admin` 权限检查 API。它不替换默认 actor/project context、不全局拦截既有业务 API、不做 UI。证据见 `docs/reviews/product-gap-3-rbac-backend-audit.md`。
+
+> **Knowledge/RAG Backend MVP 已补齐**：Product Gap 4 新增 `knowledge_sources` / `knowledge_entries`、知识源创建/归档、知识条目创建、项目内关键词检索和任务知识候选 API。它不引入向量库、不调用 LLM、不自动写 `context_packs`、不做 UI。证据见 `docs/reviews/product-gap-4-knowledge-rag-backend-audit.md`。
 
 > **不再继续 P2.x**：后续剩余工作进入独立产品路线，例如 Publisher Platform、MCP Marketplace、多租户 RBAC、Knowledge/RAG、Agent Evaluation。

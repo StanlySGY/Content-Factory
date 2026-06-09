@@ -13,6 +13,7 @@ import { ExecutionBridgeService } from "./application/execution-bridge.service.j
 import { defaultExecutionOpsRuntimeRegistry, ExecutionOpsService } from "./application/execution-ops.service.js";
 import { ExecutionResultService } from "./application/execution-result.service.js";
 import { ExecutionWritebackService } from "./application/execution-writeback.service.js";
+import { KnowledgeService } from "./application/knowledge.service.js";
 import { createWorkflowStageRunWritebackHandler } from "./application/execution-writeback-executor.js";
 import { ExecutionWorker } from "./application/execution-worker.js";
 import { MockRuntimeAdapterFactory, type RuntimeAdapterFactory } from "./application/runtime/adapter-factory.js";
@@ -62,6 +63,7 @@ import { dashboardRoutes } from "./interfaces/http/routes/dashboard.js";
 import { editorRoutes } from "./interfaces/http/routes/editor.js";
 import { executionRoutes } from "./interfaces/http/routes/execution.js";
 import { executionOpsRoutes } from "./interfaces/http/routes/execution-ops.js";
+import { knowledgeRoutes } from "./interfaces/http/routes/knowledge.js";
 import { reviewRoutes } from "./interfaces/http/routes/reviews.js";
 import { publisherChannelRoutes } from "./interfaces/http/routes/publisher-channels.js";
 import { publishRecordRoutes } from "./interfaces/http/routes/publish-records.js";
@@ -228,6 +230,7 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
   const executionBridgeService = new ExecutionBridgeService(executionJobService);
   const executionResultService = new ExecutionResultService(db);
   const executionWritebackService = new ExecutionWritebackService(db);
+  const knowledgeService = new KnowledgeService(db);
   const publisherChannelService = new PublisherChannelService(db);
   const publishRecordService = new PublishRecordService(db, publisherChannelService);
   const rbacService = new RbacService(db);
@@ -314,6 +317,7 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
     executionWritebackService,
   });
   await app.register(executionOpsRoutes, { executionOpsService });
+  await app.register(knowledgeRoutes, { env, knowledgeService });
   await app.register(agentRoutes, { env, agentProfileService, agentRuntimeService });
   await app.register(mcpRoutes, { env, mcpMarketplaceService, mcpServerService, mcpToolService, mcpRuntimeService });
 

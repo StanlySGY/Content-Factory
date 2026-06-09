@@ -393,6 +393,49 @@ export const projectMemberships = pgTable(
   ],
 );
 
+// Product Gap 4：Knowledge/RAG Backend MVP（DB-first；无向量库/无 LLM 调用）
+export const knowledgeSources = pgTable(
+  "knowledge_sources",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id").notNull(),
+    name: varchar("name", { length: 160 }).notNull(),
+    sourceType: varchar("source_type", { length: 32 }).notNull(),
+    uri: text("uri"),
+    status: varchar("status", { length: 32 }).notNull().default("active"),
+    metadata: jsonb("metadata").$type<JsonRecord>().notNull().default({}),
+    createdBy: uuid("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("idx_knowledge_sources_project_status").on(t.projectId, t.status),
+    index("idx_knowledge_sources_type").on(t.sourceType),
+  ],
+);
+
+export const knowledgeEntries = pgTable(
+  "knowledge_entries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id").notNull(),
+    sourceId: uuid("source_id").notNull(),
+    title: varchar("title", { length: 240 }).notNull(),
+    body: text("body").notNull(),
+    tags: jsonb("tags").$type<string[]>().notNull().default([]),
+    status: varchar("status", { length: 32 }).notNull().default("active"),
+    metadata: jsonb("metadata").$type<JsonRecord>().notNull().default({}),
+    createdBy: uuid("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("idx_knowledge_entries_project_status").on(t.projectId, t.status),
+    index("idx_knowledge_entries_source_status").on(t.sourceId, t.status),
+    index("idx_knowledge_entries_created_at").on(t.createdAt),
+  ],
+);
+
 // Sprint-5 执行层（独立异步骨架；execution_jobs 可变生命周期，无 project_id/无 FK）
 export const executionJobs = pgTable("execution_jobs", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -496,6 +539,8 @@ export type PublisherChannelRow = typeof publisherChannels.$inferSelect;
 export type OrganizationRow = typeof organizations.$inferSelect;
 export type OrganizationMemberRow = typeof organizationMembers.$inferSelect;
 export type ProjectMembershipRow = typeof projectMemberships.$inferSelect;
+export type KnowledgeSourceRow = typeof knowledgeSources.$inferSelect;
+export type KnowledgeEntryRow = typeof knowledgeEntries.$inferSelect;
 export type ExecutionJobRow = typeof executionJobs.$inferSelect;
 export type OutboxEventRow = typeof outboxEvents.$inferSelect;
 export type ExecutionResultRow = typeof executionResults.$inferSelect;

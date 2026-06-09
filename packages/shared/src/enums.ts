@@ -223,6 +223,16 @@ export type ProjectMembershipStatus = (typeof PROJECT_MEMBERSHIP_STATUSES)[numbe
 export const RBAC_PERMISSIONS = ["project.read", "project.write", "project.admin"] as const;
 export type RbacPermission = (typeof RBAC_PERMISSIONS)[number];
 
+// ── Product Gap 4：Knowledge/RAG Backend MVP ──
+export const KNOWLEDGE_SOURCE_TYPES = ["document", "url", "note", "dataset"] as const;
+export type KnowledgeSourceType = (typeof KNOWLEDGE_SOURCE_TYPES)[number];
+
+export const KNOWLEDGE_SOURCE_STATUSES = ["active", "archived"] as const;
+export type KnowledgeSourceStatus = (typeof KNOWLEDGE_SOURCE_STATUSES)[number];
+
+export const KNOWLEDGE_ENTRY_STATUSES = ["active", "archived"] as const;
+export type KnowledgeEntryStatus = (typeof KNOWLEDGE_ENTRY_STATUSES)[number];
+
 // ── Sprint-5 执行层值集（独立异步执行骨架；与控制平面状态机无关）──
 
 /** 执行作业类型（db execution_jobs_type_chk）*/

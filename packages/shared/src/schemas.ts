@@ -5,6 +5,9 @@ import {
   CONTEXT_SCOPES,
   DEPENDENCY_TYPES,
   EXECUTOR_TYPES,
+  KNOWLEDGE_ENTRY_STATUSES,
+  KNOWLEDGE_SOURCE_STATUSES,
+  KNOWLEDGE_SOURCE_TYPES,
   MCP_RISK_LEVELS,
   MCP_MARKETPLACE_INSTALLATION_STATUSES,
   MCP_SERVER_STATUSES,
@@ -1017,6 +1020,107 @@ export const OrganizationMembersResponseSchema = Type.Array(OrganizationMemberSc
 export const OrganizationMemberResponseSchema = OrganizationMemberSchema;
 export const ProjectMembershipResponseSchema = ProjectMembershipSchema;
 export const ProjectMembershipsResponseSchema = Type.Array(ProjectMembershipSchema);
+
+// ---- Knowledge/RAG Backend MVP (Product Gap 4) ----
+export const KnowledgeSourceTypeSchema = StringEnum(KNOWLEDGE_SOURCE_TYPES);
+export const KnowledgeSourceStatusSchema = StringEnum(KNOWLEDGE_SOURCE_STATUSES);
+export const KnowledgeEntryStatusSchema = StringEnum(KNOWLEDGE_ENTRY_STATUSES);
+
+export const KnowledgeSourceSchema = Type.Object(
+  {
+    id: Uuid(),
+    project_id: Uuid(),
+    name: Type.String(),
+    source_type: KnowledgeSourceTypeSchema,
+    uri: Nullable(Type.String()),
+    status: KnowledgeSourceStatusSchema,
+    metadata: JsonRecord(),
+    created_by: Uuid(),
+    created_at: Type.String({ format: "date-time" }),
+    updated_at: Type.String({ format: "date-time" }),
+  },
+  { additionalProperties: false },
+);
+export type KnowledgeSourceDTO = Static<typeof KnowledgeSourceSchema>;
+
+export const KnowledgeEntrySchema = Type.Object(
+  {
+    id: Uuid(),
+    project_id: Uuid(),
+    source_id: Uuid(),
+    title: Type.String(),
+    body: Type.String(),
+    tags: Type.Array(Type.String()),
+    status: KnowledgeEntryStatusSchema,
+    metadata: JsonRecord(),
+    created_by: Uuid(),
+    created_at: Type.String({ format: "date-time" }),
+    updated_at: Type.String({ format: "date-time" }),
+  },
+  { additionalProperties: false },
+);
+export type KnowledgeEntryDTO = Static<typeof KnowledgeEntrySchema>;
+
+export const KnowledgeSearchItemSchema = Type.Intersect([
+  KnowledgeEntrySchema,
+  Type.Object({
+    reason: Type.String(),
+  }, { additionalProperties: false }),
+]);
+export type KnowledgeSearchItemDTO = Static<typeof KnowledgeSearchItemSchema>;
+
+export const CreateKnowledgeSourceSchema = Type.Object(
+  {
+    name: Type.String({ minLength: 1, maxLength: 160 }),
+    source_type: KnowledgeSourceTypeSchema,
+    uri: Type.Optional(Nullable(Type.String({ minLength: 1, maxLength: 2000 }))),
+    metadata: Type.Optional(JsonRecord()),
+  },
+  { additionalProperties: false },
+);
+export type CreateKnowledgeSourceBody = Static<typeof CreateKnowledgeSourceSchema>;
+
+export const CreateKnowledgeEntrySchema = Type.Object(
+  {
+    title: Type.String({ minLength: 1, maxLength: 240 }),
+    body: Type.String({ minLength: 1, maxLength: 20000 }),
+    tags: Type.Optional(Type.Array(Type.String({ minLength: 1, maxLength: 80 }), { maxItems: 50 })),
+    metadata: Type.Optional(JsonRecord()),
+  },
+  { additionalProperties: false },
+);
+export type CreateKnowledgeEntryBody = Static<typeof CreateKnowledgeEntrySchema>;
+
+export const KnowledgeSearchQuerySchema = Type.Object(
+  {
+    q: Type.String({ minLength: 1, maxLength: 200 }),
+    limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 50, default: 10 })),
+  },
+  { additionalProperties: false },
+);
+export type KnowledgeSearchQuery = Static<typeof KnowledgeSearchQuerySchema>;
+
+export const KnowledgeSearchResponseSchema = Type.Object(
+  {
+    query: Type.String(),
+    items: Type.Array(KnowledgeSearchItemSchema),
+  },
+  { additionalProperties: false },
+);
+export type KnowledgeSearchResponse = Static<typeof KnowledgeSearchResponseSchema>;
+
+export const TaskKnowledgeCandidatesResponseSchema = Type.Object(
+  {
+    task_id: Uuid(),
+    query: Type.String(),
+    items: Type.Array(KnowledgeSearchItemSchema),
+  },
+  { additionalProperties: false },
+);
+export type TaskKnowledgeCandidatesResponse = Static<typeof TaskKnowledgeCandidatesResponseSchema>;
+
+export const KnowledgeSourceResponseSchema = KnowledgeSourceSchema;
+export const KnowledgeEntryResponseSchema = KnowledgeEntrySchema;
 
 // ---- Execution Layer (S5 Phase 1；独立异步执行骨架) ----
 export const ExecutionJobTypeSchema = StringEnum(EXECUTION_JOB_TYPES);
