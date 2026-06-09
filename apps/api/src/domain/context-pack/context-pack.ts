@@ -70,6 +70,38 @@ export function createContextPack(input: ContextPackInput): ContextPackWriteMode
   };
 }
 
+// 可物化为上下文包的知识候选最小形态（领域不依赖 db schema 类型）。
+export interface MaterializableKnowledgeEntry {
+  id: string;
+  title: string;
+  source_id: string;
+}
+
+/**
+ * 由关键词命中的知识候选构造 task 级上下文包的 data / source_refs（只读快照，不回写知识库）。
+ * data.knowledge_entries 携带物化来源明证；source_refs 记录可追溯的 entry / source id 集合。
+ */
+export function buildKnowledgeContextPackPayload(
+  query: string,
+  entries: MaterializableKnowledgeEntry[],
+): { data: Record<string, unknown>; source_refs: Record<string, unknown> } {
+  return {
+    data: {
+      materialized_from: "knowledge_entries",
+      query,
+      knowledge_entries: entries.map((e) => ({
+        id: e.id,
+        title: e.title,
+        reason: "keyword_match" as const,
+      })),
+    },
+    source_refs: {
+      knowledge_entry_ids: entries.map((e) => e.id),
+      knowledge_source_ids: [...new Set(entries.map((e) => e.source_id))],
+    },
+  };
+}
+
 /** 唯一性键（呼应 §5.8 两条部分唯一索引；实际唯一约束由 DB 强制）*/
 export function uniquenessKey(p: {
   content_task_id: string;

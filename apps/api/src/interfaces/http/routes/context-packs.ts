@@ -3,6 +3,7 @@ import {
   ContextPackSchema,
   CreateContextPackBodySchema,
   IdParamSchema,
+  MaterializeKnowledgeContextPackBodySchema,
   TaskIdPathSchema,
   UpdateContextPackBodySchema,
 } from "@cf/shared";
@@ -47,6 +48,27 @@ export const contextPackRoutes: FastifyPluginAsyncTypebox<ContextPackRoutesOptio
     async (request) => {
       const packs = await contextService.listByTask(buildContext(env, request), request.params.taskId);
       return packs.map(toContextPackDTO);
+    },
+  );
+
+  // 知识上下文包物化：关键词命中的知识候选 → task 级上下文包只读快照（不回写知识库）
+  app.post(
+    "/api/tasks/:taskId/knowledge-context-pack",
+    {
+      schema: {
+        params: TaskIdPathSchema,
+        body: MaterializeKnowledgeContextPackBodySchema,
+        response: { 201: ContextPackSchema },
+      },
+    },
+    async (request, reply) => {
+      const pack = await contextService.materializeKnowledgeContextPack(
+        buildContext(env, request),
+        request.params.taskId,
+        request.body,
+      );
+      reply.code(201);
+      return toContextPackDTO(pack);
     },
   );
 };

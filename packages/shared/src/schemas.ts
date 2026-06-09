@@ -337,6 +337,17 @@ export const CreateContextPackBodySchema = Type.Object(
 );
 export type CreateContextPackBody = Static<typeof CreateContextPackBodySchema>;
 
+// 知识上下文包物化：把关键词命中的知识候选物化为 task 级上下文包（只读快照，不回写知识库）。
+export const MaterializeKnowledgeContextPackBodySchema = Type.Object(
+  {
+    q: Type.String({ minLength: 1, maxLength: 200 }),
+    limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 50, default: 10 })),
+    version: Type.Integer({ minimum: 1 }),
+  },
+  { additionalProperties: false },
+);
+export type MaterializeKnowledgeContextPackBody = Static<typeof MaterializeKnowledgeContextPackBodySchema>;
+
 export const UpdateContextPackBodySchema = Type.Object(
   {
     data: Type.Optional(JsonRecord()),

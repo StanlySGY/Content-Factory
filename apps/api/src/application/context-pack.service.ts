@@ -1,14 +1,26 @@
 import {
+  buildKnowledgeContextPackPayload,
   createContextPack,
   type ContextPackInput,
 } from "../domain/context-pack/context-pack.js";
 import { NotFoundError } from "../domain/errors.js";
+import {
+  normalizeKnowledgeLimit,
+  normalizeKnowledgeQuery,
+} from "../domain/knowledge/knowledge.js";
 import { runInProject, type Db } from "../infrastructure/db/client.js";
 import type { ContextPackRow } from "../infrastructure/db/schema.js";
 import * as ctxRepo from "../infrastructure/repositories/context-pack.repository.js";
+import * as knowledgeRepo from "../infrastructure/repositories/knowledge.repository.js";
 import * as runRepo from "../infrastructure/repositories/workflow-run.repository.js";
 import * as stageRepo from "../infrastructure/repositories/stage-run.repository.js";
 import type { RequestContext } from "./task.service.js";
+
+export interface MaterializeKnowledgeContextPackInput {
+  q: string;
+  limit?: number;
+  version: number;
+}
 
 export interface ContextPackChanges {
   data?: Record<string, unknown>;
@@ -42,6 +54,48 @@ export class ContextPackService {
         sensitivity_level: w.sensitivity_level,
       }),
     );
+  }
+
+  /**
+   * 物化知识候选为 task 级上下文包：单事务内校验任务归属、关键词检索命中、构造只读快照落库。
+   * 不回写知识库；任务不存在或无命中候选均映射 NotFoundError(404)。
+   */
+  async materializeKnowledgeContextPack(
+    ctx: RequestContext,
+    taskId: string,
+    input: MaterializeKnowledgeContextPackInput,
+  ): Promise<ContextPackRow> {
+    const query = normalizeKnowledgeQuery(input.q);
+    const limit = normalizeKnowledgeLimit(input.limit);
+    return runInProject(this.db, ctx.projectId, async (tx) => {
+      if (!(await knowledgeRepo.taskExists(tx, ctx.projectId, taskId)))
+        throw new NotFoundError(`content_task ${taskId} not found in project`);
+      const entries = await knowledgeRepo.searchEntries(tx, ctx.projectId, query, limit);
+      if (entries.length === 0)
+        throw new NotFoundError(`no knowledge candidates matched query for task ${taskId}`);
+      const { data, source_refs } = buildKnowledgeContextPackPayload(
+        query,
+        entries.map((e) => ({ id: e.id, title: e.title, source_id: e.sourceId })),
+      );
+      const w = createContextPack({
+        content_task_id: taskId,
+        stage_run_id: null,
+        version: input.version,
+        scope: "task",
+        data,
+        source_refs,
+        sensitivity_level: "internal",
+      });
+      return ctxRepo.create(tx, ctx.projectId, {
+        content_task_id: w.content_task_id,
+        stage_run_id: w.stage_run_id,
+        version: w.version,
+        scope: w.scope,
+        data: w.data,
+        source_refs: w.source_refs,
+        sensitivity_level: w.sensitivity_level,
+      });
+    });
   }
 
   /** 更新可变快照字段 */
