@@ -2,8 +2,12 @@ import type { FastifyPluginAsyncTypebox } from "@fastify/type-provider-typebox";
 import {
   CreateBridgeJobSchema,
   CreateExecutionJobSchema,
+  CreateExecutionResultEvaluationSchema,
   ExecutionJobSchema,
   ExecutionJobsResponseSchema,
+  ExecutionResultEvaluationResponseSchema,
+  ExecutionResultEvaluationsResponseSchema,
+  ExecutionResultEvaluationSummarySchema,
   ExecutionResultSchema,
   ExecutionResultsResponseSchema,
   ExecutionResultSummarySchema,
@@ -24,14 +28,18 @@ import {
 } from "@cf/shared";
 import type { ExecutionBridgeService } from "../../../application/execution-bridge.service.js";
 import type { ExecutionJobService } from "../../../application/execution-job.service.js";
+import type { ExecutionResultEvaluationService } from "../../../application/execution-result-evaluation.service.js";
 import type { ExecutionResultService } from "../../../application/execution-result.service.js";
 import type { ExecutionWritebackService } from "../../../application/execution-writeback.service.js";
 import type { ExecutionWorker } from "../../../application/execution-worker.js";
 import type { OutboxRelay } from "../../../application/outbox-relay.js";
 import type { OutboxService } from "../../../application/outbox.service.js";
+import type { Env } from "../../../config/env.js";
 import { isOutboxProcessed } from "../../../domain/execution/outbox.js";
 import {
   toExecutionJobDTO,
+  toExecutionResultEvaluationDTO,
+  toExecutionResultEvaluationSummaryDTO,
   toExecutionResultDTO,
   toExecutionResultSummaryDTO,
   toExecutionWritebackApplyGuardDTO,
@@ -44,12 +52,14 @@ import {
 } from "../../../application/mappers.js";
 
 export interface ExecutionRoutesOptions {
+  env: Env;
   executionJobService: ExecutionJobService;
   executionWorker: ExecutionWorker;
   outboxService: OutboxService;
   outboxRelay: OutboxRelay;
   executionBridgeService: ExecutionBridgeService;
   executionResultService: ExecutionResultService;
+  executionResultEvaluationService: ExecutionResultEvaluationService;
   executionWritebackService: ExecutionWritebackService;
 }
 
@@ -58,12 +68,14 @@ export interface ExecutionRoutesOptions {
 export const executionRoutes: FastifyPluginAsyncTypebox<ExecutionRoutesOptions> = async (
   app,
   {
+    env,
     executionJobService,
     executionWorker,
     outboxService,
     outboxRelay,
     executionBridgeService,
     executionResultService,
+    executionResultEvaluationService,
     executionWritebackService,
   },
 ) => {
@@ -119,11 +131,47 @@ export const executionRoutes: FastifyPluginAsyncTypebox<ExecutionRoutesOptions> 
       toExecutionResultSummaryDTO(request.params.id, await executionResultService.summaryByJob(request.params.id)),
   );
 
+  app.get(
+    "/api/execution/jobs/:id/evaluation-summary",
+    { schema: { params: IdParamSchema, response: { 200: ExecutionResultEvaluationSummarySchema } } },
+    async (request) =>
+      toExecutionResultEvaluationSummaryDTO(
+        await executionResultEvaluationService.summaryByJob(request.params.id),
+      ),
+  );
+
   // 单条执行结果（404 不存在）
   app.get(
     "/api/execution/results/:id",
     { schema: { params: IdParamSchema, response: { 200: ExecutionResultSchema } } },
     async (request) => toExecutionResultDTO(await executionResultService.getResult(request.params.id)),
+  );
+
+  app.post(
+    "/api/execution/results/:id/evaluations",
+    {
+      schema: {
+        params: IdParamSchema,
+        body: CreateExecutionResultEvaluationSchema,
+        response: { 201: ExecutionResultEvaluationResponseSchema },
+      },
+    },
+    async (request, reply) => {
+      const evaluation = await executionResultEvaluationService.createEvaluation(
+        { projectId: "execution", actorId: env.defaultUserId, requestId: request.id },
+        request.params.id,
+        request.body,
+      );
+      reply.code(201);
+      return toExecutionResultEvaluationDTO(evaluation);
+    },
+  );
+
+  app.get(
+    "/api/execution/results/:id/evaluations",
+    { schema: { params: IdParamSchema, response: { 200: ExecutionResultEvaluationsResponseSchema } } },
+    async (request) =>
+      (await executionResultEvaluationService.listByResult(request.params.id)).map(toExecutionResultEvaluationDTO),
   );
 
   // 某执行结果关联的 writeback readiness 账本（只读，不 join 控制面表）

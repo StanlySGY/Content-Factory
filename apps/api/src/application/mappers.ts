@@ -30,6 +30,8 @@ import type {
   ExecutionWritebackTransactionPrototypeDTO,
   ExecutionWritebackTransactionPrototypeReadinessResponse,
   ExecutionMonitoringReadinessResponse,
+  ExecutionResultEvaluationDTO,
+  ExecutionResultEvaluationSummaryDTO,
   ExecutionResultSummaryDTO,
   ExecutionSystemHealthDTO,
   FinalRcProductionCandidateReadinessResponse,
@@ -81,6 +83,7 @@ import type {
   ContentTaskRow,
   ContextPackRow,
   ExecutionJobRow,
+  ExecutionResultEvaluationRow,
   ExecutionResultRow,
   ExecutionWritebackRow,
   KnowledgeEntryRow,
@@ -102,6 +105,7 @@ import type {
   WorkflowRunRow,
 } from "../infrastructure/db/schema.js";
 import type { ExecutionResultSummary } from "../domain/execution/result.js";
+import type { ExecutionResultEvaluationSummary } from "../domain/execution/evaluation.js";
 import type {
   ExecutionWritebackApplyGuard,
   ExecutionWritebackApplyGuardReadiness,
@@ -656,6 +660,22 @@ export function toExecutionResultDTO(r: ExecutionResultRow): ExecutionResultDTO 
   };
 }
 
+export function toExecutionResultEvaluationDTO(r: ExecutionResultEvaluationRow): ExecutionResultEvaluationDTO {
+  return {
+    id: r.id,
+    execution_result_id: r.executionResultId,
+    execution_job_id: r.executionJobId,
+    evaluator_type: r.evaluatorType as ExecutionResultEvaluationDTO["evaluator_type"],
+    quality_score: r.qualityScore,
+    cost_score: r.costScore,
+    latency_score: r.latencyScore,
+    notes: r.notes,
+    tags: r.tags,
+    evaluated_by: r.evaluatedBy,
+    created_at: r.createdAt.toISOString(),
+  };
+}
+
 export function toExecutionWritebackDTO(r: ExecutionWritebackRow): ExecutionWritebackDTO {
   return {
     id: r.id,
@@ -1087,6 +1107,20 @@ export function toExecutionResultSummaryDTO(
     latest_error_type: s.latestErrorType as ExecutionResultSummaryDTO["latest_error_type"],
     latest_retryable: s.latestRetryable,
     total_duration_ms: s.totalDurationMs,
+  };
+}
+
+export function toExecutionResultEvaluationSummaryDTO(
+  s: ExecutionResultEvaluationSummary,
+): ExecutionResultEvaluationSummaryDTO {
+  return {
+    job_id: s.jobId,
+    evaluation_count: s.evaluationCount,
+    average_quality_score: s.averageQualityScore,
+    average_cost_score: s.averageCostScore,
+    average_latency_score: s.averageLatencyScore,
+    latest_evaluator_type: s.latestEvaluatorType,
+    latest_evaluated_at: iso(s.latestEvaluatedAt),
   };
 }
 

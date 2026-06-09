@@ -485,6 +485,29 @@ export const executionResults = pgTable("execution_results", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const executionResultEvaluations = pgTable(
+  "execution_result_evaluations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    executionResultId: uuid("execution_result_id").notNull(),
+    executionJobId: uuid("execution_job_id").notNull(),
+    evaluatorType: varchar("evaluator_type", { length: 32 }).notNull(),
+    qualityScore: integer("quality_score").notNull(),
+    costScore: integer("cost_score").notNull(),
+    latencyScore: integer("latency_score").notNull(),
+    notes: text("notes"),
+    tags: jsonb("tags").$type<string[]>().notNull().default([]),
+    evaluatedBy: uuid("evaluated_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("idx_execution_result_evaluations_result").on(t.executionResultId),
+    index("idx_execution_result_evaluations_job").on(t.executionJobId),
+    index("idx_execution_result_evaluations_type").on(t.evaluatorType),
+    index("idx_execution_result_evaluations_created_at").on(t.createdAt),
+  ],
+);
+
 export const executionWritebacks = pgTable("execution_writebacks", {
   id: uuid("id").primaryKey().defaultRandom(),
   idempotencyKey: varchar("idempotency_key", { length: 200 }).notNull(),
@@ -544,5 +567,6 @@ export type KnowledgeEntryRow = typeof knowledgeEntries.$inferSelect;
 export type ExecutionJobRow = typeof executionJobs.$inferSelect;
 export type OutboxEventRow = typeof outboxEvents.$inferSelect;
 export type ExecutionResultRow = typeof executionResults.$inferSelect;
+export type ExecutionResultEvaluationRow = typeof executionResultEvaluations.$inferSelect;
 export type ExecutionWritebackRow = typeof executionWritebacks.$inferSelect;
 export type ExecutionProviderQuotaLedgerRow = typeof executionProviderQuotaLedger.$inferSelect;

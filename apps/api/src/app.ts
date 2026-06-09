@@ -11,6 +11,7 @@ import { EditorQueryService } from "./application/editor-query.service.js";
 import { ExecutionJobService } from "./application/execution-job.service.js";
 import { ExecutionBridgeService } from "./application/execution-bridge.service.js";
 import { defaultExecutionOpsRuntimeRegistry, ExecutionOpsService } from "./application/execution-ops.service.js";
+import { ExecutionResultEvaluationService } from "./application/execution-result-evaluation.service.js";
 import { ExecutionResultService } from "./application/execution-result.service.js";
 import { ExecutionWritebackService } from "./application/execution-writeback.service.js";
 import { KnowledgeService } from "./application/knowledge.service.js";
@@ -229,6 +230,7 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
   const outboxRelay = new OutboxRelay(db, buildOutboxHandlers(env, db), env.outboxRelayIntervalMs);
   const executionBridgeService = new ExecutionBridgeService(executionJobService);
   const executionResultService = new ExecutionResultService(db);
+  const executionResultEvaluationService = new ExecutionResultEvaluationService(db);
   const executionWritebackService = new ExecutionWritebackService(db);
   const knowledgeService = new KnowledgeService(db);
   const publisherChannelService = new PublisherChannelService(db);
@@ -308,12 +310,14 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
   await app.register(dashboardRoutes, { env, dashboardService });
   await app.register(editorRoutes, { env, editorQueryService });
   await app.register(executionRoutes, {
+    env,
     executionJobService,
     executionWorker,
     outboxService,
     outboxRelay,
     executionBridgeService,
     executionResultService,
+    executionResultEvaluationService,
     executionWritebackService,
   });
   await app.register(executionOpsRoutes, { executionOpsService });

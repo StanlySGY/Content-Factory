@@ -30,6 +30,7 @@ import {
   EXECUTION_JOB_STATUSES,
   EXECUTION_JOB_TYPES,
   EXECUTION_RESULT_STATUSES,
+  EXECUTION_RESULT_EVALUATOR_TYPES,
   EXECUTION_SUBJECT_TYPES,
   RUNTIME_ADAPTER_MODES,
   RUNTIME_MODES,
@@ -1121,6 +1122,57 @@ export type TaskKnowledgeCandidatesResponse = Static<typeof TaskKnowledgeCandida
 
 export const KnowledgeSourceResponseSchema = KnowledgeSourceSchema;
 export const KnowledgeEntryResponseSchema = KnowledgeEntrySchema;
+
+// ---- Agent Evaluation Backend MVP (Product Gap 5) ----
+export const ExecutionResultEvaluatorTypeSchema = StringEnum(EXECUTION_RESULT_EVALUATOR_TYPES);
+
+export const ExecutionResultEvaluationSchema = Type.Object(
+  {
+    id: Uuid(),
+    execution_result_id: Uuid(),
+    execution_job_id: Uuid(),
+    evaluator_type: ExecutionResultEvaluatorTypeSchema,
+    quality_score: Type.Integer({ minimum: 0, maximum: 100 }),
+    cost_score: Type.Integer({ minimum: 0, maximum: 100 }),
+    latency_score: Type.Integer({ minimum: 0, maximum: 100 }),
+    notes: Nullable(Type.String()),
+    tags: Type.Array(Type.String()),
+    evaluated_by: Uuid(),
+    created_at: Type.String({ format: "date-time" }),
+  },
+  { additionalProperties: false },
+);
+export type ExecutionResultEvaluationDTO = Static<typeof ExecutionResultEvaluationSchema>;
+
+export const CreateExecutionResultEvaluationSchema = Type.Object(
+  {
+    evaluator_type: ExecutionResultEvaluatorTypeSchema,
+    quality_score: Type.Integer({ minimum: 0, maximum: 100 }),
+    cost_score: Type.Integer({ minimum: 0, maximum: 100 }),
+    latency_score: Type.Integer({ minimum: 0, maximum: 100 }),
+    notes: Type.Optional(Nullable(Type.String({ maxLength: 4000 }))),
+    tags: Type.Optional(Type.Array(Type.String({ minLength: 1, maxLength: 80 }), { maxItems: 50 })),
+  },
+  { additionalProperties: false },
+);
+export type CreateExecutionResultEvaluationBody = Static<typeof CreateExecutionResultEvaluationSchema>;
+
+export const ExecutionResultEvaluationSummarySchema = Type.Object(
+  {
+    job_id: Uuid(),
+    evaluation_count: Type.Integer(),
+    average_quality_score: Nullable(Type.Number()),
+    average_cost_score: Nullable(Type.Number()),
+    average_latency_score: Nullable(Type.Number()),
+    latest_evaluator_type: Nullable(ExecutionResultEvaluatorTypeSchema),
+    latest_evaluated_at: Nullable(Type.String({ format: "date-time" })),
+  },
+  { additionalProperties: false },
+);
+export type ExecutionResultEvaluationSummaryDTO = Static<typeof ExecutionResultEvaluationSummarySchema>;
+
+export const ExecutionResultEvaluationResponseSchema = ExecutionResultEvaluationSchema;
+export const ExecutionResultEvaluationsResponseSchema = Type.Array(ExecutionResultEvaluationSchema);
 
 // ---- Execution Layer (S5 Phase 1；独立异步执行骨架) ----
 export const ExecutionJobTypeSchema = StringEnum(EXECUTION_JOB_TYPES);
