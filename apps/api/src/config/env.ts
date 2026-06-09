@@ -23,7 +23,10 @@ export interface Env {
   executionNetworkAllowlist: string[];
   executionSecretStoreEnabled: boolean;
   executionSecretInjectionEnabled: boolean;
+  executionSecretStoreKind: "env" | "external_registry";
   executionSecretRegistry: string[];
+  executionExternalSecretRegistry: string[];
+  executionSecretRotationPolicyEnabled: boolean;
   executionWritebackExecutorEnabled: boolean;
   executionRequireCredentialRef: boolean;
   executionRedactSnapshots: boolean;
@@ -58,6 +61,12 @@ function runtimeAdapterMode(value: string | undefined): Env["executionRuntimeAda
   if (value === undefined || value === "") return "mock";
   if (value === "mock" || value === "dry_run" || value === "fake_provider" || value === "provider_preflight" || value === "real") return value;
   throw new Error(`invalid EXECUTION_RUNTIME_ADAPTER_MODE: ${value}`);
+}
+
+function secretStoreKind(value: string | undefined): Env["executionSecretStoreKind"] {
+  if (value === undefined || value === "") return "env";
+  if (value === "env" || value === "external_registry") return value;
+  throw new Error(`invalid EXECUTION_SECRET_STORE_KIND: ${value}`);
 }
 
 function csv(value: string | undefined): string[] {
@@ -100,7 +109,10 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     executionNetworkAllowlist: csv(source.EXECUTION_NETWORK_ALLOWLIST),
     executionSecretStoreEnabled: bool(source.EXECUTION_SECRET_STORE_ENABLED, false),
     executionSecretInjectionEnabled: bool(source.EXECUTION_SECRET_INJECTION_ENABLED, false),
+    executionSecretStoreKind: secretStoreKind(source.EXECUTION_SECRET_STORE_KIND),
     executionSecretRegistry: csv(source.EXECUTION_SECRET_REGISTRY),
+    executionExternalSecretRegistry: csv(source.EXECUTION_EXTERNAL_SECRET_REGISTRY),
+    executionSecretRotationPolicyEnabled: bool(source.EXECUTION_SECRET_ROTATION_POLICY_ENABLED, false),
     executionWritebackExecutorEnabled: bool(source.EXECUTION_WRITEBACK_EXECUTOR_ENABLED, false),
     executionRequireCredentialRef: bool(source.EXECUTION_REQUIRE_CREDENTIAL_REF, true),
     executionRedactSnapshots: bool(source.EXECUTION_REDACT_SNAPSHOTS, true),

@@ -71,7 +71,11 @@ import {
   DEFAULT_SECRET_RESOLUTION_POLICY,
   buildSecretResolutionReadinessSnapshot,
 } from "./runtime/secret-resolution-policy.js";
-import { RUNTIME_SECRET_PURPOSES, type RuntimeSecretPurpose } from "./runtime/credential-resolver.js";
+import {
+  parseExternalSecretRegistry,
+  RUNTIME_SECRET_PURPOSES,
+  type RuntimeSecretPurpose,
+} from "./runtime/credential-resolver.js";
 import {
   buildProviderQuotaCostPreflightReadiness,
   DEFAULT_PROVIDER_QUOTA_MAX_REQUESTS,
@@ -127,7 +131,10 @@ export interface ExecutionOpsConfig {
   networkAllowlist: string[];
   secretStoreEnabled: boolean;
   secretInjectionEnabled: boolean;
+  secretStoreKind: "env" | "external_registry";
   secretRegistry: string[];
+  externalSecretRegistry: string[];
+  secretRotationPolicyEnabled: boolean;
   credentialEnvSource: NodeJS.ProcessEnv | Record<string, string | undefined>;
   agentOpenAICompatibleEndpoint: string | null;
   providerQuotaLimits: ProviderQuotaLimits;
@@ -255,11 +262,16 @@ export interface ProductionReadinessP1 {
   missingRequirements: string[];
   warnings: string[];
   secretStore: {
-    resolverKind: "env_registry";
+    resolverKind: "env_registry" | "external_registry";
     connected: boolean;
     materialPersisted: false;
-    rotationPolicyDefined: false;
-    refs: Array<{ keyRef: string; registered: boolean; materialAvailable: boolean }>;
+    rotationPolicyDefined: boolean;
+    refs: Array<{
+      keyRef: string;
+      registered: boolean;
+      materialSourceRef?: string;
+      materialAvailable: boolean;
+    }>;
   };
   quotaLedger: {
     distributed: true;
@@ -276,6 +288,25 @@ export interface ProductionReadinessP1 {
     externalCallPerformed: false;
     lowPrivilegeKeyRequired: true;
   };
+}
+
+export interface SecretManagerReadiness {
+  mode: "secret_manager_readiness";
+  ready: boolean;
+  status: "ready" | "blocked";
+  missingRequirements: string[];
+  warnings: string[];
+  resolverKind: "env_registry" | "external_registry";
+  storeKind: "env" | "external_registry";
+  connected: boolean;
+  materialPersisted: false;
+  rotationPolicyDefined: boolean;
+  refs: Array<{
+    keyRef: string;
+    registered: boolean;
+    materialSourceRef?: string;
+    materialAvailable: boolean;
+  }>;
 }
 
 export interface StagingSmokePlan {
@@ -464,7 +495,67 @@ export class ExecutionOpsService {
     });
   }
 
+  getSecretManagerReadiness(): SecretManagerReadiness {
+    const missingRequirements: string[] = [];
+    const warnings: string[] = [];
+    const resolverKind = this.config.secretStoreKind === "external_registry" ? "external_registry" : "env_registry";
+    let refs: SecretManagerReadiness["refs"] = [];
+
+    if (!this.config.secretStoreEnabled) missingRequirements.push("secret store must be enabled");
+    if (!this.config.secretInjectionEnabled) missingRequirements.push("secret injection must be enabled");
+    if (!this.config.secretRotationPolicyEnabled) warnings.push("secret rotation policy is not configured");
+
+    if (this.config.secretStoreKind === "external_registry") {
+      try {
+        refs = parseExternalSecretRegistry(this.config.externalSecretRegistry).map((entry) => {
+          const material = this.config.credentialEnvSource[entry.materialEnvName];
+          return {
+            keyRef: entry.keyRef,
+            registered: true,
+            materialSourceRef: entry.materialSourceRef,
+            materialAvailable: typeof material === "string" && material.trim().length > 0,
+          };
+        });
+      } catch {
+        missingRequirements.push("external secret registry must be valid");
+      }
+      if (refs.length === 0) missingRequirements.push("external secret registry must contain at least one mapping");
+    } else {
+      refs = this.config.secretRegistry.map((keyRef) => {
+        const envName = envNameFromKeyRef(keyRef);
+        const material = envName ? this.config.credentialEnvSource[envName] : undefined;
+        return {
+          keyRef,
+          registered: true,
+          materialSourceRef: keyRef,
+          materialAvailable: typeof material === "string" && material.trim().length > 0,
+        };
+      });
+      if (refs.length === 0) missingRequirements.push("secret registry must contain at least one key ref");
+    }
+
+    if (refs.some((r) => !r.materialAvailable)) {
+      missingRequirements.push("all registered secret refs must have material available");
+    }
+
+    const ready = missingRequirements.length === 0;
+    return {
+      mode: "secret_manager_readiness",
+      ready,
+      status: ready ? "ready" : "blocked",
+      missingRequirements,
+      warnings,
+      resolverKind,
+      storeKind: this.config.secretStoreKind,
+      connected: this.config.secretStoreEnabled && this.config.secretInjectionEnabled && refs.length > 0,
+      materialPersisted: false,
+      rotationPolicyDefined: this.config.secretRotationPolicyEnabled,
+      refs,
+    };
+  }
+
   async getProductionReadinessP1(): Promise<ProductionReadinessP1> {
+    const secretManager = this.getSecretManagerReadiness();
     const refs = this.config.secretRegistry.map((keyRef) => {
       const envName = envNameFromKeyRef(keyRef);
       const material = envName ? this.config.credentialEnvSource[envName] : undefined;
@@ -475,11 +566,7 @@ export class ExecutionOpsService {
       };
     });
     const tableReady = await quotaRepo.hasProviderQuotaLedgerTable(this.db);
-    const missingRequirements: string[] = [];
-    if (!this.config.secretStoreEnabled) missingRequirements.push("secret store must be enabled");
-    if (!this.config.secretInjectionEnabled) missingRequirements.push("secret injection must be enabled");
-    if (refs.length === 0) missingRequirements.push("secret registry must contain at least one key ref");
-    if (refs.some((r) => !r.materialAvailable)) missingRequirements.push("all registered secret refs must have material available");
+    const missingRequirements: string[] = [...secretManager.missingRequirements];
     if (!tableReady) missingRequirements.push("execution_provider_quota_ledger table must be ready");
     if (this.config.providerQuotaLimits.dailyRequestLimit === null)
       missingRequirements.push("provider daily request limit must be configured");
@@ -492,13 +579,13 @@ export class ExecutionOpsService {
       ready: missingRequirements.length === 0,
       status: missingRequirements.length === 0 ? "ready" : "blocked",
       missingRequirements,
-      warnings: ["secret rotation policy is not configured in P1 local env registry"],
+      warnings: secretManager.warnings,
       secretStore: {
-        resolverKind: "env_registry",
-        connected: this.config.secretStoreEnabled && this.config.secretInjectionEnabled && refs.length > 0,
+        resolverKind: secretManager.resolverKind,
+        connected: secretManager.connected,
         materialPersisted: false,
-        rotationPolicyDefined: false,
-        refs,
+        rotationPolicyDefined: secretManager.rotationPolicyDefined,
+        refs: this.config.secretStoreKind === "external_registry" ? secretManager.refs : refs,
       },
       quotaLedger: {
         distributed: true,

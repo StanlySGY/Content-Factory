@@ -34,6 +34,7 @@ import {
   RuntimeAdapterProviderPreflightTestResponseSchema,
   RuntimeAdaptersResponseSchema,
   RuntimeSafetyPolicySchema,
+  SecretManagerReadinessResponseSchema,
   SecretInjectionPreflightReadinessResponseSchema,
   SecretResolverReadinessResponseSchema,
   StagingSmokePlanResponseSchema,
@@ -66,6 +67,7 @@ import {
   toProviderQuotaCostPreflightReadinessDTO,
   toProviderSafetyResponseDTO,
   toSecretResolverReadinessDTO,
+  toSecretManagerReadinessDTO,
   toRuntimeSafetyPolicyDTO,
   toSecretInjectionPreflightReadinessDTO,
   toStagingSmokePlanDTO,
@@ -141,6 +143,12 @@ export const executionOpsRoutes: FastifyPluginAsyncTypebox<ExecutionOpsRoutesOpt
     "/api/execution/ops/production-readiness-p1",
     { schema: { response: { 200: ProductionReadinessP1ResponseSchema } } },
     async () => toProductionReadinessP1DTO(await executionOpsService.getProductionReadinessP1()),
+  );
+
+  app.get(
+    "/api/execution/ops/secret-manager-readiness",
+    { schema: { response: { 200: SecretManagerReadinessResponseSchema } } },
+    async () => toSecretManagerReadinessDTO(executionOpsService.getSecretManagerReadiness()),
   );
 
   app.get(

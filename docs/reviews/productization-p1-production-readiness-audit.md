@@ -2,6 +2,7 @@
 
 > 范围：在 Sprint-10 冻结和 Productization-P0/1/2 之后，补齐生产启用基础能力。
 > 目标：不继续追加 Phase 2.x；在默认 fail-closed、不默认外部调用、不改 Sprint-4 Control Plane 的前提下，提供 DB-backed provider quota/cost ledger、Secret Store readiness、监控告警快照和 staging smoke plan。
+> P1.1 补充：新增 `external_registry` Secret Manager contract adapter；仍不连接真实云 Secret Manager / Vault / KMS。
 
 ---
 
@@ -100,17 +101,24 @@ execution_provider_quota_ledger
 
 ## 5. Secret Store Readiness
 
-P1 当前实现的是 **env registry backed readiness**，不是云 Secret Manager / Vault / KMS。
+P1 初始实现是 **env registry backed readiness**。P1.1 增加 **external registry contract adapter**：允许 `secret://` / `vault://` 引用经本地 registry 映射到 `env://ENV_NAME`，但仍不是云 Secret Manager / Vault / KMS。
 
 | 项 | 规则 |
 |---|---|
-| resolver kind | `env_registry` |
+| resolver kind | `env_registry` / `external_registry` |
 | secret material | 只检测是否可用；API 响应不返回 material |
 | material persistence | `false` |
-| rotation policy | `false`，作为 warning 暴露 |
+| rotation policy | `EXECUTION_SECRET_ROTATION_POLICY_ENABLED` 仅作为 readiness 信号 |
 | ready 条件 | secret store/injection flag 开启、registry 非空、registry refs 均有 material |
 
-该实现为生产化前的契约和 readiness 基线。真正云 Secret Store、KMS、rotation 和最小权限策略仍需后续扩 scope。
+P1.1 external registry 格式：
+
+```text
+EXECUTION_SECRET_STORE_KIND=external_registry
+EXECUTION_EXTERNAL_SECRET_REGISTRY=secret://llm/openai=env://CONTENT_FACTORY_OPENAI_KEY
+```
+
+该实现为生产化前的契约和 readiness 基线。真正云 Secret Store、KMS、rotation 自动化和最小权限策略仍需后续扩 scope。
 
 ---
 
@@ -121,6 +129,7 @@ P1 当前实现的是 **env registry backed readiness**，不是云 Secret Manag
 ```text
 GET /api/execution/ops/production-readiness-p1
 GET /api/execution/ops/staging-smoke-plan
+GET /api/execution/ops/secret-manager-readiness
 ```
 
 `production-readiness-p1` 返回：
@@ -184,11 +193,15 @@ EXECUTION_WRITEBACK_EXECUTOR_ENABLED=false
 
 ```text
 pnpm --dir apps/api exec vitest run test/integration/productization-p1-production-readiness-api.test.ts
+pnpm --dir apps/api exec vitest run \
+  test/unit/external-registry-credential-resolver.test.ts \
+  test/integration/productization-p1-1-secret-manager-contract-api.test.ts
 ```
 
 覆盖：
 
 - P1 readiness 返回 ready、secret readiness、quota ledger、alert snapshot 和 smoke pointer。
+- P1.1 secret-manager-readiness 返回 `env_registry` / `external_registry` readiness，且不泄漏 secret material。
 - readiness / smoke 响应不包含 API key / Bearer。
 - DB-backed ledger 首次请求成功并累加用量。
 - 第二次请求在 request limit 下被 `rate_limited` 阻断，`networkUsed=false`。
@@ -199,7 +212,7 @@ pnpm --dir apps/api exec vitest run test/integration/productization-p1-productio
 ## 10. 非目标
 
 - 不默认开启真实 Agent / MCP / Publisher。
-- 不实现云 Secret Manager / Vault / KMS。
+- 不实现云 Secret Manager / Vault / KMS（P1.1 只做本地契约适配）。
 - 不实现 key rotation 自动化。
 - 不接 Prometheus / Grafana / PagerDuty。
 - 不自动执行 staging smoke test。
@@ -216,8 +229,9 @@ pnpm --dir apps/api exec vitest run test/integration/productization-p1-productio
 
 | 优先级 | 事项 | 进入条件 |
 |---|---|---|
-| P1.1 | 真实 Secret Manager adapter | 选型完成，定义最小权限、rotation、审计策略 |
-| P1.1 | 监控系统接入 | 确定 Prometheus/Grafana/PagerDuty 或等效平台 |
-| P1.2 | Staging smoke 自动化 | 有低权限真实 provider key 与隔离 staging 环境 |
+| P1.1 | Secret Manager contract adapter | 已完成；真实云 adapter 仍需扩 scope |
+| P1.2 | 真实 Secret Manager adapter | 选型完成，定义最小权限、rotation、审计策略 |
+| P1.2 | 监控系统接入 | 确定 Prometheus/Grafana/PagerDuty 或等效平台 |
+| P1.3 | Staging smoke 自动化 | 有低权限真实 provider key 与隔离 staging 环境 |
 | P2 | MCP real runtime | 独立 transport、tool allowlist、权限确认、审计 |
 | P2 | Publisher real release | 审批、预览、回滚、平台幂等策略 |

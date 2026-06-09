@@ -45,6 +45,7 @@ import type {
   ProviderQuotaCostPreflightReadinessResponse,
   ProviderSafetyResponse,
   SecretInjectionPreflightReadinessResponse,
+  SecretManagerReadinessResponse,
   SecretResolverReadinessResponse,
   StagingSmokePlanResponse,
   RuntimeSafetyPolicyDTO,
@@ -105,6 +106,7 @@ import type {
   ProviderHttpBoundaryReadiness,
   ProviderSafetySummary,
   ProductionReadinessP1,
+  SecretManagerReadiness,
   SecretInjectionPreflightReadiness,
   SecretResolverReadiness,
   StagingSmokePlan,
@@ -1218,6 +1220,7 @@ export function toProductionReadinessP1DTO(s: ProductionReadinessP1): Production
       refs: s.secretStore.refs.map((r) => ({
         key_ref: r.keyRef,
         registered: r.registered,
+        material_source_ref: r.materialSourceRef,
         material_available: r.materialAvailable,
       })),
     },
@@ -1236,6 +1239,27 @@ export function toProductionReadinessP1DTO(s: ProductionReadinessP1): Production
       external_call_performed: s.smoke.externalCallPerformed,
       low_privilege_key_required: s.smoke.lowPrivilegeKeyRequired,
     },
+  };
+}
+
+export function toSecretManagerReadinessDTO(s: SecretManagerReadiness): SecretManagerReadinessResponse {
+  return {
+    mode: s.mode,
+    ready: s.ready,
+    status: s.status,
+    missing_requirements: s.missingRequirements,
+    warnings: s.warnings,
+    resolver_kind: s.resolverKind,
+    store_kind: s.storeKind,
+    connected: s.connected,
+    material_persisted: s.materialPersisted,
+    rotation_policy_defined: s.rotationPolicyDefined,
+    refs: s.refs.map((r) => ({
+      key_ref: r.keyRef,
+      registered: r.registered,
+      material_source_ref: r.materialSourceRef,
+      material_available: r.materialAvailable,
+    })),
   };
 }
 

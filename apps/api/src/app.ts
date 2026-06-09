@@ -23,7 +23,11 @@ import {
   RealAgentProviderHttpClient,
   type AgentProviderFetch,
 } from "./application/runtime/agent-provider-real-http-client.js";
-import { EnvRuntimeCredentialResolver } from "./application/runtime/credential-resolver.js";
+import {
+  EnvRuntimeCredentialResolver,
+  ExternalRegistryCredentialResolver,
+  type IRuntimeCredentialResolver,
+} from "./application/runtime/credential-resolver.js";
 import { McpRuntimeMockService } from "./application/mcp-runtime-mock.service.js";
 import { McpServerService } from "./application/mcp-server.service.js";
 import { McpToolService } from "./application/mcp-tool.service.js";
@@ -91,6 +95,9 @@ function buildRuntimeAdapterFactory(env: Env, policy: RuntimeSafetyPolicy, opts:
   const endpoint = env.agentOpenAICompatibleEndpoint!;
   const host = new URL(endpoint).hostname;
   const allowedHosts = env.executionNetworkAllowlist.length > 0 ? env.executionNetworkAllowlist : [host];
+  const credentialResolver: IRuntimeCredentialResolver = env.executionSecretStoreKind === "external_registry"
+    ? new ExternalRegistryCredentialResolver(opts.credentialEnvSource ?? process.env, env.executionExternalSecretRegistry)
+    : new EnvRuntimeCredentialResolver(opts.credentialEnvSource ?? process.env, env.executionSecretRegistry);
   return new MockRuntimeAdapterFactory({
     ...policy,
     adapterMode: "real",
@@ -102,7 +109,7 @@ function buildRuntimeAdapterFactory(env: Env, policy: RuntimeSafetyPolicy, opts:
         endpointMap: { "provider://openai-compatible/default": endpoint },
       },
       new FetchAgentProviderHttpTransport(opts.fetchImplementation),
-      new EnvRuntimeCredentialResolver(opts.credentialEnvSource ?? process.env, env.executionSecretRegistry),
+      credentialResolver,
     ), new DbProviderQuotaEnforcer(db, providerQuotaLimits(env))),
   });
 }
@@ -169,7 +176,10 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
     networkAllowlist: env.executionNetworkAllowlist,
     secretStoreEnabled: env.executionSecretStoreEnabled,
     secretInjectionEnabled: env.executionSecretInjectionEnabled,
+    secretStoreKind: env.executionSecretStoreKind,
     secretRegistry: env.executionSecretRegistry,
+    externalSecretRegistry: env.executionExternalSecretRegistry,
+    secretRotationPolicyEnabled: env.executionSecretRotationPolicyEnabled,
     credentialEnvSource: opts.credentialEnvSource ?? process.env,
     agentOpenAICompatibleEndpoint: env.agentOpenAICompatibleEndpoint,
     providerQuotaLimits: providerQuotaLimits(env),

@@ -60,6 +60,12 @@ export interface IRuntimeCredentialResolver {
   resolve(ref: RuntimeCredentialRef): Promise<ResolvedRuntimeCredential>;
 }
 
+export interface ExternalSecretRegistryEntry {
+  keyRef: string;
+  materialSourceRef: string;
+  materialEnvName: string;
+}
+
 export interface IRuntimeSecretResolver {
   resolve(ref: RuntimeSecretRef, context: RuntimeSecretResolverContext): Promise<RuntimeSecretResolution>;
 }
@@ -160,6 +166,47 @@ function envNameFromKeyRef(keyRef: string): string | null {
   return name;
 }
 
+function schemeFromRef(ref: string): string {
+  return ref.includes("://") ? ref.split("://", 1)[0] + "://" : "unknown";
+}
+
+function isExternalRegistryKeyRef(ref: string): boolean {
+  return ref.startsWith("secret://") || ref.startsWith("vault://");
+}
+
+function looksLikeInlineSecret(value: string): boolean {
+  const trimmed = value.trim();
+  return /^Bearer\s+\S+/i.test(trimmed) || /^sk-[A-Za-z0-9_-]{6,}/.test(trimmed);
+}
+
+export function validateExternalSecretRegistryEntry(entry: string): ExternalSecretRegistryEntry {
+  const raw = entry.trim();
+  if (raw.length === 0) throw new ValidationError("external secret registry entry is required");
+  const separatorIndex = raw.indexOf("=");
+  if (separatorIndex <= 0 || separatorIndex === raw.length - 1)
+    throw new ValidationError("external secret registry entry must use keyRef=env://ENV_NAME");
+
+  const keyRef = raw.slice(0, separatorIndex).trim();
+  const materialSourceRef = raw.slice(separatorIndex + 1).trim();
+  if (looksLikeInlineSecret(keyRef) || looksLikeInlineSecret(materialSourceRef))
+    throw new ValidationError("inline secret material is not allowed in external secret registry");
+  if (!isExternalRegistryKeyRef(keyRef))
+    throw new ValidationError("external secret registry key ref must use secret:// or vault://");
+  const materialEnvName = envNameFromKeyRef(materialSourceRef);
+  if (!materialEnvName) throw new ValidationError("external secret registry entry must map to env://ENV_NAME");
+  return { keyRef, materialSourceRef, materialEnvName };
+}
+
+export function parseExternalSecretRegistry(entries: string[]): ExternalSecretRegistryEntry[] {
+  const parsed = entries.map(validateExternalSecretRegistryEntry);
+  const seen = new Set<string>();
+  for (const entry of parsed) {
+    if (seen.has(entry.keyRef)) throw new ValidationError(`duplicate external secret registry key ref: ${entry.keyRef}`);
+    seen.add(entry.keyRef);
+  }
+  return parsed;
+}
+
 export class EnvRuntimeCredentialResolver implements IRuntimeCredentialResolver {
   constructor(
     private readonly source: NodeJS.ProcessEnv | Record<string, string | undefined> = process.env,
@@ -177,7 +224,7 @@ export class EnvRuntimeCredentialResolver implements IRuntimeCredentialResolver 
         material: undefined,
         metadata: {
           resolver_kind: "env",
-          key_ref_scheme: ref.keyRef.includes("://") ? ref.keyRef.split("://", 1)[0] + "://" : "unknown",
+          key_ref_scheme: schemeFromRef(ref.keyRef),
           failure_reason: "key_ref_not_registered",
           secret_material_present: false,
           secret_material_returned_to_transport: false,
@@ -194,7 +241,7 @@ export class EnvRuntimeCredentialResolver implements IRuntimeCredentialResolver 
         material: undefined,
         metadata: {
           resolver_kind: "env",
-          key_ref_scheme: ref.keyRef.split("://", 1)[0] + "://",
+          key_ref_scheme: schemeFromRef(ref.keyRef),
           failure_reason: "unsupported_key_ref_scheme",
           secret_material_present: false,
           secret_material_returned_to_transport: false,
@@ -229,6 +276,92 @@ export class EnvRuntimeCredentialResolver implements IRuntimeCredentialResolver 
         resolver_kind: "env",
         key_ref_scheme: "env://",
         env_name: envName,
+        secret_material_present: true,
+        secret_material_returned_to_transport: true,
+      },
+    };
+  }
+}
+
+export class ExternalRegistryCredentialResolver implements IRuntimeCredentialResolver {
+  private readonly registry: Map<string, ExternalSecretRegistryEntry>;
+
+  constructor(
+    private readonly source: NodeJS.ProcessEnv | Record<string, string | undefined> = process.env,
+    registryEntries: string[] = [],
+  ) {
+    this.registry = new Map(parseExternalSecretRegistry(registryEntries).map((entry) => [entry.keyRef, entry]));
+  }
+
+  async resolve(ref: RuntimeCredentialRef): Promise<ResolvedRuntimeCredential> {
+    validateRuntimeCredentialRef(ref);
+    const keyRefScheme = schemeFromRef(ref.keyRef);
+    const baseMetadata = {
+      resolver_kind: "external_registry",
+      key_ref_scheme: keyRefScheme,
+      material_source_scheme: "env://",
+      secret_material_present: false,
+      secret_material_returned_to_transport: false,
+      network_used: false,
+      process_spawned: false,
+    };
+
+    if (!isExternalRegistryKeyRef(ref.keyRef)) {
+      return {
+        provider: ref.provider,
+        scope: ref.scope,
+        keyRef: ref.keyRef,
+        resolved: false,
+        material: undefined,
+        metadata: {
+          ...baseMetadata,
+          failure_reason: "unsupported_key_ref_scheme",
+        },
+      };
+    }
+
+    const entry = this.registry.get(ref.keyRef);
+    if (!entry) {
+      return {
+        provider: ref.provider,
+        scope: ref.scope,
+        keyRef: ref.keyRef,
+        resolved: false,
+        material: undefined,
+        metadata: {
+          ...baseMetadata,
+          failure_reason: "key_ref_not_registered",
+        },
+      };
+    }
+
+    const material = this.source[entry.materialEnvName];
+    if (typeof material !== "string" || material.trim().length === 0) {
+      return {
+        provider: ref.provider,
+        scope: ref.scope,
+        keyRef: ref.keyRef,
+        resolved: false,
+        material: undefined,
+        metadata: {
+          ...baseMetadata,
+          material_source_ref: entry.materialSourceRef,
+          material_env_name: entry.materialEnvName,
+          failure_reason: "missing_env_var",
+        },
+      };
+    }
+
+    return {
+      provider: ref.provider,
+      scope: ref.scope,
+      keyRef: ref.keyRef,
+      resolved: true,
+      material,
+      metadata: {
+        ...baseMetadata,
+        material_source_ref: entry.materialSourceRef,
+        material_env_name: entry.materialEnvName,
         secret_material_present: true,
         secret_material_returned_to_transport: true,
       },

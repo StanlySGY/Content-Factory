@@ -1976,10 +1976,29 @@ const ProductionP1SecretRefSchema = Type.Object(
   {
     key_ref: Type.String(),
     registered: Type.Boolean(),
+    material_source_ref: Type.Optional(Type.String()),
     material_available: Type.Boolean(),
   },
   { additionalProperties: false },
 );
+
+export const SecretManagerReadinessResponseSchema = Type.Object(
+  {
+    mode: StringEnum(["secret_manager_readiness"] as const),
+    ready: Type.Boolean(),
+    status: StringEnum(["ready", "blocked"] as const),
+    missing_requirements: Type.Array(Type.String()),
+    warnings: Type.Array(Type.String()),
+    resolver_kind: StringEnum(["env_registry", "external_registry"] as const),
+    store_kind: StringEnum(["env", "external_registry"] as const),
+    connected: Type.Boolean(),
+    material_persisted: Type.Boolean(),
+    rotation_policy_defined: Type.Boolean(),
+    refs: Type.Array(ProductionP1SecretRefSchema),
+  },
+  { additionalProperties: false },
+);
+export type SecretManagerReadinessResponse = Static<typeof SecretManagerReadinessResponseSchema>;
 
 const ProductionP1AlertRuleSchema = Type.Object(
   {
@@ -1999,7 +2018,7 @@ export const ProductionReadinessP1ResponseSchema = Type.Object(
     warnings: Type.Array(Type.String()),
     secret_store: Type.Object(
       {
-        resolver_kind: StringEnum(["env_registry"] as const),
+        resolver_kind: StringEnum(["env_registry", "external_registry"] as const),
         connected: Type.Boolean(),
         material_persisted: Type.Boolean(),
         rotation_policy_defined: Type.Boolean(),

@@ -5,6 +5,7 @@
 > Sprint-9 已提供显式 `workflow_stage_run` writeback handler；只有显式装配该 handler 时，terminal execution event 才会经同事务 audit 保护回写 `stage_runs`。
 > Productization-P0 已提供生产启用预检、secret registry 校验和进程内 provider quota/cost 硬限制。
 > Productization-P1 已提供 DB-backed provider quota/cost ledger、P1 readiness、alert snapshot 和 staging smoke plan。
+> Productization-P1.1 已提供 `external_registry` Secret Manager contract adapter；当前只做本地契约映射，不连接真实云 Secret Manager / Vault / KMS。
 > Productization-1 已提供显式 `agent` OpenAI-compatible HTTP transport；只有显式 real runtime/network/secret gate 全部满足时才会调用外部 LLM。
 > Productization-2 已把 `workflow_stage_run` writeback handler 接入 app 装配，但仍由 `EXECUTION_WRITEBACK_EXECUTOR_ENABLED=true` 显式开启。
 
@@ -213,6 +214,7 @@ P1 多实例启用前置检查：
 
 ```text
 GET /api/execution/ops/production-readiness-p1
+GET /api/execution/ops/secret-manager-readiness
 GET /api/execution/ops/staging-smoke-plan
 ```
 
@@ -227,6 +229,26 @@ P1 已将产品化 Agent runtime 的 quota/cost enforcement 切到 `execution_pr
 | alert snapshot | 暴露 rate_limited、failed_jobs、outbox backlog、writeback failed/skipped 建议规则 |
 
 `staging-smoke-plan` 只返回人工冒烟步骤，`external_call_performed=false`，不会自动触发真实 LLM。
+
+P1.1 external registry contract adapter：
+
+```text
+EXECUTION_SECRET_STORE_KIND=external_registry
+EXECUTION_EXTERNAL_SECRET_REGISTRY=secret://llm/openai=env://CONTENT_FACTORY_OPENAI_KEY
+EXECUTION_SECRET_ROTATION_POLICY_ENABLED=true
+```
+
+使用 `external_registry` 后，job payload 中的 `credential_ref.key_ref` 可使用 `secret://llm/openai` 或 `vault://...`。resolver 只在 HTTP transport boundary 内通过 registry 映射读取 env material；`execution_results`、`outbox_events`、API 响应和 audit 不应包含 API key、`Bearer` 或 `sk-`。
+
+`secret-manager-readiness` 判定：
+
+| 项 | 行为 |
+| --- | --- |
+| `store_kind=env` | 使用既有 `EXECUTION_SECRET_REGISTRY=env://...` |
+| `store_kind=external_registry` | 使用 `EXECUTION_EXTERNAL_SECRET_REGISTRY=secret://...=env://ENV_NAME` |
+| registry 缺失/invalid | `ready=false` |
+| env material 缺失 | `ready=false` |
+| rotation policy 未配置 | warning，不返回 secret material |
 
 启用条件：
 
@@ -380,7 +402,7 @@ pnpm --dir apps/api exec vitest run test/integration/productization-agent-writeb
 ## 12. 非目标 / 边界
 
 - 默认不做真实外部 LLM 调用；只有 Productization-1 显式 gate 满足时才允许 `agent` 外部 LLM 调用。
-- P1 不实现云 Secret Manager / Vault / KMS，也不自动执行 staging smoke。
+- P1.1 只实现 Secret Manager contract adapter，不实现云 Secret Manager / Vault / KMS，也不自动执行 staging smoke。
 - 不连接生产 MCP server、不真实发布。
 - 不引入 Redis/MQ/BullMQ（纯 DB 轮询）。
 - 不改 Workflow/Review/Agent/MCP 状态机、不做 UI。
