@@ -21,6 +21,7 @@ import {
   ProcessOutboxBatchBodySchema,
   ProcessOutboxBatchResponseSchema,
   ProductionActivationPreflightResponseSchema,
+  ProductionReadinessP1ResponseSchema,
   ProviderHttpBoundaryResponseSchema,
   ProviderSafetyResponseSchema,
   RecoverStaleJobsBodySchema,
@@ -35,6 +36,7 @@ import {
   RuntimeSafetyPolicySchema,
   SecretInjectionPreflightReadinessResponseSchema,
   SecretResolverReadinessResponseSchema,
+  StagingSmokePlanResponseSchema,
   ProviderQuotaCostPreflightReadinessResponseSchema,
 } from "@cf/shared";
 import type { ExecutionOpsService } from "../../../application/execution-ops.service.js";
@@ -57,6 +59,7 @@ import {
   toExecutionWritebackTransactionPortReadinessDTO,
   toExecutionWritebackTransactionPrototypeReadinessDTO,
   toProductionActivationPreflightDTO,
+  toProductionReadinessP1DTO,
   toRuntimeAdapterDryRunResponseDTO,
   toRuntimeAdaptersResponseDTO,
   toProviderHttpBoundaryDTO,
@@ -65,6 +68,7 @@ import {
   toSecretResolverReadinessDTO,
   toRuntimeSafetyPolicyDTO,
   toSecretInjectionPreflightReadinessDTO,
+  toStagingSmokePlanDTO,
 } from "../../../application/mappers.js";
 
 export interface ExecutionOpsRoutesOptions {
@@ -131,6 +135,18 @@ export const executionOpsRoutes: FastifyPluginAsyncTypebox<ExecutionOpsRoutesOpt
     "/api/execution/ops/production-activation-preflight",
     { schema: { response: { 200: ProductionActivationPreflightResponseSchema } } },
     async () => toProductionActivationPreflightDTO(executionOpsService.getProductionActivationPreflight()),
+  );
+
+  app.get(
+    "/api/execution/ops/production-readiness-p1",
+    { schema: { response: { 200: ProductionReadinessP1ResponseSchema } } },
+    async () => toProductionReadinessP1DTO(await executionOpsService.getProductionReadinessP1()),
+  );
+
+  app.get(
+    "/api/execution/ops/staging-smoke-plan",
+    { schema: { response: { 200: StagingSmokePlanResponseSchema } } },
+    async () => toStagingSmokePlanDTO(executionOpsService.getStagingSmokePlan()),
   );
 
   app.get(

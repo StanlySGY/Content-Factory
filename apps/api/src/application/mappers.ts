@@ -36,6 +36,7 @@ import type {
   OutboxEventDTO,
   PendingReviewDTO,
   ProductionActivationPreflightResponse,
+  ProductionReadinessP1Response,
   ReviewRecordDTO,
   RuntimeAdapterDescriptorDTO,
   RuntimeAdapterDryRunResponse,
@@ -45,6 +46,7 @@ import type {
   ProviderSafetyResponse,
   SecretInjectionPreflightReadinessResponse,
   SecretResolverReadinessResponse,
+  StagingSmokePlanResponse,
   RuntimeSafetyPolicyDTO,
   StageRunDTO,
   ToolInvocationDTO,
@@ -102,8 +104,10 @@ import type {
   AgentRealHttpAdapterReadiness,
   ProviderHttpBoundaryReadiness,
   ProviderSafetySummary,
+  ProductionReadinessP1,
   SecretInjectionPreflightReadiness,
   SecretResolverReadiness,
+  StagingSmokePlan,
 } from "./execution-ops.service.js";
 import type { ProviderQuotaCostPreflightReadiness } from "./runtime/provider-quota-cost-preflight.js";
 import type { AgentRealAdapterRegistrationGuard } from "./runtime/agent-real-adapter-registration-guard.js";
@@ -1196,6 +1200,52 @@ export function toProviderQuotaCostPreflightReadinessDTO(
     allow_network: s.allowNetwork,
     active_adapter_mode: s.activeAdapterMode,
     runtime_mode: s.runtimeMode,
+  };
+}
+
+export function toProductionReadinessP1DTO(s: ProductionReadinessP1): ProductionReadinessP1Response {
+  return {
+    mode: s.mode,
+    ready: s.ready,
+    status: s.status,
+    missing_requirements: s.missingRequirements,
+    warnings: s.warnings,
+    secret_store: {
+      resolver_kind: s.secretStore.resolverKind,
+      connected: s.secretStore.connected,
+      material_persisted: s.secretStore.materialPersisted,
+      rotation_policy_defined: s.secretStore.rotationPolicyDefined,
+      refs: s.secretStore.refs.map((r) => ({
+        key_ref: r.keyRef,
+        registered: r.registered,
+        material_available: r.materialAvailable,
+      })),
+    },
+    quota_ledger: {
+      distributed: s.quotaLedger.distributed,
+      table_ready: s.quotaLedger.tableReady,
+      daily_request_limit: s.quotaLedger.dailyRequestLimit,
+      daily_cost_limit_cents: s.quotaLedger.dailyCostLimitCents,
+      estimated_cost_per_request_cents: s.quotaLedger.estimatedCostPerRequestCents,
+    },
+    alerts: {
+      rules: s.alerts.rules,
+    },
+    smoke: {
+      endpoint: s.smoke.endpoint,
+      external_call_performed: s.smoke.externalCallPerformed,
+      low_privilege_key_required: s.smoke.lowPrivilegeKeyRequired,
+    },
+  };
+}
+
+export function toStagingSmokePlanDTO(s: StagingSmokePlan): StagingSmokePlanResponse {
+  return {
+    mode: s.mode,
+    external_call_performed: s.externalCallPerformed,
+    requires_manual_execution: s.requiresManualExecution,
+    steps: s.steps,
+    rollback_flags: s.rollbackFlags,
   };
 }
 

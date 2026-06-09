@@ -1972,6 +1972,82 @@ export type ProviderQuotaCostPreflightReadinessResponse = Static<
   typeof ProviderQuotaCostPreflightReadinessResponseSchema
 >;
 
+const ProductionP1SecretRefSchema = Type.Object(
+  {
+    key_ref: Type.String(),
+    registered: Type.Boolean(),
+    material_available: Type.Boolean(),
+  },
+  { additionalProperties: false },
+);
+
+const ProductionP1AlertRuleSchema = Type.Object(
+  {
+    metric: Type.String(),
+    severity: StringEnum(["warning", "critical"] as const),
+    threshold: Type.Integer(),
+  },
+  { additionalProperties: false },
+);
+
+export const ProductionReadinessP1ResponseSchema = Type.Object(
+  {
+    mode: StringEnum(["production_readiness_p1"] as const),
+    ready: Type.Boolean(),
+    status: StringEnum(["ready", "blocked"] as const),
+    missing_requirements: Type.Array(Type.String()),
+    warnings: Type.Array(Type.String()),
+    secret_store: Type.Object(
+      {
+        resolver_kind: StringEnum(["env_registry"] as const),
+        connected: Type.Boolean(),
+        material_persisted: Type.Boolean(),
+        rotation_policy_defined: Type.Boolean(),
+        refs: Type.Array(ProductionP1SecretRefSchema),
+      },
+      { additionalProperties: false },
+    ),
+    quota_ledger: Type.Object(
+      {
+        distributed: Type.Boolean(),
+        table_ready: Type.Boolean(),
+        daily_request_limit: Nullable(Type.Integer()),
+        daily_cost_limit_cents: Nullable(Type.Integer()),
+        estimated_cost_per_request_cents: Type.Integer(),
+      },
+      { additionalProperties: false },
+    ),
+    alerts: Type.Object(
+      {
+        rules: Type.Array(ProductionP1AlertRuleSchema),
+      },
+      { additionalProperties: false },
+    ),
+    smoke: Type.Object(
+      {
+        endpoint: Type.String(),
+        external_call_performed: Type.Boolean(),
+        low_privilege_key_required: Type.Boolean(),
+      },
+      { additionalProperties: false },
+    ),
+  },
+  { additionalProperties: false },
+);
+export type ProductionReadinessP1Response = Static<typeof ProductionReadinessP1ResponseSchema>;
+
+export const StagingSmokePlanResponseSchema = Type.Object(
+  {
+    mode: StringEnum(["staging_smoke_plan"] as const),
+    external_call_performed: Type.Boolean(),
+    requires_manual_execution: Type.Boolean(),
+    steps: Type.Array(Type.String()),
+    rollback_flags: Type.Array(Type.String()),
+  },
+  { additionalProperties: false },
+);
+export type StagingSmokePlanResponse = Static<typeof StagingSmokePlanResponseSchema>;
+
 export const AgentRealProviderConfigPreflightResponseSchema = Type.Object(
   {
     mode: StringEnum(["agent_real_provider_config_preflight"] as const),

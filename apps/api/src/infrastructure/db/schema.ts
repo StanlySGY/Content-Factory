@@ -324,6 +324,24 @@ export const executionWritebacks = pgTable("execution_writebacks", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const executionProviderQuotaLedger = pgTable(
+  "execution_provider_quota_ledger",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    provider: varchar("provider", { length: 80 }).notNull(),
+    keyRef: varchar("key_ref", { length: 240 }).notNull(),
+    windowKey: varchar("window_key", { length: 10 }).notNull(),
+    usedRequests: integer("used_requests").notNull().default(0),
+    usedCostCents: integer("used_cost_cents").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("idx_execution_provider_quota_provider_window").on(t.provider, t.windowKey),
+    index("idx_execution_provider_quota_key_ref").on(t.keyRef),
+  ],
+);
+
 export type WorkflowDefinitionRow = typeof workflowDefinitions.$inferSelect;
 export type WorkflowStageRow = typeof workflowStages.$inferSelect;
 export type WorkflowStageDependencyRow = typeof workflowStageDependencies.$inferSelect;
@@ -342,3 +360,4 @@ export type ExecutionJobRow = typeof executionJobs.$inferSelect;
 export type OutboxEventRow = typeof outboxEvents.$inferSelect;
 export type ExecutionResultRow = typeof executionResults.$inferSelect;
 export type ExecutionWritebackRow = typeof executionWritebacks.$inferSelect;
+export type ExecutionProviderQuotaLedgerRow = typeof executionProviderQuotaLedger.$inferSelect;

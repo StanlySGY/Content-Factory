@@ -4,6 +4,7 @@
 > 默认运行仍 fail-closed：worker / relay 均由 env 开关控制，默认 relay 使用 no-op handlers，不自动回写控制面。
 > Sprint-9 已提供显式 `workflow_stage_run` writeback handler；只有显式装配该 handler 时，terminal execution event 才会经同事务 audit 保护回写 `stage_runs`。
 > Productization-P0 已提供生产启用预检、secret registry 校验和进程内 provider quota/cost 硬限制。
+> Productization-P1 已提供 DB-backed provider quota/cost ledger、P1 readiness、alert snapshot 和 staging smoke plan。
 > Productization-1 已提供显式 `agent` OpenAI-compatible HTTP transport；只有显式 real runtime/network/secret gate 全部满足时才会调用外部 LLM。
 > Productization-2 已把 `workflow_stage_run` writeback handler 接入 app 装配，但仍由 `EXECUTION_WRITEBACK_EXECUTOR_ENABLED=true` 显式开启。
 
@@ -208,6 +209,25 @@ EXECUTION_WRITEBACK_EXECUTOR_ENABLED=false
 - 对 `execution_results.error_type=rate_limited` 建告警；这通常表示配额耗尽或限额配置过紧。
 - 当前 quota/cost enforcer 是进程内实现，不适合作为多实例全局成本账本。
 
+P1 多实例启用前置检查：
+
+```text
+GET /api/execution/ops/production-readiness-p1
+GET /api/execution/ops/staging-smoke-plan
+```
+
+P1 已将产品化 Agent runtime 的 quota/cost enforcement 切到 `execution_provider_quota_ledger`：
+
+| 项 | 行为 |
+| --- | --- |
+| 聚合键 | `provider + key_ref + window_key(YYYY-MM-DD)` |
+| 并发控制 | DB row lock，fetch 前原子判定并消费额度 |
+| 达限行为 | `rate_limited`，`networkUsed=false`，不会调用 provider |
+| secret 输出 | readiness 只返回 key ref/material availability，不返回 secret value |
+| alert snapshot | 暴露 rate_limited、failed_jobs、outbox backlog、writeback failed/skipped 建议规则 |
+
+`staging-smoke-plan` 只返回人工冒烟步骤，`external_call_performed=false`，不会自动触发真实 LLM。
+
 启用条件：
 
 ```text
@@ -261,7 +281,39 @@ pnpm --dir apps/api exec vitest run \
 
 ---
 
-## 10. Agent Result Writeback Relay（显式产品化闭环）
+## 10. Productization-P1 Staging Smoke
+
+推荐 staging 冒烟步骤：
+
+```text
+GET /api/execution/ops/production-readiness-p1
+POST /api/execution/bridge/jobs
+POST /api/execution/jobs/:id/tick
+POST /api/execution/ops/process-outbox-batch
+GET /api/execution/jobs/:id/results
+GET /api/execution/jobs/:id/events
+```
+
+要求：
+
+| 项 | 要求 |
+| --- | --- |
+| provider key | 使用低权限、低限额 key |
+| quota | `EXECUTION_PROVIDER_DAILY_REQUEST_LIMIT` 和 `EXECUTION_PROVIDER_DAILY_COST_LIMIT_CENTS` 必须配置 |
+| writeback | 仅当需要验证 stage 回写时开启 `EXECUTION_WRITEBACK_EXECUTOR_ENABLED=true` |
+| 回滚 | 先关闭 real runtime/network/writeback flags，再处理 backlog |
+
+回滚 flags：
+
+```text
+EXECUTION_RUNTIME_MODE=mock
+EXECUTION_RUNTIME_ADAPTER_MODE=mock
+EXECUTION_ALLOW_REAL_RUNTIME=false
+EXECUTION_ALLOW_NETWORK=false
+EXECUTION_WRITEBACK_EXECUTOR_ENABLED=false
+```
+
+## 11. Agent Result Writeback Relay（显式产品化闭环）
 
 Productization-2 支持把 agent terminal execution result 经 app relay 写回 `workflow_stage_run`。
 
@@ -325,9 +377,10 @@ pnpm --dir apps/api exec vitest run test/integration/productization-agent-writeb
 
 ---
 
-## 11. 非目标 / 边界
+## 12. 非目标 / 边界
 
 - 默认不做真实外部 LLM 调用；只有 Productization-1 显式 gate 满足时才允许 `agent` 外部 LLM 调用。
+- P1 不实现云 Secret Manager / Vault / KMS，也不自动执行 staging smoke。
 - 不连接生产 MCP server、不真实发布。
 - 不引入 Redis/MQ/BullMQ（纯 DB 轮询）。
 - 不改 Workflow/Review/Agent/MCP 状态机、不做 UI。

@@ -17,7 +17,7 @@ import { createWorkflowStageRunWritebackHandler } from "./application/execution-
 import { ExecutionWorker } from "./application/execution-worker.js";
 import { MockRuntimeAdapterFactory, type RuntimeAdapterFactory } from "./application/runtime/adapter-factory.js";
 import { AgentRealRuntime } from "./application/runtime/agent-real-runtime.js";
-import { InMemoryProviderQuotaEnforcer, type ProviderQuotaLimits } from "./application/runtime/provider-quota-enforcer.js";
+import { DbProviderQuotaEnforcer, type ProviderQuotaLimits } from "./application/runtime/provider-quota-enforcer.js";
 import {
   FetchAgentProviderHttpTransport,
   RealAgentProviderHttpClient,
@@ -83,7 +83,7 @@ function providerQuotaLimits(env: Env): ProviderQuotaLimits {
   };
 }
 
-function buildRuntimeAdapterFactory(env: Env, policy: RuntimeSafetyPolicy, opts: BuildOptions): RuntimeAdapterFactory {
+function buildRuntimeAdapterFactory(env: Env, policy: RuntimeSafetyPolicy, opts: BuildOptions, db: ReturnType<typeof createDb>): RuntimeAdapterFactory {
   if (opts.runtimeAdapterFactory) return opts.runtimeAdapterFactory;
   if (!shouldAssembleProductizedAgentRuntime(env))
     return new MockRuntimeAdapterFactory({ ...policy, adapterMode: env.executionRuntimeAdapterMode });
@@ -103,7 +103,7 @@ function buildRuntimeAdapterFactory(env: Env, policy: RuntimeSafetyPolicy, opts:
       },
       new FetchAgentProviderHttpTransport(opts.fetchImplementation),
       new EnvRuntimeCredentialResolver(opts.credentialEnvSource ?? process.env, env.executionSecretRegistry),
-    ), new InMemoryProviderQuotaEnforcer(providerQuotaLimits(env))),
+    ), new DbProviderQuotaEnforcer(db, providerQuotaLimits(env))),
   });
 }
 
@@ -145,7 +145,7 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
   validateRuntimeSafetyPolicy(runtimeSafetyPolicy);
   const executionWorker = new ExecutionWorker(
     db,
-    buildRuntimeAdapterFactory(env, runtimeSafetyPolicy, opts),
+    buildRuntimeAdapterFactory(env, runtimeSafetyPolicy, opts, db),
     env.executionWorkerIntervalMs,
     env.executionWorkerLockTimeoutMs,
     env.executionRuntimeTimeoutMs,

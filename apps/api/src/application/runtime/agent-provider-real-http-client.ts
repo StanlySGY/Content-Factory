@@ -211,6 +211,8 @@ export class RealAgentProviderHttpClient implements IAgentProviderHttpClient {
 
     const url = resolveEndpoint(request.urlRef, this.policy);
     const timeoutMs = Math.min(request.timeoutMs, context.timeoutMs);
+    const maybeHeaders = this.resolveTransportHeaders(request);
+    const headers = maybeHeaders instanceof Promise ? await maybeHeaders : maybeHeaders;
     const controller = new AbortController();
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
     let removeParentAbortListener: (() => void) | null = null;
@@ -230,18 +232,20 @@ export class RealAgentProviderHttpClient implements IAgentProviderHttpClient {
       removeParentAbortListener = () => context.signal.removeEventListener("abort", onAbort);
     });
 
-    const maybeHeaders = this.resolveTransportHeaders(request);
-    const headers = maybeHeaders instanceof Promise ? await maybeHeaders : maybeHeaders;
+    const transportPromise = this.transport.send({
+      url,
+      method: request.method,
+      headers,
+      body: request.body,
+      timeoutMs,
+      signal: controller.signal,
+      requestId: request.requestId,
+    });
+    timeoutPromise.catch(() => undefined);
+    parentAbortPromise.catch(() => undefined);
+    transportPromise.catch(() => undefined);
     const response = await Promise.race([
-      this.transport.send({
-        url,
-        method: request.method,
-        headers,
-        body: request.body,
-        timeoutMs,
-        signal: controller.signal,
-        requestId: request.requestId,
-      }),
+      transportPromise,
       timeoutPromise,
       parentAbortPromise,
     ]).finally(() => {

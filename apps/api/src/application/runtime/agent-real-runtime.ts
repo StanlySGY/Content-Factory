@@ -107,7 +107,7 @@ export class AgentRealRuntime implements IAgentRuntime {
         requestId: `${request.jobId}:${request.attemptCount}:real`,
       });
       requestSnapshot = redactRuntimeSnapshot(httpRequest);
-      const quotaDecision = this.quotaEnforcer?.checkAndConsume() ?? null;
+      const quotaDecision = await (this.quotaEnforcer?.checkAndConsume(context.credentialRef) ?? Promise.resolve(null));
       if (quotaDecision?.status === "throttle")
         return this.quotaFailure(request.jobId, quotaDecision, started, requestSnapshot);
       const raw = await this.httpClient.send(httpRequest, {

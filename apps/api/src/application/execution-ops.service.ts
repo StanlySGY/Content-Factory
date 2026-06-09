@@ -56,6 +56,7 @@ import type { ExecutionJobRow } from "../infrastructure/db/schema.js";
 import * as jobRepo from "../infrastructure/repositories/execution-job.repository.js";
 import * as outboxRepo from "../infrastructure/repositories/outbox.repository.js";
 import * as resultRepo from "../infrastructure/repositories/execution-result.repository.js";
+import * as quotaRepo from "../infrastructure/repositories/provider-quota-ledger.repository.js";
 import {
   assertAdapterAllowedBySafetyPolicy,
   createDefaultRuntimeAdapterRegistry,
@@ -247,6 +248,49 @@ export interface SecretInjectionPreflightReadiness {
   blockedRealAdapterReason: "no real adapter registered";
 }
 
+export interface ProductionReadinessP1 {
+  mode: "production_readiness_p1";
+  ready: boolean;
+  status: "ready" | "blocked";
+  missingRequirements: string[];
+  warnings: string[];
+  secretStore: {
+    resolverKind: "env_registry";
+    connected: boolean;
+    materialPersisted: false;
+    rotationPolicyDefined: false;
+    refs: Array<{ keyRef: string; registered: boolean; materialAvailable: boolean }>;
+  };
+  quotaLedger: {
+    distributed: true;
+    tableReady: boolean;
+    dailyRequestLimit: number | null;
+    dailyCostLimitCents: number | null;
+    estimatedCostPerRequestCents: number;
+  };
+  alerts: {
+    rules: Array<{ metric: string; severity: "warning" | "critical"; threshold: number }>;
+  };
+  smoke: {
+    endpoint: "/api/execution/ops/staging-smoke-plan";
+    externalCallPerformed: false;
+    lowPrivilegeKeyRequired: true;
+  };
+}
+
+export interface StagingSmokePlan {
+  mode: "staging_smoke_plan";
+  externalCallPerformed: false;
+  requiresManualExecution: true;
+  steps: string[];
+  rollbackFlags: string[];
+}
+
+function envNameFromKeyRef(keyRef: string): string | null {
+  if (!keyRef.startsWith("env://")) return null;
+  return keyRef.slice("env://".length);
+}
+
 // ExecutionOpsService：execution layer 安全运维入口（health / stale 恢复 / outbox 批处理 / manual retry）。
 // 严格隔离：所有操作只影响 execution plane 表，不改 Workflow/Review/Agent/MCP，不删/改 execution_results 历史。
 export class ExecutionOpsService {
@@ -418,6 +462,87 @@ export class ExecutionOpsService {
       relayEnabled: this.config.relayEnabled,
       writebackExecutorEnabled: this.config.writebackExecutorEnabled,
     });
+  }
+
+  async getProductionReadinessP1(): Promise<ProductionReadinessP1> {
+    const refs = this.config.secretRegistry.map((keyRef) => {
+      const envName = envNameFromKeyRef(keyRef);
+      const material = envName ? this.config.credentialEnvSource[envName] : undefined;
+      return {
+        keyRef,
+        registered: true,
+        materialAvailable: typeof material === "string" && material.trim().length > 0,
+      };
+    });
+    const tableReady = await quotaRepo.hasProviderQuotaLedgerTable(this.db);
+    const missingRequirements: string[] = [];
+    if (!this.config.secretStoreEnabled) missingRequirements.push("secret store must be enabled");
+    if (!this.config.secretInjectionEnabled) missingRequirements.push("secret injection must be enabled");
+    if (refs.length === 0) missingRequirements.push("secret registry must contain at least one key ref");
+    if (refs.some((r) => !r.materialAvailable)) missingRequirements.push("all registered secret refs must have material available");
+    if (!tableReady) missingRequirements.push("execution_provider_quota_ledger table must be ready");
+    if (this.config.providerQuotaLimits.dailyRequestLimit === null)
+      missingRequirements.push("provider daily request limit must be configured");
+    if (this.config.providerQuotaLimits.dailyCostLimitCents === null)
+      missingRequirements.push("provider daily cost limit must be configured");
+    if (this.config.providerQuotaLimits.estimatedCostPerRequestCents <= 0)
+      missingRequirements.push("provider estimated cost per request must be greater than zero");
+    return {
+      mode: "production_readiness_p1",
+      ready: missingRequirements.length === 0,
+      status: missingRequirements.length === 0 ? "ready" : "blocked",
+      missingRequirements,
+      warnings: ["secret rotation policy is not configured in P1 local env registry"],
+      secretStore: {
+        resolverKind: "env_registry",
+        connected: this.config.secretStoreEnabled && this.config.secretInjectionEnabled && refs.length > 0,
+        materialPersisted: false,
+        rotationPolicyDefined: false,
+        refs,
+      },
+      quotaLedger: {
+        distributed: true,
+        tableReady,
+        dailyRequestLimit: this.config.providerQuotaLimits.dailyRequestLimit,
+        dailyCostLimitCents: this.config.providerQuotaLimits.dailyCostLimitCents,
+        estimatedCostPerRequestCents: this.config.providerQuotaLimits.estimatedCostPerRequestCents,
+      },
+      alerts: {
+        rules: [
+          { metric: "execution_results.error_type.rate_limited", severity: "warning", threshold: 1 },
+          { metric: "execution_jobs.failed", severity: "critical", threshold: 1 },
+          { metric: "outbox_events.unprocessed", severity: "warning", threshold: 10 },
+          { metric: "execution_writebacks.failed_or_skipped", severity: "critical", threshold: 1 },
+        ],
+      },
+      smoke: {
+        endpoint: "/api/execution/ops/staging-smoke-plan",
+        externalCallPerformed: false,
+        lowPrivilegeKeyRequired: true,
+      },
+    };
+  }
+
+  getStagingSmokePlan(): StagingSmokePlan {
+    return {
+      mode: "staging_smoke_plan",
+      externalCallPerformed: false,
+      requiresManualExecution: true,
+      steps: [
+        "verify production-readiness-p1 ready=true",
+        "create workflow_stage_run bridge job with low-privilege key",
+        "tick agent job once",
+        "process outbox batch",
+        "verify execution_results, outbox_events and execution_writebacks",
+      ],
+      rollbackFlags: [
+        "EXECUTION_RUNTIME_MODE=mock",
+        "EXECUTION_RUNTIME_ADAPTER_MODE=mock",
+        "EXECUTION_ALLOW_REAL_RUNTIME=false",
+        "EXECUTION_ALLOW_NETWORK=false",
+        "EXECUTION_WRITEBACK_EXECUTOR_ENABLED=false",
+      ],
+    };
   }
 
   getProviderQuotaCostPreflightReadiness(): ProviderQuotaCostPreflightReadiness {
