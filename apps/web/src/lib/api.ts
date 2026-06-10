@@ -15,6 +15,7 @@ import type {
   CreateTaskBody,
   CreateWorkflowBody,
   EditorStateDTO,
+  ExecutionMonitoringReadinessResponse,
   ExecutionWritebackExecutorRegistrationReadinessResponse,
   FinalRcProductionCandidateReadinessResponse,
   ListTasksQuery,
@@ -30,6 +31,7 @@ import type {
   ReviewRecordDTO,
   ReviewStatus,
   StageRunDTO,
+  StagingSmokeReadinessResponse,
   UpdateAgentProfileBody,
   UpdateContextPackBody,
   UpdateTaskBody,
@@ -215,6 +217,10 @@ export const api = {
     ),
   getProductionReadinessP1: () =>
     request<ProductionReadinessP1Response>("GET", "/execution/ops/production-readiness-p1"),
+  getExecutionMonitoringReadiness: () =>
+    request<ExecutionMonitoringReadinessResponse>("GET", "/execution/ops/monitoring-readiness"),
+  getStagingSmokeReadiness: () =>
+    request<StagingSmokeReadinessResponse>("GET", "/execution/ops/staging-smoke-readiness"),
   getMcpRealRuntimeReadiness: () =>
     request<McpRealRuntimeReadinessResponse>(
       "GET",

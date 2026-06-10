@@ -37,3 +37,17 @@ export function useReadinessDrilldowns(enabled: boolean) {
     },
   });
 }
+
+export function useOpsMonitoringReadiness() {
+  return useQuery({
+    queryKey: ["ops", "monitoring-readiness"],
+    queryFn: async () => {
+      const [monitoring, stagingSmoke] = await Promise.all([
+        api.getExecutionMonitoringReadiness(),
+        api.getStagingSmokeReadiness(),
+      ]);
+
+      return { monitoring, stagingSmoke };
+    },
+  });
+}

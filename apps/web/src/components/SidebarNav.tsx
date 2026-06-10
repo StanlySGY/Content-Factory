@@ -15,6 +15,7 @@ export function SidebarNav() {
       <NavLink to="/agents">Agent 管理</NavLink>
       <NavLink to="/assets">素材中心</NavLink>
       <NavLink to="/ops/readiness">运维门禁</NavLink>
+      <NavLink to="/ops/monitoring">运维监控</NavLink>
       <div className="nav-group">后续 Sprint</div>
       {FUTURE.map((label) => (
         <span className="nav-disabled" key={label} title="后续 Sprint 交付">
