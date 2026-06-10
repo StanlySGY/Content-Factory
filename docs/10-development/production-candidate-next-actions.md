@@ -48,19 +48,20 @@ Content Factory 当前处于 **Final RC / production candidate** 收口阶段：
 | MCP Management UI | 已完成 | Web 新增 `/mcp` 只读 MCP 管理入口，展示 MCP server/tool inventory 与 real-runtime readiness；不启用热加载、不执行 tool invocation、不打开真实外部 transport |
 | RBAC Management UI | 已完成 | Web 新增 `/rbac` 只读 RBAC 管理入口，展示 organizations、organization members、默认项目 memberships 与角色状态；不接 auth/session、不做全局业务 API enforcement、不新增权限写操作 |
 | Agent Evaluation Dashboard UI | 已完成 | Web 新增 `/evaluations` 只读评估看板，展示 evaluation analytics、low-quality results 与 result evaluation ledger；不接 LLM judge、不做模型对比、不触发自动回归评测或 rule runner |
+| MCP Marketplace Management UI | 已完成 | Web 新增 `/mcp/marketplace` 只读 marketplace 管理入口，展示 marketplace entries、project installations 与 server binding；不做外部发现、不执行安装/禁用/卸载、不触发 hot-load 或 tool invocation |
 
 下一步建议：
 
 | 优先级 | 任务 | 完成条件 |
 | --- | --- | --- |
-| P2 | MCP Marketplace Management UI | Web 新增只读 marketplace 管理入口，展示 marketplace entries、installations 与 server 绑定状态；不做外部发现、不执行安装/禁用/卸载、不触发 hot-load 或 tool invocation |
+| P2 | Knowledge Candidate Review UI | Web 新增只读任务知识候选入口，展示 task knowledge candidates、命中原因与已有关联 context packs；不接 embedding、向量库、LLM rerank，不自动刷新或物化 context pack |
 
 ## 4. P2：扩展路线
 
 | 路线 | 范围 | 当前缺口 |
 | --- | --- | --- |
-| MCP Marketplace | 外部发现、SDK transport、SSE/stdio、热加载、tool invocation ledger 回写、UI | 当前只有 backend MVP |
-| Knowledge / RAG | embedding、向量库、LLM rerank、引用追踪 UI、context pack 自动刷新 | 当前只有关键词与后端管理 API |
+| MCP Marketplace | 外部发现、SDK transport、SSE/stdio、热加载、tool invocation ledger 回写 | 当前已有 backend MVP 与只读管理 UI |
+| Knowledge / RAG | embedding、向量库、LLM rerank、引用追踪 UI、context pack 自动刷新 | 当前已有关键词、后端管理 API 与 knowledge inventory UI |
 | Agent Evaluation | LLM judge、真实成本归因、模型对比、回归评测 | 当前已有人工/规则评价、analytics API 与只读 dashboard |
 | Skill / Plugin | Skill 路由、质量门禁自动化、插件隔离、供应链验证、UI | 当前不是 MVP 验收项 |
 

@@ -136,7 +136,7 @@
 
 | 能力 | 已有 API 范围 | 仍未完成 |
 | --- | --- | --- |
-| MCP Marketplace | `/api/mcp/marketplace/entries`、`/api/mcp/marketplace/installations`、安装/禁用/卸载 | 外部 marketplace 发现、SDK transport、SSE/stdio、热加载、UI |
+| MCP Marketplace | `/api/mcp/marketplace/entries`、`/api/mcp/marketplace/installations`、安装/禁用/卸载、只读 management UI | 外部 marketplace 发现、SDK transport、SSE/stdio、热加载 |
 | Publisher Platform Backend | `/api/publisher/channels`、`/api/publish-records`、Publisher real-runtime readiness | 完整发布 UI、素材管理、撤回/重发、失败告警、多渠道编排 |
 | Multi-tenant RBAC Backend | `/api/rbac/organizations`、`/api/rbac/organizations/:id/members`、`/api/rbac/projects/:id/memberships`、成员管理、项目 membership、`check-access` | auth/session、全局业务 API enforcement、权限变更 UI、RBAC audit hardening |
 | Knowledge/RAG Backend | `/api/knowledge/sources`、entries、archive/restore、keyword search、task candidates | embedding、向量库、LLM rerank、引用追踪 UI、context pack 自动刷新 |

@@ -13,6 +13,7 @@ import { DashboardPage } from "../features/dashboard/DashboardPage.js";
 import { AgentEvaluationDashboardPage } from "../features/evaluations/AgentEvaluationDashboardPage.js";
 import { EditorPage } from "../features/editor/EditorPage.js";
 import { KnowledgeInventoryPage } from "../features/knowledge/KnowledgeInventoryPage.js";
+import { McpMarketplaceManagementPage } from "../features/mcp-marketplace/McpMarketplaceManagementPage.js";
 import { McpManagementPage } from "../features/mcp/McpManagementPage.js";
 import { OpsMonitoringPage } from "../features/ops/OpsMonitoringPage.js";
 import { OpsReadinessPage } from "../features/ops/OpsReadinessPage.js";
@@ -54,6 +55,7 @@ export function App() {
         <Route path="/evaluations" element={<AgentEvaluationDashboardPage />} />
         <Route path="/knowledge" element={<KnowledgeInventoryPage />} />
         <Route path="/mcp" element={<McpManagementPage />} />
+        <Route path="/mcp/marketplace" element={<McpMarketplaceManagementPage />} />
         <Route path="/rbac" element={<RbacManagementPage />} />
         <Route path="/ops/readiness" element={<OpsReadinessPage />} />
         <Route path="/ops/monitoring" element={<OpsMonitoringPage />} />

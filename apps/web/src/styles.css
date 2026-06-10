@@ -984,6 +984,77 @@ button {
   font-size: 11px;
 }
 
+/* ---- MCP marketplace management ---- */
+.marketplace-kpi-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.marketplace-grid {
+  display: grid;
+  grid-template-columns: minmax(420px, 1fr) minmax(0, 1fr);
+  gap: var(--sp-4);
+}
+.marketplace-detail-column {
+  min-width: 0;
+}
+.marketplace-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+.marketplace-section-head span {
+  color: var(--text-secondary);
+  font-size: 12px;
+  word-break: break-all;
+}
+.marketplace-table tbody tr {
+  cursor: default;
+}
+.marketplace-table tbody tr:hover {
+  background: var(--bg-surface);
+}
+.marketplace-table strong,
+.marketplace-table span,
+.marketplace-table code {
+  display: block;
+}
+.marketplace-table span {
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin-top: 2px;
+}
+.marketplace-table code {
+  color: var(--text-secondary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  margin-top: 2px;
+  word-break: break-all;
+}
+.marketplace-entry-table,
+.marketplace-installation-table {
+  table-layout: fixed;
+}
+.marketplace-entry-table th,
+.marketplace-entry-table td,
+.marketplace-installation-table th,
+.marketplace-installation-table td {
+  word-break: break-word;
+}
+.marketplace-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+}
+.marketplace-tools span {
+  display: inline-flex;
+  margin: 0;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
 /* ---- Publisher workbench ---- */
 .publisher-kpi-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1038,6 +1109,7 @@ button {
   .mcp-kpi-grid,
   .rbac-kpi-grid,
   .evaluation-kpi-grid,
+  .marketplace-kpi-grid,
   .publisher-kpi-grid,
   .ops-grid,
   .ops-drilldown-grid,
@@ -1047,7 +1119,8 @@ button {
   .mcp-grid,
   .rbac-grid,
   .evaluation-distribution,
-  .evaluation-grid {
+  .evaluation-grid,
+  .marketplace-grid {
     grid-template-columns: 1fr;
   }
 }

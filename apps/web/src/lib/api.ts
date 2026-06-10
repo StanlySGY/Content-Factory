@@ -29,6 +29,8 @@ import type {
   ListTasksQuery,
   ListWorkflowsQuery,
   LowQualityEvaluationsResponse,
+  McpMarketplaceEntryDTO,
+  McpMarketplaceInstallationDTO,
   McpRealRuntimeReadinessResponse,
   McpServerDTO,
   McpToolDTO,
@@ -238,6 +240,15 @@ export const api = {
     request<ExecutionResultEvaluationDTO[]>(
       "GET",
       `/execution/results/${resultId}/evaluations`,
+    ),
+
+  // ── MCP Marketplace Management（只读管理面）──
+  listMcpMarketplaceEntries: () =>
+    request<McpMarketplaceEntryDTO[]>("GET", "/mcp/marketplace/entries"),
+  listMcpMarketplaceInstallations: (projectId: string) =>
+    request<McpMarketplaceInstallationDTO[]>(
+      "GET",
+      `/mcp/marketplace/installations${toQuery({ project_id: projectId })}`,
     ),
 
   // ── MCP Management（只读管理面）──
