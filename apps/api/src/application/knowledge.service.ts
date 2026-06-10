@@ -1,6 +1,8 @@
 import type {
   CreateKnowledgeEntryBody,
   CreateKnowledgeSourceBody,
+  ListKnowledgeEntriesQuery,
+  ListKnowledgeSourcesQuery,
   KnowledgeSearchQuery,
 } from "@cf/shared";
 import { NotFoundError, ValidationError } from "../domain/errors.js";
@@ -73,6 +75,35 @@ export class KnowledgeService {
     );
     if (!row) throw new NotFoundError(`knowledge_source ${sourceId} not found`);
     return row;
+  }
+
+  listSources(ctx: RequestContext, query: ListKnowledgeSourcesQuery): Promise<KnowledgeSourceRow[]> {
+    return runInProject(this.db, ctx.projectId, (tx) =>
+      repo.listSources(tx, ctx.projectId, {
+        status: query.status,
+        source_type: query.source_type,
+      }),
+    );
+  }
+
+  async getSource(ctx: RequestContext, sourceId: string): Promise<KnowledgeSourceRow> {
+    const row = await runInProject(this.db, ctx.projectId, (tx) =>
+      repo.getSource(tx, ctx.projectId, sourceId),
+    );
+    if (!row) throw new NotFoundError(`knowledge_source ${sourceId} not found`);
+    return row;
+  }
+
+  async listEntriesBySource(
+    ctx: RequestContext,
+    sourceId: string,
+    query: ListKnowledgeEntriesQuery,
+  ): Promise<KnowledgeEntryRow[]> {
+    return runInProject(this.db, ctx.projectId, async (tx) => {
+      const source = await repo.getSource(tx, ctx.projectId, sourceId);
+      if (!source) throw new NotFoundError(`knowledge_source ${sourceId} not found`);
+      return repo.listEntriesBySource(tx, ctx.projectId, sourceId, { status: query.status });
+    });
   }
 
   async restoreSource(ctx: RequestContext, sourceId: string): Promise<KnowledgeSourceRow> {

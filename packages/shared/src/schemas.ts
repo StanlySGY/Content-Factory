@@ -1103,6 +1103,23 @@ export const CreateKnowledgeEntrySchema = Type.Object(
 );
 export type CreateKnowledgeEntryBody = Static<typeof CreateKnowledgeEntrySchema>;
 
+export const ListKnowledgeSourcesQuerySchema = Type.Object(
+  {
+    status: Type.Optional(KnowledgeSourceStatusSchema),
+    source_type: Type.Optional(KnowledgeSourceTypeSchema),
+  },
+  { additionalProperties: false },
+);
+export type ListKnowledgeSourcesQuery = Static<typeof ListKnowledgeSourcesQuerySchema>;
+
+export const ListKnowledgeEntriesQuerySchema = Type.Object(
+  {
+    status: Type.Optional(KnowledgeEntryStatusSchema),
+  },
+  { additionalProperties: false },
+);
+export type ListKnowledgeEntriesQuery = Static<typeof ListKnowledgeEntriesQuerySchema>;
+
 export const KnowledgeSearchQuerySchema = Type.Object(
   {
     q: Type.String({ minLength: 1, maxLength: 200 }),
@@ -1132,7 +1149,9 @@ export const TaskKnowledgeCandidatesResponseSchema = Type.Object(
 export type TaskKnowledgeCandidatesResponse = Static<typeof TaskKnowledgeCandidatesResponseSchema>;
 
 export const KnowledgeSourceResponseSchema = KnowledgeSourceSchema;
+export const KnowledgeSourcesResponseSchema = Type.Array(KnowledgeSourceSchema);
 export const KnowledgeEntryResponseSchema = KnowledgeEntrySchema;
+export const KnowledgeEntriesResponseSchema = Type.Array(KnowledgeEntrySchema);
 
 // ---- Agent Evaluation Backend MVP (Product Gap 5) ----
 export const ExecutionResultEvaluatorTypeSchema = StringEnum(EXECUTION_RESULT_EVALUATOR_TYPES);

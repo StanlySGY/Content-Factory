@@ -3,10 +3,14 @@ import {
   CreateKnowledgeEntrySchema,
   CreateKnowledgeSourceSchema,
   IdParamSchema,
+  KnowledgeEntriesResponseSchema,
   KnowledgeEntryResponseSchema,
   KnowledgeSearchQuerySchema,
   KnowledgeSearchResponseSchema,
+  KnowledgeSourcesResponseSchema,
   KnowledgeSourceResponseSchema,
+  ListKnowledgeEntriesQuerySchema,
+  ListKnowledgeSourcesQuerySchema,
   TaskIdParamSchema,
   TaskKnowledgeCandidatesResponseSchema,
 } from "@cf/shared";
@@ -38,6 +42,20 @@ export const knowledgeRoutes: FastifyPluginAsyncTypebox<KnowledgeRoutesOptions> 
     },
   );
 
+  app.get(
+    "/api/knowledge/sources",
+    { schema: { querystring: ListKnowledgeSourcesQuerySchema, response: { 200: KnowledgeSourcesResponseSchema } } },
+    async (request) =>
+      (await knowledgeService.listSources(buildContext(env, request), request.query)).map(toKnowledgeSourceDTO),
+  );
+
+  app.get(
+    "/api/knowledge/sources/:id",
+    { schema: { params: IdParamSchema, response: { 200: KnowledgeSourceResponseSchema } } },
+    async (request) =>
+      toKnowledgeSourceDTO(await knowledgeService.getSource(buildContext(env, request), request.params.id)),
+  );
+
   app.post(
     "/api/knowledge/sources/:id/entries",
     { schema: { params: IdParamSchema, body: CreateKnowledgeEntrySchema, response: { 201: KnowledgeEntryResponseSchema } } },
@@ -46,6 +64,14 @@ export const knowledgeRoutes: FastifyPluginAsyncTypebox<KnowledgeRoutesOptions> 
       reply.code(201);
       return toKnowledgeEntryDTO(entry);
     },
+  );
+
+  app.get(
+    "/api/knowledge/sources/:id/entries",
+    { schema: { params: IdParamSchema, querystring: ListKnowledgeEntriesQuerySchema, response: { 200: KnowledgeEntriesResponseSchema } } },
+    async (request) =>
+      (await knowledgeService.listEntriesBySource(buildContext(env, request), request.params.id, request.query))
+        .map(toKnowledgeEntryDTO),
   );
 
   app.post(

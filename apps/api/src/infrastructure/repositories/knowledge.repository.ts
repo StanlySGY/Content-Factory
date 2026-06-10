@@ -29,6 +29,15 @@ export interface KnowledgeEntryWrite {
   created_by: string;
 }
 
+export interface KnowledgeSourceFilter {
+  status?: string;
+  source_type?: string;
+}
+
+export interface KnowledgeEntryFilter {
+  status?: string;
+}
+
 export async function createSource(db: Db, input: KnowledgeSourceWrite): Promise<KnowledgeSourceRow> {
   const [row] = await db.insert(knowledgeSources).values({
     projectId: input.project_id,
@@ -50,6 +59,17 @@ export async function getSource(db: Db, projectId: string, id: string): Promise<
   return row ?? null;
 }
 
+export async function listSources(
+  db: Db,
+  projectId: string,
+  filter: KnowledgeSourceFilter = {},
+): Promise<KnowledgeSourceRow[]> {
+  const conditions: SQL[] = [eq(knowledgeSources.projectId, projectId)];
+  if (filter.status) conditions.push(eq(knowledgeSources.status, filter.status));
+  if (filter.source_type) conditions.push(eq(knowledgeSources.sourceType, filter.source_type));
+  return db.select().from(knowledgeSources).where(and(...conditions)).orderBy(desc(knowledgeSources.updatedAt));
+}
+
 export async function getEntry(db: Db, projectId: string, id: string): Promise<KnowledgeEntryRow | null> {
   const [row] = await db
     .select()
@@ -57,6 +77,20 @@ export async function getEntry(db: Db, projectId: string, id: string): Promise<K
     .where(and(eq(knowledgeEntries.id, id), eq(knowledgeEntries.projectId, projectId)))
     .limit(1);
   return row ?? null;
+}
+
+export async function listEntriesBySource(
+  db: Db,
+  projectId: string,
+  sourceId: string,
+  filter: KnowledgeEntryFilter = {},
+): Promise<KnowledgeEntryRow[]> {
+  const conditions: SQL[] = [
+    eq(knowledgeEntries.projectId, projectId),
+    eq(knowledgeEntries.sourceId, sourceId),
+  ];
+  if (filter.status) conditions.push(eq(knowledgeEntries.status, filter.status));
+  return db.select().from(knowledgeEntries).where(and(...conditions)).orderBy(desc(knowledgeEntries.updatedAt));
 }
 
 export async function archiveSource(db: Db, projectId: string, id: string): Promise<KnowledgeSourceRow | null> {
