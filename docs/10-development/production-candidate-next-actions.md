@@ -36,6 +36,12 @@ Content Factory 当前处于 **Final RC / production candidate** 收口阶段：
 | Production Ops | 监控面板、告警规则、runbook 演练、部署开关审计 | 故障可定位、可回滚、可复盘 |
 | Agent Production | 真实 provider staging、错误映射、成本校准、限额策略 | 真实调用可追溯，不泄露 secret material |
 
+当前已补齐的 P1 可视化入口：
+
+| 任务 | 状态 | 边界 |
+| --- | --- | --- |
+| Final RC 门禁 UI | 已完成 | Web 新增 `/ops/readiness`，只读展示 `final-rc-readiness` 聚合结果；不启用真实 runtime，不替代 staging smoke |
+
 ## 4. P2：扩展路线
 
 | 路线 | 范围 | 当前缺口 |

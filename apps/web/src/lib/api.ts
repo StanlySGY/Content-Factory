@@ -15,6 +15,7 @@ import type {
   CreateTaskBody,
   CreateWorkflowBody,
   EditorStateDTO,
+  FinalRcProductionCandidateReadinessResponse,
   ListTasksQuery,
   ListWorkflowsQuery,
   PaginatedTasks,
@@ -195,4 +196,11 @@ export const api = {
     request<AgentSessionDTO[]>("GET", `/agents/${id}/sessions`),
   getAgentSession: (id: string) =>
     request<AgentSessionDTO>("GET", `/agent-sessions/${id}`),
+
+  // ── Final RC Ops ──
+  getFinalRcReadiness: () =>
+    request<FinalRcProductionCandidateReadinessResponse>(
+      "GET",
+      "/execution/ops/final-rc-readiness",
+    ),
 };

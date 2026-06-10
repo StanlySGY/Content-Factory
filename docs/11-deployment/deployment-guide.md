@@ -74,7 +74,8 @@ MCP 与 Publisher 真实入口还需分别开启：
 4. 以默认关闭 runtime gate 启动 API 与 Web。
 5. 调用 `/api/health`，确认数据库连接可用。
 6. 调用 `/api/execution/ops/final-rc-readiness`，确认默认环境不会执行外部调用。
-7. 若进入真实启用，按 `production-candidate-next-actions.md` 选择单一路线逐项开启 gate，不混开 Agent / MCP / Publisher / writeback。
+7. 打开 Web `/ops/readiness`，确认页面展示同一份 Final RC 门禁结果。
+8. 若进入真实启用，按 `production-candidate-next-actions.md` 选择单一路线逐项开启 gate，不混开 Agent / MCP / Publisher / writeback。
 
 ## 5. 生产候选验证
 
@@ -82,7 +83,7 @@ MCP 与 Publisher 真实入口还需分别开启：
 
 | 验证 | 通过条件 |
 | --- | --- |
-| `final-rc-readiness` | 目标环境达到候选条件；`external_call_performed=false` |
+| `final-rc-readiness` | 目标环境达到候选条件；`external_call_performed=false`；Web `/ops/readiness` 与 API 结果一致 |
 | Secret Store | secret material 不落响应、不入 `execution_results` 明文快照 |
 | allowlist | 所有真实外部 endpoint host 都在 allowlist 内 |
 | quota/cost | DB-backed ledger 在目标拓扑下可写、可读、可阻断 |

@@ -11,6 +11,7 @@ import { AssetsPage } from "../features/assets/AssetsPage.js";
 import { ContextPacksPage } from "../features/context-packs/ContextPacksPage.js";
 import { DashboardPage } from "../features/dashboard/DashboardPage.js";
 import { EditorPage } from "../features/editor/EditorPage.js";
+import { OpsReadinessPage } from "../features/ops/OpsReadinessPage.js";
 import { PendingReviewsPage } from "../features/reviews/PendingReviewsPage.js";
 import { ReviewQueuePage } from "../features/reviews/ReviewQueuePage.js";
 import { StageRunDetailPage } from "../features/stage-runs/StageRunDetailPage.js";
@@ -44,6 +45,7 @@ export function App() {
         <Route path="/reviews" element={<ReviewQueuePage />} />
         <Route path="/reviews/pending" element={<PendingReviewsPage />} />
         <Route path="/work-queue" element={<WorkQueuePage />} />
+        <Route path="/ops/readiness" element={<OpsReadinessPage />} />
         <Route path="/stage-runs/:id" element={<StageRunDetailPage />} />
         <Route path="/agents" element={<AgentListPage />} />
         <Route path="/agents/new" element={<NewAgentPage />} />
