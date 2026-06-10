@@ -33,7 +33,7 @@ Content Factory 当前处于 **Final RC / production candidate** 收口阶段：
 
 | 路线 | 范围 | 验收重点 |
 | --- | --- | --- |
-| Publisher Platform | 发布 UI、渠道配置、素材管理、撤回/重发、失败告警、多渠道编排 | 不产生半发布状态；发布记录锚定 asset_version |
+| Publisher Platform | 真实发布 UI/审批流、素材管理、撤回/重发、失败告警、多渠道编排 | 不产生半发布状态；发布记录锚定 asset_version |
 | Multi-tenant RBAC | auth/session、全局 API enforcement、成员/角色 UI、RBAC audit hardening | 跨项目访问被拒，权限变更可审计 |
 | Production Ops | 监控面板、告警规则、runbook 演练、部署开关审计 | 故障可定位、可回滚、可复盘 |
 | Agent Production | 真实 provider staging、错误映射、成本校准、限额策略 | 真实调用可追溯，不泄露 secret material |
@@ -45,7 +45,7 @@ Content Factory 当前处于 **Final RC / production candidate** 收口阶段：
 | Final RC 门禁 UI | 已完成 | Web 新增 `/ops/readiness`，只读展示 `final-rc-readiness` 聚合结果；不启用真实 runtime，不替代 staging smoke |
 | Readiness drilldown | 已完成 | `/ops/readiness` 下钻展示 production activation、P1 readiness、MCP runtime、Publisher runtime、writeback executor registration 的只读端点结果、缺失要求和下一阶段要求 |
 | Production Ops 监控页 | 已完成 | Web 新增 `/ops/monitoring`，只读展示 `monitoring-readiness`、alert rules、`staging-smoke-readiness` 与 smoke run endpoint；不接真实 Grafana / PagerDuty，不触发 smoke run |
-| Publisher Platform 控制台 UI | 已完成 | Web 新增 `/publisher` 只读发布工作台，展示 publisher channels 与 publish records 的渠道状态、endpoint_ref、发布记录状态和 asset_version 锚定信息；不触发真实发布、不新增外部平台调用 |
+| Publisher Platform 控制台 UI | 已完成 | Web `/publisher` 支持 publisher channel 创建、启用/停用/归档与 publish records 只读展示，保留 endpoint_ref、发布记录状态和 asset_version 锚定信息；不触发真实发布、不新增外部平台调用 |
 | Knowledge Inventory UI | 已完成 | Web 新增 `/knowledge` 只读知识库管理入口，展示 knowledge sources、source 详情和 source entries，保留 active / archived 可见性；不接 embedding、向量库、LLM rerank，不自动刷新 context pack |
 | Knowledge Candidate Review UI | 已完成 | Web 新增 `/knowledge/candidates` 只读任务知识候选入口，展示 task knowledge candidates、命中原因与已有 context packs 关联；不接 embedding、向量库、LLM rerank，不自动刷新或物化 context pack |
 | MCP Management UI | 已完成 | Web 新增 `/mcp` 只读 MCP 管理入口，展示 MCP server/tool inventory 与 real-runtime readiness；不启用热加载、不执行 tool invocation、不打开真实外部 transport |

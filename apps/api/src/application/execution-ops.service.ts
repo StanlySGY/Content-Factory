@@ -964,10 +964,10 @@ export class ExecutionOpsService {
           "publisher channels and publish_records APIs",
           "asset_version-pinned publish records",
           "default-closed Publisher real runtime readiness",
-          "readonly Publisher workbench UI",
+          "Publisher workbench UI with channel lifecycle controls",
+          "channel configuration write UI",
         ],
         missingProductRequirements: [
-          "channel configuration write UI",
           "real external publishing approval workflow",
           "withdraw and resend operations",
           "multi-channel orchestration",

@@ -44,6 +44,9 @@ describe("product route readiness", () => {
       expect(route.missing_product_requirements.length).toBeGreaterThan(0);
       expect(route.safety_boundaries.length).toBeGreaterThan(0);
     }
+    const publisherRoute = body.routes.find((route: { key: string }) => route.key === "publisher_platform");
+    expect(publisherRoute.delivered_capabilities).toContain("channel configuration write UI");
+    expect(publisherRoute.missing_product_requirements).not.toContain("channel configuration write UI");
     expect(JSON.stringify(body)).not.toContain("sk-");
     expect(JSON.stringify(body)).not.toContain("Bearer");
   });

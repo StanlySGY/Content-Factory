@@ -76,7 +76,7 @@ MCP 与 Publisher 真实入口还需分别开启：
 6. 调用 `/api/execution/ops/final-rc-readiness`，确认默认环境不会执行外部调用。
 7. 打开 Web `/ops/readiness`，确认页面展示同一份 Final RC 门禁结果及只读 drilldown。
 8. 打开 Web `/ops/monitoring`，确认 monitoring 与 staging smoke 只读状态和 API 结果一致，且未触发 smoke run。
-9. 打开 Web `/publisher`，确认 publisher channels 与 publish records 只读展示，且未触发真实发布。
+9. 打开 Web `/publisher`，确认 publisher channels 可创建、启用/停用/归档，publish records 只读展示，且未触发真实发布。
 10. 打开 Web `/knowledge`，确认 knowledge sources、source detail 与 source entries 只读展示，且未触发 context pack 自动刷新。
 11. 打开 Web `/knowledge/candidates`，确认 task knowledge candidates、命中原因与已有 context pack 关联只读展示，且未触发 context pack 自动刷新或物化。
 12. 打开 Web `/mcp`，确认 MCP server/tool inventory 与 real-runtime readiness 只读展示，且未触发 tool invocation 或真实外部 transport。
@@ -109,7 +109,7 @@ MCP 与 Publisher 真实入口还需分别开启：
 | quota/cost | DB-backed ledger 在目标拓扑下可写、可读、可阻断 |
 | monitoring | 指标出口和告警规则已接入真实监控系统；Web `/ops/monitoring` 与 `monitoring-readiness` 一致 |
 | staging smoke | 使用低权限真实 key、低额度限制跑通，并保留 result ledger；Web `/ops/monitoring` 默认不触发 smoke run |
-| publisher workbench | Web `/publisher` 只读展示渠道和发布记录，publish records 锚定 `asset_version_id`，不触发真实发布 |
+| publisher workbench | Web `/publisher` 支持渠道创建、启用/停用/归档并只读展示发布记录，publish records 锚定 `asset_version_id`，不触发真实发布 |
 | knowledge inventory | Web `/knowledge` 只读展示 knowledge sources、source detail 与 source entries，active / archived 均可见，不触发 embedding、rerank 或 context pack 自动刷新 |
 | knowledge candidates | Web `/knowledge/candidates` 只读展示 task knowledge candidates、命中原因与已有 context pack 关联，不触发 embedding、rerank、context pack 自动刷新或物化 |
 | mcp management | Web `/mcp` 只读展示 MCP servers、selected server tools 与 real-runtime readiness，不触发 health-check、mock invoke、安装/卸载或真实 transport |

@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import type { PublishRecordDTO, PublisherChannelDTO } from "@cf/shared";
@@ -8,6 +9,9 @@ import { App } from "../src/app/App";
 const apiMock = vi.hoisted(() => ({
   listPublisherChannels: vi.fn(),
   listPublishRecords: vi.fn(),
+  createPublisherChannel: vi.fn(),
+  disablePublisherChannel: vi.fn(),
+  archivePublisherChannel: vi.fn(),
   createPublishRecord: vi.fn(),
 }));
 
@@ -41,6 +45,7 @@ const publisherChannels: PublisherChannelDTO[] = [
     updated_at: "2026-06-10T00:00:00.000Z",
   },
 ];
+const activePublisherChannel = publisherChannels[0]!;
 
 const publishRecords: PublishRecordDTO[] = [
   {
@@ -114,5 +119,40 @@ describe("PublisherWorkbenchPage", () => {
     expect(screen.getByText("00000000-0000-0000-0000-000000000106")).toBeInTheDocument();
     expect(screen.getByText("wx-msg-123")).toBeInTheDocument();
     expect(screen.getByText("channel disabled")).toBeInTheDocument();
+  });
+
+  it("creates and disables publisher channels from the channel configuration UI", async () => {
+    apiMock.listPublisherChannels.mockResolvedValue(publisherChannels);
+    apiMock.listPublishRecords.mockResolvedValue(publishRecords);
+    apiMock.createPublisherChannel.mockResolvedValue({
+      ...activePublisherChannel,
+      id: "00000000-0000-0000-0000-000000000203",
+      key: "linkedin",
+      display_name: "LinkedIn Page",
+      endpoint_ref: "publisher://linkedin",
+    });
+    apiMock.disablePublisherChannel.mockResolvedValue({
+      ...activePublisherChannel,
+      status: "disabled",
+    });
+
+    renderRoute();
+
+    await screen.findByText("WeChat Official Account");
+    await userEvent.type(screen.getByLabelText("渠道 key"), "linkedin");
+    await userEvent.type(screen.getByLabelText("渠道名称"), "LinkedIn Page");
+    await userEvent.type(screen.getByLabelText("Endpoint ref"), "publisher://linkedin");
+    await userEvent.click(screen.getByRole("button", { name: "创建渠道" }));
+
+    expect(apiMock.createPublisherChannel).toHaveBeenCalledWith({
+      key: "linkedin",
+      display_name: "LinkedIn Page",
+      endpoint_ref: "publisher://linkedin",
+      config: { schema_version: 1 },
+    });
+
+    await userEvent.click(screen.getByRole("button", { name: "停用 WeChat Official Account" }));
+    expect(apiMock.disablePublisherChannel).toHaveBeenCalledWith(activePublisherChannel.id);
+    expect(apiMock.createPublishRecord).not.toHaveBeenCalled();
   });
 });

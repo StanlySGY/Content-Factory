@@ -26,7 +26,10 @@ const readiness: ProductRouteReadinessResponse = {
       production_ready: false,
       status: "ready",
       evidence_endpoints: ["/api/publisher/channels", "/publisher"],
-      delivered_capabilities: ["readonly Publisher workbench UI"],
+      delivered_capabilities: [
+        "Publisher workbench UI with channel lifecycle controls",
+        "channel configuration write UI",
+      ],
       missing_product_requirements: ["withdraw and resend operations"],
       safety_boundaries: ["readiness checks do not call external publisher endpoints"],
     },

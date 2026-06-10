@@ -181,6 +181,13 @@ button {
 .btn.primary:hover {
   filter: brightness(1.08);
 }
+.btn.danger {
+  color: var(--status-danger);
+  border-color: #f3b6b6;
+}
+.btn.danger:hover {
+  background: #fde7e7;
+}
 .btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
@@ -1636,6 +1643,28 @@ button {
   color: var(--text-secondary);
   font-size: 12px;
 }
+.publisher-config-section {
+  padding: var(--sp-4);
+  border: 1px solid var(--border-muted);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+}
+.publisher-channel-form {
+  display: grid;
+  grid-template-columns: minmax(140px, 0.75fr) minmax(180px, 1fr) minmax(220px, 1.25fr) auto;
+  align-items: end;
+  gap: var(--sp-3);
+  margin-top: var(--sp-3);
+}
+.publisher-channel-form-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+.publisher-channel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
 .publisher-table tbody tr {
   cursor: default;
 }
@@ -1680,6 +1709,7 @@ button {
   .execution-writeback-kpi-grid,
   .marketplace-kpi-grid,
   .publisher-kpi-grid,
+  .publisher-channel-form,
   .ops-grid,
   .ops-drilldown-grid,
   .knowledge-grid,

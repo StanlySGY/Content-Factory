@@ -16,6 +16,7 @@ import type {
   CreateAssetBody,
   CreateAssetVersionBody,
   CreateContextPackBody,
+  CreatePublisherChannelBody,
   CreateTaskBody,
   CreateWorkflowBody,
   EditorStateDTO,
@@ -70,6 +71,7 @@ import type {
   ToolInvocationDTO,
   UpdateAgentProfileBody,
   UpdateContextPackBody,
+  UpdatePublisherChannelBody,
   UpdateTaskBody,
   WorkQueueItemDTO,
   WorkflowDefinitionDTO,
@@ -321,9 +323,17 @@ export const api = {
       `/tasks/${taskId}/knowledge-candidates${toQuery(q)}`,
     ),
 
-  // ── Publisher Platform（只读工作台）──
+  // ── Publisher Platform ──
   listPublisherChannels: (q: ListPublisherChannelsQuery = {}) =>
     request<PublisherChannelDTO[]>("GET", `/publisher/channels${toQuery(q)}`),
+  createPublisherChannel: (body: CreatePublisherChannelBody) =>
+    request<PublisherChannelDTO>("POST", "/publisher/channels", body),
+  updatePublisherChannel: (id: string, body: UpdatePublisherChannelBody) =>
+    request<PublisherChannelDTO>("PATCH", `/publisher/channels/${id}`, body),
+  disablePublisherChannel: (id: string) =>
+    request<PublisherChannelDTO>("POST", `/publisher/channels/${id}/disable`),
+  archivePublisherChannel: (id: string) =>
+    request<PublisherChannelDTO>("POST", `/publisher/channels/${id}/archive`),
   listPublishRecords: (q: ListPublishRecordsQuery = {}) =>
     request<PublishRecordDTO[]>("GET", `/publish-records${toQuery(q)}`),
 
