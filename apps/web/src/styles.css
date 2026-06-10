@@ -467,10 +467,68 @@ button {
   color: var(--text-secondary);
   margin: 0;
 }
+.ops-drilldown-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-5);
+}
+.ops-drilldown-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+.ops-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+.ops-card-head h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.ops-endpoint {
+  display: block;
+  padding: 7px 9px;
+  border: 1px solid var(--border-muted);
+  border-radius: var(--radius-sm);
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  word-break: break-all;
+}
+.ops-detail-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-2);
+  margin: 0;
+}
+.ops-detail-facts div {
+  min-width: 0;
+}
+.ops-detail-facts dt {
+  color: var(--text-secondary);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+.ops-detail-facts dd {
+  margin: 0;
+  font-weight: 600;
+  word-break: break-word;
+}
+.ops-drilldown-card h4 {
+  margin: var(--sp-1) 0 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
 
 @media (max-width: 980px) {
   .ops-kpi-grid,
-  .ops-grid {
+  .ops-grid,
+  .ops-drilldown-grid {
     grid-template-columns: 1fr;
   }
 }

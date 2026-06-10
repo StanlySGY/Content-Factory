@@ -15,12 +15,17 @@ import type {
   CreateTaskBody,
   CreateWorkflowBody,
   EditorStateDTO,
+  ExecutionWritebackExecutorRegistrationReadinessResponse,
   FinalRcProductionCandidateReadinessResponse,
   ListTasksQuery,
   ListWorkflowsQuery,
+  McpRealRuntimeReadinessResponse,
   PaginatedTasks,
   PendingReviewDTO,
+  ProductionActivationPreflightResponse,
+  ProductionReadinessP1Response,
   PublishVersionBody,
+  PublisherRealRuntimeReadinessResponse,
   RequestRevisionBody,
   ReviewRecordDTO,
   ReviewStatus,
@@ -202,5 +207,27 @@ export const api = {
     request<FinalRcProductionCandidateReadinessResponse>(
       "GET",
       "/execution/ops/final-rc-readiness",
+    ),
+  getProductionActivationReadiness: () =>
+    request<ProductionActivationPreflightResponse>(
+      "GET",
+      "/execution/ops/production-activation-preflight",
+    ),
+  getProductionReadinessP1: () =>
+    request<ProductionReadinessP1Response>("GET", "/execution/ops/production-readiness-p1"),
+  getMcpRealRuntimeReadiness: () =>
+    request<McpRealRuntimeReadinessResponse>(
+      "GET",
+      "/execution/ops/mcp-real-runtime-readiness",
+    ),
+  getPublisherRealRuntimeReadiness: () =>
+    request<PublisherRealRuntimeReadinessResponse>(
+      "GET",
+      "/execution/ops/publisher-real-runtime-readiness",
+    ),
+  getWritebackExecutorRegistrationReadiness: () =>
+    request<ExecutionWritebackExecutorRegistrationReadinessResponse>(
+      "GET",
+      "/execution/ops/writeback-executor-registration-readiness",
     ),
 };

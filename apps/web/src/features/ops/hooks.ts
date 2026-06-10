@@ -7,3 +7,33 @@ export function useFinalRcReadiness() {
     queryFn: () => api.getFinalRcReadiness(),
   });
 }
+
+export function useReadinessDrilldowns(enabled: boolean) {
+  return useQuery({
+    queryKey: ["ops", "readiness-drilldowns"],
+    enabled,
+    queryFn: async () => {
+      const [
+        productionActivation,
+        productionReadinessP1,
+        mcpRealRuntime,
+        publisherRealRuntime,
+        writebackExecutorRegistration,
+      ] = await Promise.all([
+        api.getProductionActivationReadiness(),
+        api.getProductionReadinessP1(),
+        api.getMcpRealRuntimeReadiness(),
+        api.getPublisherRealRuntimeReadiness(),
+        api.getWritebackExecutorRegistrationReadiness(),
+      ]);
+
+      return {
+        productionActivation,
+        productionReadinessP1,
+        mcpRealRuntime,
+        publisherRealRuntime,
+        writebackExecutorRegistration,
+      };
+    },
+  });
+}

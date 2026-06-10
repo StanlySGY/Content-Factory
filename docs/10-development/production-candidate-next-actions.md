@@ -41,6 +41,13 @@ Content Factory 当前处于 **Final RC / production candidate** 收口阶段：
 | 任务 | 状态 | 边界 |
 | --- | --- | --- |
 | Final RC 门禁 UI | 已完成 | Web 新增 `/ops/readiness`，只读展示 `final-rc-readiness` 聚合结果；不启用真实 runtime，不替代 staging smoke |
+| Readiness drilldown | 已完成 | `/ops/readiness` 下钻展示 production activation、P1 readiness、MCP runtime、Publisher runtime、writeback executor registration 的只读端点结果、缺失要求和下一阶段要求 |
+
+下一步建议：
+
+| 优先级 | 任务 | 完成条件 |
+| --- | --- | --- |
+| P1 | Production Ops 监控页 | Web 新增只读 monitoring / staging smoke 面板，展示 `monitoring-readiness`、alert rules、`staging-smoke-readiness` 与 smoke run endpoint；不接真实 Grafana / PagerDuty，不触发 smoke run |
 
 ## 4. P2：扩展路线
 
