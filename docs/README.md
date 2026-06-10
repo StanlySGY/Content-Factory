@@ -53,4 +53,19 @@ docs/
 
 ## 当前状态
 
-已初始化文档架构。后续应按实际功能阶段补充各目录下的专题文档。
+项目已推进到 **Sprint-10 / Final RC production candidate** 收口阶段。Sprint 1-4 MVP、Sprint 5 execution foundation、Productization P0/P1/P2 的默认关闭真实 runtime 入口均已落地；后续不再追加 `Phase 2.x`，剩余工作进入独立产品路线。
+
+当前权威入口：
+
+- 阶段与路线：[`10-development/development-roadmap.md`](./10-development/development-roadmap.md)
+- 运维与生产门禁：[`10-development/execution-ops-runbook.md`](./10-development/execution-ops-runbook.md)
+- 部署与启用指南：[`11-deployment/deployment-guide.md`](./11-deployment/deployment-guide.md)
+- 下一步执行清单：[`10-development/production-candidate-next-actions.md`](./10-development/production-candidate-next-actions.md)
+- Review 清单：[`reviews/review-backlog.md`](./reviews/review-backlog.md)
+
+关键边界：
+
+- 默认不执行真实 LLM / MCP / Publisher 外部调用。
+- 默认不启用真实控制面 writeback executor。
+- `final-rc-readiness` 是只读生产候选门禁，不代表完整商业产品功能已完成。
+- 真实上线前必须先完成 secret store、监控告警、staging smoke、环境 gate 与回滚预案。

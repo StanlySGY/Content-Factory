@@ -31,6 +31,7 @@
 | ADR-020 | 迁移排序：stage_runs.agent_profile_id FK 延后至 S4 | 已确定 | roadmap §5.3 |
 | ADR-021 | 真实 Provider 端到端验证在 S4 壳层前完成 1 条链路 | 已确定（Sprint 0）| RC R3 |
 | ADR-022 | 调用幂等键 = stage_run_id + 输入摘要 | 已确定 | arch §15.3 / agent §9.5 |
+| ADR-023 | Final RC 后停止追加 Phase 2.x，后续进入独立产品路线 | 已确定 | final-rc audit / roadmap §11 |
 
 ---
 
@@ -117,6 +118,13 @@
 - **状态**：已确定
 - **决策**：外部来源内容（MCP 抓取、用户上传、第三方返回）标记 `trust_level=untrusted`，仅作数据呈现，不得进入 system/指令通道、不得驱动工具授权。结果校验须含注入特征过滤。
 - **后果**：防间接提示注入（RC 红队 RT-001）。
+
+## ADR-023 Final RC 后停止追加 Phase 2.x
+
+- **状态**：已确定
+- **背景**：Sprint-10 已冻结 execution foundation 功能路线，Final RC 已完成 production activation / P1 readiness / MCP readiness / Publisher readiness / writeback executor / DB invariant 的只读聚合门禁。继续向 `Phase 2.x` 追加功能会扩大范围、稀释生产启用门禁，并混淆“生产候选安全闭合”和“完整商业产品功能完成”。
+- **决策**：Final RC 后不再新增 `Phase 2.x` 或 Sprint-11。剩余工作必须按独立产品路线推进，包括 Publisher Platform、MCP Marketplace、Multi-tenant RBAC、Knowledge/RAG、Agent Evaluation、真实生产启用与监控运维。
+- **后果**：新工作必须先定义路线范围、启用条件、验收标准和回滚点；不得绕过 fail-closed 默认配置，不得把真实外部调用、控制面回写或生产密钥接入混入小型补丁。
 
 ## ADR-014 实时通道选型
 

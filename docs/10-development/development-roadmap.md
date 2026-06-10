@@ -525,3 +525,5 @@ MVP 后再进入：
 > **Evaluation Analytics Backend MVP 已补齐**：Product Gap 7 新增只读 evaluation analytics 和 low-quality evaluation 查询端点，用于查看评分均值、低分数量、evaluator 分布和低分明细。它不调用 LLM、不做 dashboard UI、不改 `execution_results` / `execution_jobs` / `execution_result_evaluations` 历史记录。证据见 `docs/reviews/product-gap-7-evaluation-analytics-backend-audit.md`。
 
 > **不再继续 P2.x**：后续剩余工作进入独立产品路线，例如 Publisher Platform、MCP Marketplace、多租户 RBAC、Knowledge/RAG、Agent Evaluation。
+
+后续执行以 [`production-candidate-next-actions.md`](./production-candidate-next-actions.md) 为入口：生产启用前先完成 Secret Store、生产 allowlist、监控告警、staging smoke、回滚预案和目标环境 `final-rc-readiness` 验证；产品功能扩展按独立路线立项，不再塞回 `Phase 2.x`。

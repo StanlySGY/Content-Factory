@@ -1,6 +1,6 @@
 import { NavLink } from "react-router-dom";
 
-const FUTURE = ["知识库", "Agent 管理", "MCP 管理", "公众号工作台"];
+const FUTURE = ["知识库", "MCP 管理", "发布工作台", "RBAC 管理", "评估看板"];
 
 export function SidebarNav() {
   return (

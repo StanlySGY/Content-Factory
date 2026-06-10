@@ -121,12 +121,26 @@
 | `POST` | `/api/agents/:id/health-check` | Agent 健康检查 | 是 |
 | `GET` | `/api/mcp/servers` | MCP Server 列表 | 否 |
 | `POST` | `/api/mcp/servers` | 注册 MCP Server | 是 |
-| `GET` | `/api/mcp/tools` | MCP Tool 列表 | 否 |
-| `GET` | `/api/mcp/logs` | MCP 调用日志 | 否 |
-| `GET` | `/api/wechat/tasks/:taskId/preview` | 公众号预览（只读）| 否 |
-| `POST` | `/api/wechat/tasks/:taskId/publish-records` | 创建发布准备记录 | 是 |
+| `GET` | `/api/mcp/servers/:id/tools` | 某 MCP Server 下的 Tool 列表 | 否 |
+| `POST` | `/api/mcp/servers/:id/tools` | 注册 MCP Tool | 是 |
+| `POST` | `/api/mcp/tools/:id/mock-invoke` | 记录一次 mock Tool 调用 | 是 |
+| `GET` | `/api/mcp/tools/:id/invocations` | 查询 Tool 调用日志 | 否 |
+| `POST` | `/api/publish-records` | 创建发布准备记录 | 是 |
+| `GET` | `/api/publish-records` | 查询发布记录 | 否 |
 
 > Agent/MCP 为配置 + mock/日志壳层（ADR-016）；发布准备须校验审核通过（roadmap §7.5），锚定 `asset_version_id`（db §5.21）。
+
+### 4.5 Final RC 后端扩展 MVP
+
+> 以下能力已在后端补齐 MVP API，但尚未代表完整产品体验完成；当前主要缺口是前端页面、真实外部集成、生产启用配置或高级自动化。后续范围以 `docs/10-development/production-candidate-next-actions.md` 为准。
+
+| 能力 | 已有 API 范围 | 仍未完成 |
+| --- | --- | --- |
+| MCP Marketplace | `/api/mcp/marketplace/entries`、`/api/mcp/marketplace/installations`、安装/禁用/卸载 | 外部 marketplace 发现、SDK transport、SSE/stdio、热加载、UI |
+| Publisher Platform Backend | `/api/publisher/channels`、`/api/publish-records`、Publisher real-runtime readiness | 完整发布 UI、素材管理、撤回/重发、失败告警、多渠道编排 |
+| Multi-tenant RBAC Backend | `/api/rbac/organizations`、成员管理、项目 membership、`check-access` | auth/session、全局业务 API enforcement、成员/角色 UI、RBAC audit hardening |
+| Knowledge/RAG Backend | `/api/knowledge/sources`、entries、archive/restore、keyword search、task candidates | embedding、向量库、LLM rerank、引用追踪 UI、context pack 自动刷新 |
+| Agent Evaluation Backend | `/api/execution/results/:id/evaluations`、rule evaluation、analytics、low-quality list | LLM judge、真实成本归因、模型对比、回归评测、dashboard/UI |
 
 ## 5. 调用追溯端点（支撑可追溯硬指标）
 
@@ -141,7 +155,7 @@
 ## 7. 不在 MVP 的 API（占位说明）
 
 - 插件、Skill 的执行类端点不在 MVP（ADR-016）；MVP 仅可能提供其配置/只读展示端点。
-- MCP 市场安装、真实发布、多租户成员管理为 P1/P2，相应端点延后（roadmap §10）。
+- 完整真实发布、MCP 外部市场发现、多租户全局 enforcement、RAG/评估高级自动化仍为独立产品路线；后端已有 MVP API 不等于真实生产启用或完整 UI 已完成。
 
 ## 8. 关联文档
 
