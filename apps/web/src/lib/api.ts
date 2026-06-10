@@ -17,7 +17,10 @@ import type {
   EditorStateDTO,
   ExecutionMonitoringReadinessResponse,
   ExecutionEvaluationAnalyticsDTO,
+  ExecutionJobDTO,
+  ExecutionResultDTO,
   ExecutionResultEvaluationDTO,
+  ExecutionResultSummaryDTO,
   ExecutionWritebackExecutorRegistrationReadinessResponse,
   FinalRcProductionCandidateReadinessResponse,
   KnowledgeEntryDTO,
@@ -25,6 +28,7 @@ import type {
   KnowledgeSourceDTO,
   ListKnowledgeEntriesQuery,
   ListKnowledgeSourcesQuery,
+  ListExecutionJobsQuery,
   ListPublishRecordsQuery,
   ListPublisherChannelsQuery,
   ListTasksQuery,
@@ -243,6 +247,17 @@ export const api = {
     request<ExecutionResultEvaluationDTO[]>(
       "GET",
       `/execution/results/${resultId}/evaluations`,
+    ),
+
+  // ── Execution Result Ledger（只读账本）──
+  listExecutionJobs: (q: ListExecutionJobsQuery = {}) =>
+    request<ExecutionJobDTO[]>("GET", `/execution/jobs${toQuery(q)}`),
+  listExecutionJobResults: (jobId: string) =>
+    request<ExecutionResultDTO[]>("GET", `/execution/jobs/${jobId}/results`),
+  getExecutionResultSummary: (jobId: string) =>
+    request<ExecutionResultSummaryDTO>(
+      "GET",
+      `/execution/jobs/${jobId}/result-summary`,
     ),
 
   // ── MCP Marketplace Management（只读管理面）──

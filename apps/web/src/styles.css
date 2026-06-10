@@ -1159,6 +1159,100 @@ button {
   font-size: 11px;
 }
 
+/* ---- Execution result ledger ---- */
+.execution-result-kpi-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.execution-result-grid {
+  display: grid;
+  grid-template-columns: minmax(440px, 0.9fr) minmax(0, 1.15fr);
+  gap: var(--sp-4);
+}
+.execution-result-detail-column {
+  min-width: 0;
+}
+.execution-result-section-head,
+.execution-result-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+.execution-result-card-head {
+  margin-bottom: var(--sp-4);
+}
+.execution-result-card-head h2 {
+  margin: 0;
+  font-size: 16px;
+}
+.execution-result-section-head span,
+.execution-result-card-head code {
+  color: var(--text-secondary);
+  font-size: 12px;
+  word-break: break-all;
+}
+.execution-result-card-head code {
+  display: block;
+  margin-top: var(--sp-1);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.execution-result-summary-card {
+  margin-bottom: var(--sp-4);
+}
+.execution-result-detail-grid code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  word-break: break-all;
+}
+.execution-result-table tbody tr {
+  cursor: default;
+}
+.execution-result-table tbody tr:hover {
+  background: var(--bg-surface);
+}
+.execution-result-table tbody tr.selected {
+  background: var(--accent-primary-weak);
+}
+.execution-result-table strong,
+.execution-result-table span,
+.execution-result-table code {
+  display: block;
+}
+.execution-result-table span {
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin-top: 2px;
+}
+.execution-result-table code {
+  color: var(--text-secondary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  margin-top: 2px;
+  word-break: break-all;
+}
+.execution-result-select-button {
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  padding: 0;
+  text-align: left;
+}
+.execution-result-select-button:hover {
+  color: var(--accent-primary);
+}
+.execution-job-table,
+.execution-result-ledger-table {
+  table-layout: fixed;
+}
+.execution-job-table th,
+.execution-job-table td,
+.execution-result-ledger-table th,
+.execution-result-ledger-table td {
+  word-break: break-word;
+}
+
 /* ---- MCP marketplace management ---- */
 .marketplace-kpi-grid {
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -1286,6 +1380,7 @@ button {
   .invocation-kpi-grid,
   .rbac-kpi-grid,
   .evaluation-kpi-grid,
+  .execution-result-kpi-grid,
   .marketplace-kpi-grid,
   .publisher-kpi-grid,
   .ops-grid,
@@ -1299,6 +1394,7 @@ button {
   .rbac-grid,
   .evaluation-distribution,
   .evaluation-grid,
+  .execution-result-grid,
   .marketplace-grid {
     grid-template-columns: 1fr;
   }

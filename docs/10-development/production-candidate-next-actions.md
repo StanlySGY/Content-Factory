@@ -51,12 +51,13 @@ Content Factory 当前处于 **Final RC / production candidate** 收口阶段：
 | Agent Evaluation Dashboard UI | 已完成 | Web 新增 `/evaluations` 只读评估看板，展示 evaluation analytics、low-quality results 与 result evaluation ledger；不接 LLM judge、不做模型对比、不触发自动回归评测或 rule runner |
 | MCP Marketplace Management UI | 已完成 | Web 新增 `/mcp/marketplace` 只读 marketplace 管理入口，展示 marketplace entries、project installations 与 server binding；不做外部发现、不执行安装/禁用/卸载、不触发 hot-load 或 tool invocation |
 | Tool Invocation Ledger UI | 已完成 | Web 新增 `/mcp/invocations` 只读 MCP tool invocation 账本入口，按工具展示 invocation status、risk、duration、caller 与输入/输出摘要；不触发 mock invoke、真实 transport、重放或任何写操作 |
+| Execution Result Ledger UI | 已完成 | Web 新增 `/execution/results` 只读 execution result 账本入口，按 job 展示 `execution_results` attempts、latest status、error_type、duration、request/response snapshot 与 result summary；不触发 tick、retry、evaluate-rule、writeback、replay 或任何写操作 |
 
 下一步建议：
 
 | 优先级 | 任务 | 完成条件 |
 | --- | --- | --- |
-| P2 | Execution Result Ledger UI | Web 新增只读 execution result 账本入口，按 job 展示 `execution_results` attempts、latest status、error_type、duration、request/response snapshot 与 result summary；不触发 tick、retry、evaluate-rule、writeback、replay 或任何写操作 |
+| P2 | Execution Outbox Event Ledger UI | Web 新增只读 execution outbox event 账本入口，按 job 展示 `outbox_events` event_type、processed/error、retry_count、claim 状态与 payload 摘要；不触发 process-batch、retry、tick、relay、replay、writeback 或任何写操作 |
 
 ## 4. P2：扩展路线
 

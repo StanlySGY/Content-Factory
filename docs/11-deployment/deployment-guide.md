@@ -81,10 +81,11 @@ MCP 与 Publisher 真实入口还需分别开启：
 11. 打开 Web `/knowledge/candidates`，确认 task knowledge candidates、命中原因与已有 context pack 关联只读展示，且未触发 context pack 自动刷新或物化。
 12. 打开 Web `/mcp`，确认 MCP server/tool inventory 与 real-runtime readiness 只读展示，且未触发 tool invocation 或真实外部 transport。
 13. 打开 Web `/mcp/invocations`，确认 MCP tool invocation ledger 按 tool 只读展示 status、caller、risk、duration 与输入/输出摘要，且未触发 mock invoke、health check、真实 transport、replay 或写操作。
-14. 打开 Web `/rbac`，确认 organizations、organization members 与默认项目 memberships 只读展示，且未触发权限写操作。
-15. 打开 Web `/evaluations`，确认 evaluation analytics、low-quality results 与 result evaluations 只读展示，且未触发 create evaluation 或 rule runner。
-16. 打开 Web `/mcp/marketplace`，确认 marketplace entries、project installations 与 server binding 只读展示，且未触发 install/disable/uninstall、hot-load 或 tool invocation。
-17. 若进入真实启用，按 `production-candidate-next-actions.md` 选择单一路线逐项开启 gate，不混开 Agent / MCP / Publisher / writeback。
+14. 打开 Web `/execution/results`，确认 execution result ledger 按 job 只读展示 attempts、latest status、error_type、duration、request/response snapshot 与 result summary，且未触发 tick、retry、evaluate-rule、writeback、replay 或写操作。
+15. 打开 Web `/rbac`，确认 organizations、organization members 与默认项目 memberships 只读展示，且未触发权限写操作。
+16. 打开 Web `/evaluations`，确认 evaluation analytics、low-quality results 与 result evaluations 只读展示，且未触发 create evaluation 或 rule runner。
+17. 打开 Web `/mcp/marketplace`，确认 marketplace entries、project installations 与 server binding 只读展示，且未触发 install/disable/uninstall、hot-load 或 tool invocation。
+18. 若进入真实启用，按 `production-candidate-next-actions.md` 选择单一路线逐项开启 gate，不混开 Agent / MCP / Publisher / writeback。
 
 ## 5. 生产候选验证
 
@@ -103,6 +104,7 @@ MCP 与 Publisher 真实入口还需分别开启：
 | knowledge candidates | Web `/knowledge/candidates` 只读展示 task knowledge candidates、命中原因与已有 context pack 关联，不触发 embedding、rerank、context pack 自动刷新或物化 |
 | mcp management | Web `/mcp` 只读展示 MCP servers、selected server tools 与 real-runtime readiness，不触发 health-check、mock invoke、安装/卸载或真实 transport |
 | mcp invocation ledger | Web `/mcp/invocations` 只读展示 MCP tool invocation status、caller、risk、duration 与输入/输出摘要，不触发 mock invoke、health-check、真实 transport、replay 或写操作 |
+| execution result ledger | Web `/execution/results` 只读展示 execution job results、attempt snapshots 与 result summary，不触发 tick/retry/evaluate-rule/writeback/replay 或写操作 |
 | rbac management | Web `/rbac` 只读展示 organizations、organization members 与默认项目 memberships，不触发 create/update/deactivate/grant/revoke/check-access |
 | evaluation dashboard | Web `/evaluations` 只读展示 analytics、low-quality results 与 result evaluations，不触发 create/evaluate-rule/batch rule evaluation |
 | mcp marketplace | Web `/mcp/marketplace` 只读展示 marketplace entries、project installations 与 server binding，不触发 create/install/disable/uninstall/hot-load/tool invocation |

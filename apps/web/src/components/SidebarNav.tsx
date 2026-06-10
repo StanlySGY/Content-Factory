@@ -11,6 +11,7 @@ export function SidebarNav() {
       <NavLink to="/reviews/pending">待审队列</NavLink>
       <NavLink to="/work-queue">工作队列</NavLink>
       <NavLink to="/agents">Agent 管理</NavLink>
+      <NavLink to="/execution/results">执行结果</NavLink>
       <NavLink to="/evaluations">评估看板</NavLink>
       <NavLink to="/assets">素材中心</NavLink>
       <NavLink end to="/knowledge">知识库</NavLink>
