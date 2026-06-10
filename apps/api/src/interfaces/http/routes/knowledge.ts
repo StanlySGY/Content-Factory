@@ -62,6 +62,13 @@ export const knowledgeRoutes: FastifyPluginAsyncTypebox<KnowledgeRoutesOptions> 
       toKnowledgeEntryDTO(await knowledgeService.archiveEntry(buildContext(env, request), request.params.id)),
   );
 
+  app.post(
+    "/api/knowledge/entries/:id/restore",
+    { schema: { params: IdParamSchema, response: { 200: KnowledgeEntryResponseSchema } } },
+    async (request) =>
+      toKnowledgeEntryDTO(await knowledgeService.restoreEntry(buildContext(env, request), request.params.id)),
+  );
+
   app.get(
     "/api/knowledge/search",
     { schema: { querystring: KnowledgeSearchQuerySchema, response: { 200: KnowledgeSearchResponseSchema } } },

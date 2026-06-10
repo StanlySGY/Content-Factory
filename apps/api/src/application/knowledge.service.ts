@@ -83,6 +83,19 @@ export class KnowledgeService {
     return row;
   }
 
+  async restoreEntry(ctx: RequestContext, entryId: string): Promise<KnowledgeEntryRow> {
+    return runInProject(this.db, ctx.projectId, async (tx) => {
+      const entry = await repo.getEntry(tx, ctx.projectId, entryId);
+      if (!entry) throw new NotFoundError(`knowledge_entry ${entryId} not found`);
+      const source = await repo.getSource(tx, ctx.projectId, entry.sourceId);
+      if (!source) throw new NotFoundError(`knowledge_source ${entry.sourceId} not found`);
+      assertKnowledgeSourceActive(source.status);
+      const restored = await repo.restoreEntry(tx, ctx.projectId, entryId);
+      if (!restored) throw new NotFoundError(`knowledge_entry ${entryId} not found`);
+      return restored;
+    });
+  }
+
   async search(ctx: RequestContext, query: KnowledgeSearchQuery): Promise<KnowledgeSearchResult> {
     const normalizedQuery = normalizeKnowledgeQuery(query.q);
     const limit = normalizeKnowledgeLimit(query.limit);
