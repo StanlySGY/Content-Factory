@@ -141,7 +141,7 @@
 | Multi-tenant RBAC Backend | `/api/rbac/organizations`、`/api/rbac/organizations/:id/members`、`/api/rbac/projects/:id/memberships`、成员管理、项目 membership、`check-access` | auth/session、全局业务 API enforcement、权限变更 UI、RBAC audit hardening |
 | Knowledge/RAG Backend | `/api/knowledge/sources`、entries、archive/restore、keyword search、task candidates、只读 candidate review UI | embedding、向量库、LLM rerank、context pack 自动刷新 |
 | Agent Evaluation Backend | `/api/execution/results/:id/evaluations`、rule evaluation、analytics、low-quality list、只读 dashboard UI | LLM judge、真实成本归因、模型对比、回归评测 |
-| Execution Observability | `/api/execution/jobs`、`/api/execution/jobs/:id/results`、`/api/execution/jobs/:id/result-summary`、只读 result ledger UI | outbox event UI、replay、写回操作台 |
+| Execution Observability | `/api/execution/jobs`、`/api/execution/jobs/:id/results`、`/api/execution/jobs/:id/result-summary`、`/api/execution/jobs/:id/events`、只读 result/outbox ledger UI | replay、写回操作台 |
 
 ## 5. 调用追溯端点（支撑可追溯硬指标）
 
@@ -149,6 +149,7 @@
 - 输入/输出以摘要返回，敏感值已脱敏（ADR-012）；高风险调用标记 `risk_level`。
 - MCP tool invocation 账本已提供只读 Web 入口 `/mcp/invocations`，按 server/tool 选择后展示 invocation status、caller、risk、duration 与输入/输出摘要；该入口不调用写端点。
 - Execution result 账本已提供只读 Web 入口 `/execution/results`，按 job 展示 attempts、latest status、error_type、duration、request/response snapshot 与 result summary；该入口不调用 tick、retry、evaluate-rule、writeback 或 replay 写端点。
+- Execution outbox event 账本已提供只读 Web 入口 `/execution/outbox`，按 job 展示 event_type、processed/error、retry_count、claim 状态与 payload 摘要；该入口不调用 process-batch、process event、relay、retry、tick、writeback 或 replay 写端点。
 
 ## 6. 高风险动作的风险元数据
 

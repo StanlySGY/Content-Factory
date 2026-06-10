@@ -41,6 +41,7 @@ import type {
   McpToolDTO,
   OrganizationDTO,
   OrganizationMemberDTO,
+  OutboxEventDTO,
   PaginatedTasks,
   PendingReviewDTO,
   ProjectMembershipDTO,
@@ -259,6 +260,8 @@ export const api = {
       "GET",
       `/execution/jobs/${jobId}/result-summary`,
     ),
+  listExecutionJobEvents: (jobId: string) =>
+    request<OutboxEventDTO[]>("GET", `/execution/jobs/${jobId}/events`),
 
   // ── MCP Marketplace Management（只读管理面）──
   listMcpMarketplaceEntries: () =>

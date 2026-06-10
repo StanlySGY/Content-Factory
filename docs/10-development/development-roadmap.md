@@ -506,6 +506,8 @@ MVP 后再进入：
 
 > **Execution Result Ledger UI 已补齐**：Web 新增 `/execution/results`，只读展示 execution jobs、selected job 的 `execution_results` attempts 与 result summary，包含 latest status、error_type、duration 和 request/response snapshot 摘要。它不触发 tick、retry、evaluate-rule、writeback、replay 或写操作。
 
+> **Execution Outbox Event Ledger UI 已补齐**：Web 新增 `/execution/outbox`，只读展示 execution jobs 与 selected job 的 outbox events，包含 event_type、processed/error、retry_count、claim 状态和 payload 摘要。它不触发 process-batch、process event、relay、retry、tick、writeback、replay 或写操作。
+
 > **Publisher Platform Backend MVP 已补齐**：Product Gap 2 新增项目级 `publisher_channels`、渠道创建/列表/详情/更新/禁用/归档 API，并让 `publish_records` 创建前校验渠道处于 active。它不新增真实发布网络行为、不做 UI、不代表完整多渠道运营平台已完成。证据见 `docs/reviews/product-gap-2-publisher-platform-backend-audit.md`。
 
 > **Multi-tenant RBAC Backend MVP 已补齐**：Product Gap 3 新增 `organizations` / `organization_members` / `project_memberships`、组织成员管理、项目成员授权/撤销、`project.read/write/admin` 权限检查 API。它不替换默认 actor/project context、不全局拦截既有业务 API、不做 UI。证据见 `docs/reviews/product-gap-3-rbac-backend-audit.md`。

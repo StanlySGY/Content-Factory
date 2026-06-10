@@ -1253,6 +1253,79 @@ button {
   word-break: break-word;
 }
 
+/* ---- Execution outbox ledger ---- */
+.execution-outbox-kpi-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.execution-outbox-grid {
+  display: grid;
+  grid-template-columns: minmax(440px, 0.9fr) minmax(0, 1.15fr);
+  gap: var(--sp-4);
+}
+.execution-outbox-detail-column {
+  min-width: 0;
+}
+.execution-outbox-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+.execution-outbox-section-head span {
+  color: var(--text-secondary);
+  font-size: 12px;
+  word-break: break-all;
+}
+.execution-outbox-table tbody tr {
+  cursor: default;
+}
+.execution-outbox-table tbody tr:hover {
+  background: var(--bg-surface);
+}
+.execution-outbox-table tbody tr.selected {
+  background: var(--accent-primary-weak);
+}
+.execution-outbox-table strong,
+.execution-outbox-table span,
+.execution-outbox-table code {
+  display: block;
+}
+.execution-outbox-table span {
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin-top: 2px;
+}
+.execution-outbox-table code {
+  color: var(--text-secondary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  margin-top: 2px;
+  word-break: break-all;
+}
+.execution-outbox-select-button {
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  padding: 0;
+  text-align: left;
+}
+.execution-outbox-select-button:hover {
+  color: var(--accent-primary);
+}
+.execution-outbox-job-table,
+.execution-outbox-event-table {
+  table-layout: fixed;
+}
+.execution-outbox-job-table th,
+.execution-outbox-job-table td,
+.execution-outbox-event-table th,
+.execution-outbox-event-table td {
+  word-break: break-word;
+}
+
 /* ---- MCP marketplace management ---- */
 .marketplace-kpi-grid {
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -1381,6 +1454,7 @@ button {
   .rbac-kpi-grid,
   .evaluation-kpi-grid,
   .execution-result-kpi-grid,
+  .execution-outbox-kpi-grid,
   .marketplace-kpi-grid,
   .publisher-kpi-grid,
   .ops-grid,
@@ -1395,6 +1469,7 @@ button {
   .evaluation-distribution,
   .evaluation-grid,
   .execution-result-grid,
+  .execution-outbox-grid,
   .marketplace-grid {
     grid-template-columns: 1fr;
   }

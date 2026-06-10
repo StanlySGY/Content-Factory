@@ -12,6 +12,7 @@ import { ContextPacksPage } from "../features/context-packs/ContextPacksPage.js"
 import { DashboardPage } from "../features/dashboard/DashboardPage.js";
 import { AgentEvaluationDashboardPage } from "../features/evaluations/AgentEvaluationDashboardPage.js";
 import { EditorPage } from "../features/editor/EditorPage.js";
+import { ExecutionOutboxLedgerPage } from "../features/execution-outbox/ExecutionOutboxLedgerPage.js";
 import { ExecutionResultLedgerPage } from "../features/execution-results/ExecutionResultLedgerPage.js";
 import { KnowledgeCandidateReviewPage } from "../features/knowledge-candidates/KnowledgeCandidateReviewPage.js";
 import { KnowledgeInventoryPage } from "../features/knowledge/KnowledgeInventoryPage.js";
@@ -56,6 +57,7 @@ export function App() {
         <Route path="/reviews/pending" element={<PendingReviewsPage />} />
         <Route path="/work-queue" element={<WorkQueuePage />} />
         <Route path="/execution/results" element={<ExecutionResultLedgerPage />} />
+        <Route path="/execution/outbox" element={<ExecutionOutboxLedgerPage />} />
         <Route path="/evaluations" element={<AgentEvaluationDashboardPage />} />
         <Route path="/knowledge" element={<KnowledgeInventoryPage />} />
         <Route path="/knowledge/candidates" element={<KnowledgeCandidateReviewPage />} />
