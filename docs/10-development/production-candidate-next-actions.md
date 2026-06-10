@@ -47,12 +47,13 @@ Content Factory 当前处于 **Final RC / production candidate** 收口阶段：
 | Knowledge Inventory UI | 已完成 | Web 新增 `/knowledge` 只读知识库管理入口，展示 knowledge sources、source 详情和 source entries，保留 active / archived 可见性；不接 embedding、向量库、LLM rerank，不自动刷新 context pack |
 | MCP Management UI | 已完成 | Web 新增 `/mcp` 只读 MCP 管理入口，展示 MCP server/tool inventory 与 real-runtime readiness；不启用热加载、不执行 tool invocation、不打开真实外部 transport |
 | RBAC Management UI | 已完成 | Web 新增 `/rbac` 只读 RBAC 管理入口，展示 organizations、organization members、默认项目 memberships 与角色状态；不接 auth/session、不做全局业务 API enforcement、不新增权限写操作 |
+| Agent Evaluation Dashboard UI | 已完成 | Web 新增 `/evaluations` 只读评估看板，展示 evaluation analytics、low-quality results 与 result evaluation ledger；不接 LLM judge、不做模型对比、不触发自动回归评测或 rule runner |
 
 下一步建议：
 
 | 优先级 | 任务 | 完成条件 |
 | --- | --- | --- |
-| P1 | Agent Evaluation Dashboard UI | Web 新增只读评估看板，展示 evaluation analytics、low-quality results 与 execution result evaluations；不接 LLM judge、不做模型对比、不触发自动回归评测 |
+| P2 | MCP Marketplace Management UI | Web 新增只读 marketplace 管理入口，展示 marketplace entries、installations 与 server 绑定状态；不做外部发现、不执行安装/禁用/卸载、不触发 hot-load 或 tool invocation |
 
 ## 4. P2：扩展路线
 
@@ -60,7 +61,7 @@ Content Factory 当前处于 **Final RC / production candidate** 收口阶段：
 | --- | --- | --- |
 | MCP Marketplace | 外部发现、SDK transport、SSE/stdio、热加载、tool invocation ledger 回写、UI | 当前只有 backend MVP |
 | Knowledge / RAG | embedding、向量库、LLM rerank、引用追踪 UI、context pack 自动刷新 | 当前只有关键词与后端管理 API |
-| Agent Evaluation | LLM judge、真实成本归因、模型对比、回归评测、dashboard | 当前只有人工/规则评价与 analytics API |
+| Agent Evaluation | LLM judge、真实成本归因、模型对比、回归评测 | 当前已有人工/规则评价、analytics API 与只读 dashboard |
 | Skill / Plugin | Skill 路由、质量门禁自动化、插件隔离、供应链验证、UI | 当前不是 MVP 验收项 |
 
 ## 5. 仓库收口项
@@ -72,7 +73,7 @@ Content Factory 当前处于 **Final RC / production candidate** 收口阶段：
 | Final RC 后路线决策 | 已更新 | ADR-023 固化“不再追加 Phase 2.x” |
 | API 契约漂移 | 已更新 | `api-overview.md` 区分后端已补齐 MVP API 与仍未完成的产品化/UI/真实启用 |
 | 部署指南 | 已新增 | `11-deployment/deployment-guide.md` 记录最小拓扑、runtime gate、发布验证与回滚边界 |
-| 前端导航占位 | 已更新 | 移除已存在 Agent 管理入口的重复后续占位，保留真实未接入产品路线 |
+| 前端导航占位 | 已更新 | 已交付入口从后续占位移入真实导航；剩余未接入产品路线在本文“下一步建议”中维护 |
 | Sprint-2 审查文档 | 已识别，待提交 | 7 份历史审查/计划文档属于审计证据，应随本次收口提交一并纳入版本控制 |
 
 ## 6. 禁止事项

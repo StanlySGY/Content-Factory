@@ -16,6 +16,8 @@ import type {
   CreateWorkflowBody,
   EditorStateDTO,
   ExecutionMonitoringReadinessResponse,
+  ExecutionEvaluationAnalyticsDTO,
+  ExecutionResultEvaluationDTO,
   ExecutionWritebackExecutorRegistrationReadinessResponse,
   FinalRcProductionCandidateReadinessResponse,
   KnowledgeEntryDTO,
@@ -26,6 +28,7 @@ import type {
   ListPublisherChannelsQuery,
   ListTasksQuery,
   ListWorkflowsQuery,
+  LowQualityEvaluationsResponse,
   McpRealRuntimeReadinessResponse,
   McpServerDTO,
   McpToolDTO,
@@ -96,6 +99,12 @@ export interface VersionCompareResult {
   from_version: number;
   to_version: number;
   diff: FieldDiff[];
+}
+
+/** Low-quality evaluation 查询参数（对齐后端 LowQualityEvaluationsQuerySchema） */
+export interface ListLowQualityEvaluationsQuery {
+  threshold?: number;
+  limit?: number;
 }
 
 /** 统一错误（对齐后端 api §2.3） */
@@ -216,6 +225,20 @@ export const api = {
     request<AgentSessionDTO[]>("GET", `/agents/${id}/sessions`),
   getAgentSession: (id: string) =>
     request<AgentSessionDTO>("GET", `/agent-sessions/${id}`),
+
+  // ── Agent Evaluation Dashboard（只读看板）──
+  getExecutionEvaluationAnalytics: () =>
+    request<ExecutionEvaluationAnalyticsDTO>("GET", "/execution/evaluations/analytics"),
+  listLowQualityEvaluations: (q: ListLowQualityEvaluationsQuery = {}) =>
+    request<LowQualityEvaluationsResponse>(
+      "GET",
+      `/execution/evaluations/low-quality${toQuery({ ...q })}`,
+    ),
+  listExecutionResultEvaluations: (resultId: string) =>
+    request<ExecutionResultEvaluationDTO[]>(
+      "GET",
+      `/execution/results/${resultId}/evaluations`,
+    ),
 
   // ── MCP Management（只读管理面）──
   listMcpServers: () => request<McpServerDTO[]>("GET", "/mcp/servers"),

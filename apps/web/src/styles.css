@@ -851,6 +851,139 @@ button {
   word-break: break-word;
 }
 
+/* ---- Agent evaluation dashboard ---- */
+.evaluation-kpi-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.evaluation-distribution-card {
+  margin-bottom: var(--sp-5);
+}
+.evaluation-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+.evaluation-card-head h2 {
+  margin: 0;
+  font-size: 16px;
+}
+.evaluation-card-head span,
+.evaluation-muted {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.evaluation-distribution {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--sp-2);
+}
+.evaluation-distribution div {
+  padding: var(--sp-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-subtle);
+}
+.evaluation-distribution strong,
+.evaluation-distribution span {
+  display: block;
+}
+.evaluation-distribution strong {
+  margin-bottom: var(--sp-1);
+}
+.evaluation-distribution span {
+  color: var(--text-secondary);
+  font-size: 20px;
+  font-weight: 700;
+}
+.evaluation-grid {
+  display: grid;
+  grid-template-columns: minmax(420px, 0.9fr) minmax(0, 1.1fr);
+  gap: var(--sp-4);
+}
+.evaluation-detail-column {
+  min-width: 0;
+}
+.evaluation-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+.evaluation-section-head span {
+  color: var(--text-secondary);
+  font-size: 12px;
+  word-break: break-all;
+}
+.evaluation-table tbody tr {
+  cursor: default;
+}
+.evaluation-table tbody tr:hover {
+  background: var(--bg-surface);
+}
+.evaluation-table tbody tr.selected {
+  background: var(--accent-primary-weak);
+}
+.evaluation-table strong,
+.evaluation-table span {
+  display: block;
+}
+.evaluation-table span {
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin-top: 2px;
+}
+.evaluation-table code,
+.evaluation-detail-grid code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  word-break: break-all;
+}
+.evaluation-result-button {
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  padding: 0;
+  text-align: left;
+}
+.evaluation-result-button:hover {
+  color: var(--accent-primary);
+}
+.evaluation-selected-card {
+  margin-bottom: var(--sp-5);
+}
+.evaluation-detail-grid {
+  grid-template-columns: 88px 1fr;
+}
+.evaluation-low-quality-table,
+.evaluation-ledger-table {
+  table-layout: fixed;
+}
+.evaluation-low-quality-table th,
+.evaluation-low-quality-table td,
+.evaluation-ledger-table th,
+.evaluation-ledger-table td {
+  word-break: break-word;
+}
+.evaluation-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+}
+.evaluation-tags span {
+  display: inline-flex;
+  margin: 0;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
 /* ---- Publisher workbench ---- */
 .publisher-kpi-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -904,6 +1037,7 @@ button {
   .knowledge-kpi-grid,
   .mcp-kpi-grid,
   .rbac-kpi-grid,
+  .evaluation-kpi-grid,
   .publisher-kpi-grid,
   .ops-grid,
   .ops-drilldown-grid,
@@ -911,7 +1045,9 @@ button {
   .mcp-readiness-facts,
   .mcp-readiness-lists,
   .mcp-grid,
-  .rbac-grid {
+  .rbac-grid,
+  .evaluation-distribution,
+  .evaluation-grid {
     grid-template-columns: 1fr;
   }
 }

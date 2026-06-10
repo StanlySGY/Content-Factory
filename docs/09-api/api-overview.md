@@ -140,7 +140,7 @@
 | Publisher Platform Backend | `/api/publisher/channels`、`/api/publish-records`、Publisher real-runtime readiness | 完整发布 UI、素材管理、撤回/重发、失败告警、多渠道编排 |
 | Multi-tenant RBAC Backend | `/api/rbac/organizations`、`/api/rbac/organizations/:id/members`、`/api/rbac/projects/:id/memberships`、成员管理、项目 membership、`check-access` | auth/session、全局业务 API enforcement、权限变更 UI、RBAC audit hardening |
 | Knowledge/RAG Backend | `/api/knowledge/sources`、entries、archive/restore、keyword search、task candidates | embedding、向量库、LLM rerank、引用追踪 UI、context pack 自动刷新 |
-| Agent Evaluation Backend | `/api/execution/results/:id/evaluations`、rule evaluation、analytics、low-quality list | LLM judge、真实成本归因、模型对比、回归评测、dashboard/UI |
+| Agent Evaluation Backend | `/api/execution/results/:id/evaluations`、rule evaluation、analytics、low-quality list、只读 dashboard UI | LLM judge、真实成本归因、模型对比、回归评测 |
 
 ## 5. 调用追溯端点（支撑可追溯硬指标）
 

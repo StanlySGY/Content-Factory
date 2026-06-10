@@ -10,6 +10,7 @@ import { AssetDetailPage } from "../features/assets/AssetDetailPage.js";
 import { AssetsPage } from "../features/assets/AssetsPage.js";
 import { ContextPacksPage } from "../features/context-packs/ContextPacksPage.js";
 import { DashboardPage } from "../features/dashboard/DashboardPage.js";
+import { AgentEvaluationDashboardPage } from "../features/evaluations/AgentEvaluationDashboardPage.js";
 import { EditorPage } from "../features/editor/EditorPage.js";
 import { KnowledgeInventoryPage } from "../features/knowledge/KnowledgeInventoryPage.js";
 import { McpManagementPage } from "../features/mcp/McpManagementPage.js";
@@ -50,6 +51,7 @@ export function App() {
         <Route path="/reviews" element={<ReviewQueuePage />} />
         <Route path="/reviews/pending" element={<PendingReviewsPage />} />
         <Route path="/work-queue" element={<WorkQueuePage />} />
+        <Route path="/evaluations" element={<AgentEvaluationDashboardPage />} />
         <Route path="/knowledge" element={<KnowledgeInventoryPage />} />
         <Route path="/mcp" element={<McpManagementPage />} />
         <Route path="/rbac" element={<RbacManagementPage />} />
