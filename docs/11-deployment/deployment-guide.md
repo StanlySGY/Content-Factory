@@ -79,7 +79,8 @@ MCP 与 Publisher 真实入口还需分别开启：
 9. 打开 Web `/publisher`，确认 publisher channels 与 publish records 只读展示，且未触发真实发布。
 10. 打开 Web `/knowledge`，确认 knowledge sources、source detail 与 source entries 只读展示，且未触发 context pack 自动刷新。
 11. 打开 Web `/mcp`，确认 MCP server/tool inventory 与 real-runtime readiness 只读展示，且未触发 tool invocation 或真实外部 transport。
-12. 若进入真实启用，按 `production-candidate-next-actions.md` 选择单一路线逐项开启 gate，不混开 Agent / MCP / Publisher / writeback。
+12. 打开 Web `/rbac`，确认 organizations、organization members 与默认项目 memberships 只读展示，且未触发权限写操作。
+13. 若进入真实启用，按 `production-candidate-next-actions.md` 选择单一路线逐项开启 gate，不混开 Agent / MCP / Publisher / writeback。
 
 ## 5. 生产候选验证
 
@@ -96,6 +97,7 @@ MCP 与 Publisher 真实入口还需分别开启：
 | publisher workbench | Web `/publisher` 只读展示渠道和发布记录，publish records 锚定 `asset_version_id`，不触发真实发布 |
 | knowledge inventory | Web `/knowledge` 只读展示 knowledge sources、source detail 与 source entries，active / archived 均可见，不触发 embedding、rerank 或 context pack 自动刷新 |
 | mcp management | Web `/mcp` 只读展示 MCP servers、selected server tools 与 real-runtime readiness，不触发 health-check、mock invoke、安装/卸载或真实 transport |
+| rbac management | Web `/rbac` 只读展示 organizations、organization members 与默认项目 memberships，不触发 create/update/deactivate/grant/revoke/check-access |
 | rollback | 已演练 env 级关闭 runtime、network、writeback executor |
 
 ## 6. 回滚

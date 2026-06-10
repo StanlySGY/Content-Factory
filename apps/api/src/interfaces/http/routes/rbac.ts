@@ -7,7 +7,9 @@ import {
   OrganizationMemberResponseSchema,
   OrganizationMembersResponseSchema,
   OrganizationResponseSchema,
+  OrganizationsResponseSchema,
   ProjectMembershipResponseSchema,
+  ProjectMembershipsResponseSchema,
   RbacProjectAccessQuerySchema,
   RbacProjectAccessResponseSchema,
   UpdateOrganizationMemberSchema,
@@ -30,6 +32,12 @@ export const rbacRoutes: FastifyPluginAsyncTypebox<RbacRoutesOptions> = async (
   app,
   { env, rbacService },
 ) => {
+  app.get(
+    "/api/rbac/organizations",
+    { schema: { response: { 200: OrganizationsResponseSchema } } },
+    async () => (await rbacService.listOrganizations()).map(toOrganizationDTO),
+  );
+
   app.post(
     "/api/rbac/organizations",
     { schema: { body: CreateOrganizationSchema, response: { 201: OrganizationResponseSchema } } },
@@ -38,6 +46,12 @@ export const rbacRoutes: FastifyPluginAsyncTypebox<RbacRoutesOptions> = async (
       reply.code(201);
       return toOrganizationDTO(org);
     },
+  );
+
+  app.get(
+    "/api/rbac/organizations/:id",
+    { schema: { params: IdParamSchema, response: { 200: OrganizationResponseSchema } } },
+    async (request) => toOrganizationDTO(await rbacService.getOrganization(request.params.id)),
   );
 
   app.get(
@@ -85,6 +99,14 @@ export const rbacRoutes: FastifyPluginAsyncTypebox<RbacRoutesOptions> = async (
     { schema: { params: IdParamSchema, response: { 200: OrganizationMemberResponseSchema } } },
     async (request) =>
       toOrganizationMemberDTO(await rbacService.deactivateOrganizationMember(request.params.id)),
+  );
+
+  app.get(
+    "/api/rbac/projects/:id/memberships",
+    { schema: { params: IdParamSchema, response: { 200: ProjectMembershipsResponseSchema } } },
+    async (request) =>
+      (await rbacService.listProjectMemberships(buildContext(env, request), request.params.id))
+        .map(toProjectMembershipDTO),
   );
 
   app.post(

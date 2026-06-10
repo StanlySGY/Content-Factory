@@ -39,6 +39,67 @@ async function createUser(name = "Member") {
 }
 
 describe("Product Gap 3 Multi-tenant RBAC Backend MVP", () => {
+  it("lists organizations and project memberships for readonly management UI", async () => {
+    const api = await startApp();
+    const user = await createUser("Readonly RBAC");
+    const org = await api.inject({
+      method: "POST",
+      url: "/api/rbac/organizations",
+      payload: { name: `Readonly Org ${randomUUID()}` },
+    });
+    expect(org.statusCode).toBe(201);
+
+    const member = await api.inject({
+      method: "POST",
+      url: `/api/rbac/organizations/${org.json().id}/members`,
+      payload: { user_id: user.id, role: "member" },
+    });
+    expect(member.statusCode).toBe(201);
+
+    const membership = await api.inject({
+      method: "POST",
+      url: `/api/rbac/projects/${DEFAULT_PROJECT_ID}/memberships`,
+      payload: { organization_member_id: member.json().id, role: "editor" },
+    });
+    expect(membership.statusCode).toBe(201);
+
+    const organizations = await api.inject({ method: "GET", url: "/api/rbac/organizations" });
+    expect(organizations.statusCode).toBe(200);
+    expect(organizations.json()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: org.json().id,
+          name: org.json().name,
+          status: "active",
+        }),
+      ]),
+    );
+
+    const organization = await api.inject({
+      method: "GET",
+      url: `/api/rbac/organizations/${org.json().id}`,
+    });
+    expect(organization.statusCode).toBe(200);
+    expect(organization.json()).toMatchObject({ id: org.json().id, status: "active" });
+
+    const memberships = await api.inject({
+      method: "GET",
+      url: `/api/rbac/projects/${DEFAULT_PROJECT_ID}/memberships`,
+    });
+    expect(memberships.statusCode).toBe(200);
+    expect(memberships.json()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: membership.json().id,
+          project_id: DEFAULT_PROJECT_ID,
+          organization_member_id: member.json().id,
+          role: "editor",
+          status: "active",
+        }),
+      ]),
+    );
+  });
+
   it("creates organization and seeds owner membership", async () => {
     const api = await startApp();
     const created = await api.inject({

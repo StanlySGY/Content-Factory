@@ -47,6 +47,16 @@ export class RbacService {
     });
   }
 
+  listOrganizations(): Promise<OrganizationRow[]> {
+    return repo.listOrganizations(this.db);
+  }
+
+  async getOrganization(id: string): Promise<OrganizationRow> {
+    const org = await repo.getOrganization(this.db, id);
+    if (!org) throw new NotFoundError(`organization ${id} not found`);
+    return org;
+  }
+
   async addOrganizationMember(
     ctx: RequestContext,
     organizationId: string,
@@ -119,6 +129,14 @@ export class RbacService {
         if (isForeignKeyViolation(error)) throw new NotFoundError("project membership reference not found");
         throw error;
       }
+    });
+  }
+
+  listProjectMemberships(ctx: RequestContext, projectId: string): Promise<ProjectMembershipRow[]> {
+    return runInProject(this.db, ctx.projectId, async (tx) => {
+      if (projectId !== ctx.projectId || !(await repo.projectExists(tx, projectId)))
+        throw new NotFoundError(`project ${projectId} not found`);
+      return repo.listProjectMembershipsByProject(tx, projectId);
     });
   }
 

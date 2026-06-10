@@ -16,6 +16,7 @@ import { McpManagementPage } from "../features/mcp/McpManagementPage.js";
 import { OpsMonitoringPage } from "../features/ops/OpsMonitoringPage.js";
 import { OpsReadinessPage } from "../features/ops/OpsReadinessPage.js";
 import { PublisherWorkbenchPage } from "../features/publisher/PublisherWorkbenchPage.js";
+import { RbacManagementPage } from "../features/rbac/RbacManagementPage.js";
 import { PendingReviewsPage } from "../features/reviews/PendingReviewsPage.js";
 import { ReviewQueuePage } from "../features/reviews/ReviewQueuePage.js";
 import { StageRunDetailPage } from "../features/stage-runs/StageRunDetailPage.js";
@@ -51,6 +52,7 @@ export function App() {
         <Route path="/work-queue" element={<WorkQueuePage />} />
         <Route path="/knowledge" element={<KnowledgeInventoryPage />} />
         <Route path="/mcp" element={<McpManagementPage />} />
+        <Route path="/rbac" element={<RbacManagementPage />} />
         <Route path="/ops/readiness" element={<OpsReadinessPage />} />
         <Route path="/ops/monitoring" element={<OpsMonitoringPage />} />
         <Route path="/publisher" element={<PublisherWorkbenchPage />} />

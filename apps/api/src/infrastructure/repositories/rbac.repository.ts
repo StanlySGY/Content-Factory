@@ -48,6 +48,10 @@ export async function createOrganization(db: Db, input: OrganizationWrite): Prom
   return row!;
 }
 
+export function listOrganizations(db: Db): Promise<OrganizationRow[]> {
+  return db.select().from(organizations).orderBy(asc(organizations.createdAt));
+}
+
 export async function getOrganization(db: Db, id: string): Promise<OrganizationRow | null> {
   const [row] = await db.select().from(organizations).where(eq(organizations.id, id)).limit(1);
   return row ?? null;
@@ -111,6 +115,17 @@ export async function createProjectMembership(
 export async function getProjectMembership(db: Db, id: string): Promise<ProjectMembershipRow | null> {
   const [row] = await db.select().from(projectMemberships).where(eq(projectMemberships.id, id)).limit(1);
   return row ?? null;
+}
+
+export function listProjectMembershipsByProject(
+  db: Db,
+  projectId: string,
+): Promise<ProjectMembershipRow[]> {
+  return db
+    .select()
+    .from(projectMemberships)
+    .where(eq(projectMemberships.projectId, projectId))
+    .orderBy(asc(projectMemberships.createdAt));
 }
 
 export async function revokeProjectMembership(db: Db, id: string): Promise<ProjectMembershipRow | null> {

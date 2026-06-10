@@ -29,8 +29,11 @@ import type {
   McpRealRuntimeReadinessResponse,
   McpServerDTO,
   McpToolDTO,
+  OrganizationDTO,
+  OrganizationMemberDTO,
   PaginatedTasks,
   PendingReviewDTO,
+  ProjectMembershipDTO,
   PublishRecordDTO,
   ProductionActivationPreflightResponse,
   ProductionReadinessP1Response,
@@ -218,6 +221,17 @@ export const api = {
   listMcpServers: () => request<McpServerDTO[]>("GET", "/mcp/servers"),
   listMcpTools: (serverId: string) =>
     request<McpToolDTO[]>("GET", `/mcp/servers/${serverId}/tools`),
+
+  // ── RBAC Management（只读管理面）──
+  listRbacOrganizations: () =>
+    request<OrganizationDTO[]>("GET", "/rbac/organizations"),
+  listRbacOrganizationMembers: (organizationId: string) =>
+    request<OrganizationMemberDTO[]>(
+      "GET",
+      `/rbac/organizations/${organizationId}/members`,
+    ),
+  listRbacProjectMemberships: (projectId: string) =>
+    request<ProjectMembershipDTO[]>("GET", `/rbac/projects/${projectId}/memberships`),
 
   // ── Knowledge Inventory（只读管理面）──
   listKnowledgeSources: (q: ListKnowledgeSourcesQuery = {}) =>

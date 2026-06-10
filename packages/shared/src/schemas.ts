@@ -1028,6 +1028,7 @@ export const RbacProjectAccessResponseSchema = Type.Object(
 export type RbacProjectAccessResponse = Static<typeof RbacProjectAccessResponseSchema>;
 
 export const OrganizationResponseSchema = OrganizationSchema;
+export const OrganizationsResponseSchema = Type.Array(OrganizationSchema);
 export const OrganizationMembersResponseSchema = Type.Array(OrganizationMemberSchema);
 export const OrganizationMemberResponseSchema = OrganizationMemberSchema;
 export const ProjectMembershipResponseSchema = ProjectMembershipSchema;
