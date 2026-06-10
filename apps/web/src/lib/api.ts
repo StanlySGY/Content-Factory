@@ -1,4 +1,5 @@
 import type {
+  AgentRealProviderConfigPreflightResponse,
   AgentProfileDTO,
   AgentSessionDTO,
   AgentSessionStatus,
@@ -340,6 +341,11 @@ export const api = {
     request<ProviderQuotaCostPreflightReadinessResponse>(
       "GET",
       "/execution/ops/provider-quota-cost-preflight",
+    ),
+  getAgentRealProviderConfigPreflight: () =>
+    request<AgentRealProviderConfigPreflightResponse>(
+      "GET",
+      "/execution/ops/agent-real-provider-config-preflight",
     ),
   getMcpRealRuntimeReadiness: () =>
     request<McpRealRuntimeReadinessResponse>(

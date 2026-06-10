@@ -58,3 +58,10 @@ export function useProviderQuotaCostPreflight() {
     queryFn: () => api.getProviderQuotaCostPreflight(),
   });
 }
+
+export function useAgentRealProviderConfigPreflight() {
+  return useQuery({
+    queryKey: ["ops", "agent-real-provider-config-preflight"],
+    queryFn: () => api.getAgentRealProviderConfigPreflight(),
+  });
+}

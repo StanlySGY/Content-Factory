@@ -55,12 +55,13 @@ Content Factory 当前处于 **Final RC / production candidate** 收口阶段：
 | Execution Outbox Event Ledger UI | 已完成 | Web 新增 `/execution/outbox` 只读 execution outbox event 账本入口，按 job 展示 `outbox_events` event_type、processed/error、retry_count、claim 状态与 payload 摘要；不触发 process-batch、retry、tick、relay、replay、writeback 或任何写操作 |
 | Execution Writeback Ledger UI | 已完成 | Web 新增 `/execution/writebacks` 只读 execution writeback 账本入口，按 job/result 展示 `execution_writebacks` status、subject、idempotency_key、plan、error 与 created/updated 时间；不触发 apply、dry-run、transaction-prototype、retry、replay 或任何写操作 |
 | Provider Quota / Cost Preflight UI | 已完成 | Web 新增 `/ops/provider-quota` 只读 provider quota/cost preflight 可视化入口，展示 quota policy、distributed quota、cost metrics、token usage、billing disabled 与 runtime/network gate；不消费 quota、不执行 provider 请求、不触发 staging smoke 或任何写操作 |
+| Agent Real Provider Config Preflight UI | 已完成 | Web 新增 `/ops/agent-provider-config` 只读 agent real provider config preflight 可视化入口，展示 provider kind、model、endpoint_ref、credential ref readiness、secret material redaction、timeout/quota/cost profile 与 real adapter blocked reason；不解析 secret、不发网络探测、不执行真实 provider 请求或写操作 |
 
 下一步建议：
 
 | 优先级 | 任务 | 完成条件 |
 | --- | --- | --- |
-| P2 | Agent Real Provider Config Preflight UI | Web 新增只读 agent real provider config preflight 可视化入口，展示 `/api/execution/ops/agent-real-provider-config-preflight` 的 provider kind、model、endpoint_ref、credential ref readiness、secret material redaction、timeout/quota/cost profile 与 real adapter blocked reason；不解析 secret、不发网络探测、不执行真实 provider 请求或写操作 |
+| P2 | Agent Real Provider Transport Disabled Harness UI | Web 新增只读 agent real provider transport disabled harness 可视化入口，展示 `/api/execution/ops/agent-real-provider-transport-disabled-harness` 的 request shape、url_ref、timeout、disabled transport readiness、fail-closed error、network/secret boundary 与 redacted request；不执行 transport、不发网络请求、不读取 secret material、不写 execution 表 |
 
 ## 4. P2：扩展路线
 
