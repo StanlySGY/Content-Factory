@@ -45,6 +45,7 @@ Content Factory 当前处于 **Final RC / production candidate** 收口阶段：
 | Production Ops 监控页 | 已完成 | Web 新增 `/ops/monitoring`，只读展示 `monitoring-readiness`、alert rules、`staging-smoke-readiness` 与 smoke run endpoint；不接真实 Grafana / PagerDuty，不触发 smoke run |
 | Publisher Platform 控制台 UI | 已完成 | Web 新增 `/publisher` 只读发布工作台，展示 publisher channels 与 publish records 的渠道状态、endpoint_ref、发布记录状态和 asset_version 锚定信息；不触发真实发布、不新增外部平台调用 |
 | Knowledge Inventory UI | 已完成 | Web 新增 `/knowledge` 只读知识库管理入口，展示 knowledge sources、source 详情和 source entries，保留 active / archived 可见性；不接 embedding、向量库、LLM rerank，不自动刷新 context pack |
+| Knowledge Candidate Review UI | 已完成 | Web 新增 `/knowledge/candidates` 只读任务知识候选入口，展示 task knowledge candidates、命中原因与已有 context packs 关联；不接 embedding、向量库、LLM rerank，不自动刷新或物化 context pack |
 | MCP Management UI | 已完成 | Web 新增 `/mcp` 只读 MCP 管理入口，展示 MCP server/tool inventory 与 real-runtime readiness；不启用热加载、不执行 tool invocation、不打开真实外部 transport |
 | RBAC Management UI | 已完成 | Web 新增 `/rbac` 只读 RBAC 管理入口，展示 organizations、organization members、默认项目 memberships 与角色状态；不接 auth/session、不做全局业务 API enforcement、不新增权限写操作 |
 | Agent Evaluation Dashboard UI | 已完成 | Web 新增 `/evaluations` 只读评估看板，展示 evaluation analytics、low-quality results 与 result evaluation ledger；不接 LLM judge、不做模型对比、不触发自动回归评测或 rule runner |
@@ -54,14 +55,14 @@ Content Factory 当前处于 **Final RC / production candidate** 收口阶段：
 
 | 优先级 | 任务 | 完成条件 |
 | --- | --- | --- |
-| P2 | Knowledge Candidate Review UI | Web 新增只读任务知识候选入口，展示 task knowledge candidates、命中原因与已有关联 context packs；不接 embedding、向量库、LLM rerank，不自动刷新或物化 context pack |
+| P2 | Tool Invocation Ledger UI | Web 新增只读 MCP tool invocation 账本入口，按工具展示 invocation status、risk、duration、caller 与输入/输出摘要；不触发 mock invoke、真实 transport、重放或任何写操作 |
 
 ## 4. P2：扩展路线
 
 | 路线 | 范围 | 当前缺口 |
 | --- | --- | --- |
 | MCP Marketplace | 外部发现、SDK transport、SSE/stdio、热加载、tool invocation ledger 回写 | 当前已有 backend MVP 与只读管理 UI |
-| Knowledge / RAG | embedding、向量库、LLM rerank、引用追踪 UI、context pack 自动刷新 | 当前已有关键词、后端管理 API 与 knowledge inventory UI |
+| Knowledge / RAG | embedding、向量库、LLM rerank、context pack 自动刷新 | 当前已有关键词、后端管理 API、knowledge inventory UI 与 candidate review UI |
 | Agent Evaluation | LLM judge、真实成本归因、模型对比、回归评测 | 当前已有人工/规则评价、analytics API 与只读 dashboard |
 | Skill / Plugin | Skill 路由、质量门禁自动化、插件隔离、供应链验证、UI | 当前不是 MVP 验收项 |
 

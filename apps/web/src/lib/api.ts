@@ -21,6 +21,7 @@ import type {
   ExecutionWritebackExecutorRegistrationReadinessResponse,
   FinalRcProductionCandidateReadinessResponse,
   KnowledgeEntryDTO,
+  KnowledgeSearchQuery,
   KnowledgeSourceDTO,
   ListKnowledgeEntriesQuery,
   ListKnowledgeSourcesQuery,
@@ -50,6 +51,7 @@ import type {
   ReviewStatus,
   StageRunDTO,
   StagingSmokeReadinessResponse,
+  TaskKnowledgeCandidatesResponse,
   UpdateAgentProfileBody,
   UpdateContextPackBody,
   UpdateTaskBody,
@@ -276,6 +278,11 @@ export const api = {
     request<KnowledgeEntryDTO[]>(
       "GET",
       `/knowledge/sources/${sourceId}/entries${toQuery(q)}`,
+    ),
+  listTaskKnowledgeCandidates: (taskId: string, q: KnowledgeSearchQuery) =>
+    request<TaskKnowledgeCandidatesResponse>(
+      "GET",
+      `/tasks/${taskId}/knowledge-candidates${toQuery(q)}`,
     ),
 
   // ── Publisher Platform（只读工作台）──

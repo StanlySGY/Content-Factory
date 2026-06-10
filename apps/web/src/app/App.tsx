@@ -12,6 +12,7 @@ import { ContextPacksPage } from "../features/context-packs/ContextPacksPage.js"
 import { DashboardPage } from "../features/dashboard/DashboardPage.js";
 import { AgentEvaluationDashboardPage } from "../features/evaluations/AgentEvaluationDashboardPage.js";
 import { EditorPage } from "../features/editor/EditorPage.js";
+import { KnowledgeCandidateReviewPage } from "../features/knowledge-candidates/KnowledgeCandidateReviewPage.js";
 import { KnowledgeInventoryPage } from "../features/knowledge/KnowledgeInventoryPage.js";
 import { McpMarketplaceManagementPage } from "../features/mcp-marketplace/McpMarketplaceManagementPage.js";
 import { McpManagementPage } from "../features/mcp/McpManagementPage.js";
@@ -54,6 +55,7 @@ export function App() {
         <Route path="/work-queue" element={<WorkQueuePage />} />
         <Route path="/evaluations" element={<AgentEvaluationDashboardPage />} />
         <Route path="/knowledge" element={<KnowledgeInventoryPage />} />
+        <Route path="/knowledge/candidates" element={<KnowledgeCandidateReviewPage />} />
         <Route path="/mcp" element={<McpManagementPage />} />
         <Route path="/mcp/marketplace" element={<McpMarketplaceManagementPage />} />
         <Route path="/rbac" element={<RbacManagementPage />} />
