@@ -20,6 +20,7 @@ import { KnowledgeInventoryPage } from "../features/knowledge/KnowledgeInventory
 import { ToolInvocationLedgerPage } from "../features/mcp-invocations/ToolInvocationLedgerPage.js";
 import { McpMarketplaceManagementPage } from "../features/mcp-marketplace/McpMarketplaceManagementPage.js";
 import { McpManagementPage } from "../features/mcp/McpManagementPage.js";
+import { AgentRealAdapterRegistrationGuardPage } from "../features/ops/AgentRealAdapterRegistrationGuardPage.js";
 import { AgentProviderConfigPreflightPage } from "../features/ops/AgentProviderConfigPreflightPage.js";
 import { AgentProviderTransportDisabledHarnessPage } from "../features/ops/AgentProviderTransportDisabledHarnessPage.js";
 import { OpsMonitoringPage } from "../features/ops/OpsMonitoringPage.js";
@@ -76,6 +77,7 @@ export function App() {
         <Route path="/ops/provider-quota" element={<ProviderQuotaCostPreflightPage />} />
         <Route path="/ops/agent-provider-config" element={<AgentProviderConfigPreflightPage />} />
         <Route path="/ops/agent-provider-transport" element={<AgentProviderTransportDisabledHarnessPage />} />
+        <Route path="/ops/agent-registration-guard" element={<AgentRealAdapterRegistrationGuardPage />} />
         <Route path="/ops/secret-injection" element={<SecretInjectionPreflightPage />} />
         <Route path="/publisher" element={<PublisherWorkbenchPage />} />
         <Route path="/stage-runs/:id" element={<StageRunDetailPage />} />

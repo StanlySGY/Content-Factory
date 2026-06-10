@@ -28,6 +28,7 @@ export function SidebarNav() {
       <NavLink to="/ops/provider-quota">额度成本</NavLink>
       <NavLink to="/ops/agent-provider-config">Provider 配置</NavLink>
       <NavLink to="/ops/agent-provider-transport">Provider 传输</NavLink>
+      <NavLink to="/ops/agent-registration-guard">Agent 注册门禁</NavLink>
       <NavLink to="/ops/secret-injection">Secret 注入</NavLink>
     </nav>
   );

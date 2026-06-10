@@ -73,6 +73,13 @@ export function useAgentRealProviderTransportDisabledHarness() {
   });
 }
 
+export function useAgentRealAdapterRegistrationGuard() {
+  return useQuery({
+    queryKey: ["ops", "agent-real-adapter-registration-guard"],
+    queryFn: () => api.getAgentRealAdapterRegistrationGuard(),
+  });
+}
+
 export function useSecretInjectionPreflight() {
   return useQuery({
     queryKey: ["ops", "secret-injection-preflight"],

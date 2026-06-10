@@ -1,4 +1,5 @@
 import type {
+  AgentRealAdapterRegistrationGuardResponse,
   AgentRealProviderConfigPreflightResponse,
   AgentRealProviderTransportDisabledHarnessResponse,
   AgentProfileDTO,
@@ -353,6 +354,11 @@ export const api = {
     request<AgentRealProviderTransportDisabledHarnessResponse>(
       "GET",
       "/execution/ops/agent-real-provider-transport-disabled-harness",
+    ),
+  getAgentRealAdapterRegistrationGuard: () =>
+    request<AgentRealAdapterRegistrationGuardResponse>(
+      "GET",
+      "/execution/ops/agent-real-adapter-registration-guard",
     ),
   getSecretInjectionPreflight: () =>
     request<SecretInjectionPreflightReadinessResponse>(
