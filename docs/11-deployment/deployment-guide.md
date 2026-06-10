@@ -77,7 +77,8 @@ MCP 与 Publisher 真实入口还需分别开启：
 7. 打开 Web `/ops/readiness`，确认页面展示同一份 Final RC 门禁结果及只读 drilldown。
 8. 打开 Web `/ops/monitoring`，确认 monitoring 与 staging smoke 只读状态和 API 结果一致，且未触发 smoke run。
 9. 打开 Web `/publisher`，确认 publisher channels 与 publish records 只读展示，且未触发真实发布。
-10. 若进入真实启用，按 `production-candidate-next-actions.md` 选择单一路线逐项开启 gate，不混开 Agent / MCP / Publisher / writeback。
+10. 打开 Web `/knowledge`，确认 knowledge sources、source detail 与 source entries 只读展示，且未触发 context pack 自动刷新。
+11. 若进入真实启用，按 `production-candidate-next-actions.md` 选择单一路线逐项开启 gate，不混开 Agent / MCP / Publisher / writeback。
 
 ## 5. 生产候选验证
 
@@ -92,6 +93,7 @@ MCP 与 Publisher 真实入口还需分别开启：
 | monitoring | 指标出口和告警规则已接入真实监控系统；Web `/ops/monitoring` 与 `monitoring-readiness` 一致 |
 | staging smoke | 使用低权限真实 key、低额度限制跑通，并保留 result ledger；Web `/ops/monitoring` 默认不触发 smoke run |
 | publisher workbench | Web `/publisher` 只读展示渠道和发布记录，publish records 锚定 `asset_version_id`，不触发真实发布 |
+| knowledge inventory | Web `/knowledge` 只读展示 knowledge sources、source detail 与 source entries，active / archived 均可见，不触发 embedding、rerank 或 context pack 自动刷新 |
 | rollback | 已演练 env 级关闭 runtime、network、writeback executor |
 
 ## 6. 回滚

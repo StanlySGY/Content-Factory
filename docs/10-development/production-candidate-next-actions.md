@@ -44,12 +44,13 @@ Content Factory 当前处于 **Final RC / production candidate** 收口阶段：
 | Readiness drilldown | 已完成 | `/ops/readiness` 下钻展示 production activation、P1 readiness、MCP runtime、Publisher runtime、writeback executor registration 的只读端点结果、缺失要求和下一阶段要求 |
 | Production Ops 监控页 | 已完成 | Web 新增 `/ops/monitoring`，只读展示 `monitoring-readiness`、alert rules、`staging-smoke-readiness` 与 smoke run endpoint；不接真实 Grafana / PagerDuty，不触发 smoke run |
 | Publisher Platform 控制台 UI | 已完成 | Web 新增 `/publisher` 只读发布工作台，展示 publisher channels 与 publish records 的渠道状态、endpoint_ref、发布记录状态和 asset_version 锚定信息；不触发真实发布、不新增外部平台调用 |
+| Knowledge Inventory UI | 已完成 | Web 新增 `/knowledge` 只读知识库管理入口，展示 knowledge sources、source 详情和 source entries，保留 active / archived 可见性；不接 embedding、向量库、LLM rerank，不自动刷新 context pack |
 
 下一步建议：
 
 | 优先级 | 任务 | 完成条件 |
 | --- | --- | --- |
-| P1 | Knowledge Inventory UI | Web 新增只读知识库管理入口，展示 knowledge sources、source 详情和 source entries，支持 active / archived 可见性；不接 embedding、向量库、LLM rerank，不自动刷新 context pack |
+| P1 | MCP Management UI | Web 新增只读 MCP 管理入口，展示 MCP server/tool inventory 与 runtime readiness 状态；不启用热加载、不执行 tool invocation、不打开真实外部 transport |
 
 ## 4. P2：扩展路线
 

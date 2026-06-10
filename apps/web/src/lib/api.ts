@@ -18,6 +18,10 @@ import type {
   ExecutionMonitoringReadinessResponse,
   ExecutionWritebackExecutorRegistrationReadinessResponse,
   FinalRcProductionCandidateReadinessResponse,
+  KnowledgeEntryDTO,
+  KnowledgeSourceDTO,
+  ListKnowledgeEntriesQuery,
+  ListKnowledgeSourcesQuery,
   ListPublishRecordsQuery,
   ListPublisherChannelsQuery,
   ListTasksQuery,
@@ -207,6 +211,17 @@ export const api = {
     request<AgentSessionDTO[]>("GET", `/agents/${id}/sessions`),
   getAgentSession: (id: string) =>
     request<AgentSessionDTO>("GET", `/agent-sessions/${id}`),
+
+  // ── Knowledge Inventory（只读管理面）──
+  listKnowledgeSources: (q: ListKnowledgeSourcesQuery = {}) =>
+    request<KnowledgeSourceDTO[]>("GET", `/knowledge/sources${toQuery(q)}`),
+  getKnowledgeSource: (id: string) =>
+    request<KnowledgeSourceDTO>("GET", `/knowledge/sources/${id}`),
+  listKnowledgeEntries: (sourceId: string, q: ListKnowledgeEntriesQuery = {}) =>
+    request<KnowledgeEntryDTO[]>(
+      "GET",
+      `/knowledge/sources/${sourceId}/entries${toQuery(q)}`,
+    ),
 
   // ── Publisher Platform（只读工作台）──
   listPublisherChannels: (q: ListPublisherChannelsQuery = {}) =>
