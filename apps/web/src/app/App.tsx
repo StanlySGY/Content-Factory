@@ -12,6 +12,7 @@ import { ContextPacksPage } from "../features/context-packs/ContextPacksPage.js"
 import { DashboardPage } from "../features/dashboard/DashboardPage.js";
 import { EditorPage } from "../features/editor/EditorPage.js";
 import { KnowledgeInventoryPage } from "../features/knowledge/KnowledgeInventoryPage.js";
+import { McpManagementPage } from "../features/mcp/McpManagementPage.js";
 import { OpsMonitoringPage } from "../features/ops/OpsMonitoringPage.js";
 import { OpsReadinessPage } from "../features/ops/OpsReadinessPage.js";
 import { PublisherWorkbenchPage } from "../features/publisher/PublisherWorkbenchPage.js";
@@ -49,6 +50,7 @@ export function App() {
         <Route path="/reviews/pending" element={<PendingReviewsPage />} />
         <Route path="/work-queue" element={<WorkQueuePage />} />
         <Route path="/knowledge" element={<KnowledgeInventoryPage />} />
+        <Route path="/mcp" element={<McpManagementPage />} />
         <Route path="/ops/readiness" element={<OpsReadinessPage />} />
         <Route path="/ops/monitoring" element={<OpsMonitoringPage />} />
         <Route path="/publisher" element={<PublisherWorkbenchPage />} />

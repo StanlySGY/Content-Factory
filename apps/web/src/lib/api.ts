@@ -27,6 +27,8 @@ import type {
   ListTasksQuery,
   ListWorkflowsQuery,
   McpRealRuntimeReadinessResponse,
+  McpServerDTO,
+  McpToolDTO,
   PaginatedTasks,
   PendingReviewDTO,
   PublishRecordDTO,
@@ -211,6 +213,11 @@ export const api = {
     request<AgentSessionDTO[]>("GET", `/agents/${id}/sessions`),
   getAgentSession: (id: string) =>
     request<AgentSessionDTO>("GET", `/agent-sessions/${id}`),
+
+  // ── MCP Management（只读管理面）──
+  listMcpServers: () => request<McpServerDTO[]>("GET", "/mcp/servers"),
+  listMcpTools: (serverId: string) =>
+    request<McpToolDTO[]>("GET", `/mcp/servers/${serverId}/tools`),
 
   // ── Knowledge Inventory（只读管理面）──
   listKnowledgeSources: (q: ListKnowledgeSourcesQuery = {}) =>

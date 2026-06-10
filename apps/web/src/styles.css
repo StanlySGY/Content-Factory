@@ -657,6 +657,124 @@ button {
   font-size: 11px;
 }
 
+/* ---- MCP management ---- */
+.mcp-kpi-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.mcp-readiness-kpi .kpi-value {
+  font-size: 22px;
+}
+.mcp-readiness-card {
+  margin-bottom: var(--sp-5);
+}
+.mcp-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+.mcp-card-head h2 {
+  margin: 0;
+  font-size: 16px;
+}
+.mcp-card-head code {
+  display: block;
+  margin-top: var(--sp-1);
+  color: var(--text-secondary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  word-break: break-all;
+}
+.mcp-readiness-facts {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--sp-2);
+  margin: 0 0 var(--sp-4);
+}
+.mcp-readiness-facts dt {
+  color: var(--text-secondary);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+.mcp-readiness-facts dd {
+  margin: 0;
+  font-weight: 700;
+  word-break: break-word;
+}
+.mcp-readiness-lists {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-4);
+}
+.mcp-readiness-lists h3 {
+  margin: 0 0 var(--sp-2);
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-transform: uppercase;
+}
+.mcp-grid {
+  display: grid;
+  grid-template-columns: minmax(420px, 1fr) minmax(0, 1fr);
+  gap: var(--sp-4);
+}
+.mcp-tool-column {
+  min-width: 0;
+}
+.mcp-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+.mcp-section-head span {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.mcp-table tbody tr {
+  cursor: default;
+}
+.mcp-table tbody tr:hover {
+  background: var(--bg-surface);
+}
+.mcp-table tbody tr.selected {
+  background: var(--accent-primary-weak);
+}
+.mcp-table strong,
+.mcp-table span {
+  display: block;
+}
+.mcp-table span {
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin-top: 2px;
+}
+.mcp-table code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  word-break: break-all;
+}
+.mcp-server-button {
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  padding: 0;
+  text-align: left;
+}
+.mcp-server-button:hover {
+  color: var(--accent-primary);
+}
+.mcp-tool-table {
+  table-layout: fixed;
+}
+.mcp-tool-table th,
+.mcp-tool-table td {
+  word-break: break-word;
+}
+
 /* ---- Publisher workbench ---- */
 .publisher-kpi-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -708,10 +826,14 @@ button {
 @media (max-width: 980px) {
   .ops-kpi-grid,
   .knowledge-kpi-grid,
+  .mcp-kpi-grid,
   .publisher-kpi-grid,
   .ops-grid,
   .ops-drilldown-grid,
-  .knowledge-grid {
+  .knowledge-grid,
+  .mcp-readiness-facts,
+  .mcp-readiness-lists,
+  .mcp-grid {
     grid-template-columns: 1fr;
   }
 }
