@@ -25,6 +25,7 @@ export function SidebarNav() {
       <NavLink to="/publisher">发布工作台</NavLink>
       <NavLink to="/ops/readiness">运维门禁</NavLink>
       <NavLink to="/ops/monitoring">运维监控</NavLink>
+      <NavLink to="/ops/provider-quota">额度成本</NavLink>
     </nav>
   );
 }

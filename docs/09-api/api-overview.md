@@ -151,6 +151,7 @@
 - Execution result 账本已提供只读 Web 入口 `/execution/results`，按 job 展示 attempts、latest status、error_type、duration、request/response snapshot 与 result summary；该入口不调用 tick、retry、evaluate-rule、writeback 或 replay 写端点。
 - Execution outbox event 账本已提供只读 Web 入口 `/execution/outbox`，按 job 展示 event_type、processed/error、retry_count、claim 状态与 payload 摘要；该入口不调用 process-batch、process event、relay、retry、tick、writeback 或 replay 写端点。
 - Execution writeback 账本已提供只读 Web 入口 `/execution/writebacks`，按 job/result 展示 `execution_writebacks` status、subject、idempotency_key、plan、error 与时间戳；该入口不调用 guard、transaction-plan、dry-run、apply-guard、transaction-prototype、retry、replay 或写端点。
+- Provider quota/cost preflight 已提供只读 Web 入口 `/ops/provider-quota`，展示 `/api/execution/ops/provider-quota-cost-preflight` 的 quota policy、distributed quota、cost metrics、token usage、billing disabled 与 runtime/network gate；该入口不消费 quota、不执行 provider 请求、不触发 staging smoke 或写端点。
 
 ## 6. 高风险动作的风险元数据
 

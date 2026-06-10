@@ -46,6 +46,7 @@ import type {
   PaginatedTasks,
   PendingReviewDTO,
   ProjectMembershipDTO,
+  ProviderQuotaCostPreflightReadinessResponse,
   PublishRecordDTO,
   ProductionActivationPreflightResponse,
   ProductionReadinessP1Response,
@@ -335,6 +336,11 @@ export const api = {
     request<ExecutionMonitoringReadinessResponse>("GET", "/execution/ops/monitoring-readiness"),
   getStagingSmokeReadiness: () =>
     request<StagingSmokeReadinessResponse>("GET", "/execution/ops/staging-smoke-readiness"),
+  getProviderQuotaCostPreflight: () =>
+    request<ProviderQuotaCostPreflightReadinessResponse>(
+      "GET",
+      "/execution/ops/provider-quota-cost-preflight",
+    ),
   getMcpRealRuntimeReadiness: () =>
     request<McpRealRuntimeReadinessResponse>(
       "GET",

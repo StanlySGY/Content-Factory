@@ -510,6 +510,8 @@ MVP 后再进入：
 
 > **Execution Writeback Ledger UI 已补齐**：Web 新增 `/execution/writebacks`，只读展示 execution jobs、selected result 与 `execution_writebacks`，包含 status、subject、idempotency_key、plan、error 和 created/updated 时间。它不触发 guard、transaction-plan、dry-run、apply-guard、transaction-prototype、retry、replay 或写操作。
 
+> **Provider Quota / Cost Preflight UI 已补齐**：Web 新增 `/ops/provider-quota`，只读展示 provider quota/cost preflight 的 quota policy、distributed quota、cost metrics、token usage、billing disabled 与 runtime/network gate。它不消费 quota、不执行 provider 请求、不触发 staging smoke 或写操作。
+
 > **Publisher Platform Backend MVP 已补齐**：Product Gap 2 新增项目级 `publisher_channels`、渠道创建/列表/详情/更新/禁用/归档 API，并让 `publish_records` 创建前校验渠道处于 active。它不新增真实发布网络行为、不做 UI、不代表完整多渠道运营平台已完成。证据见 `docs/reviews/product-gap-2-publisher-platform-backend-audit.md`。
 
 > **Multi-tenant RBAC Backend MVP 已补齐**：Product Gap 3 新增 `organizations` / `organization_members` / `project_memberships`、组织成员管理、项目成员授权/撤销、`project.read/write/admin` 权限检查 API。它不替换默认 actor/project context、不全局拦截既有业务 API、不做 UI。证据见 `docs/reviews/product-gap-3-rbac-backend-audit.md`。

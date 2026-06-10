@@ -51,3 +51,10 @@ export function useOpsMonitoringReadiness() {
     },
   });
 }
+
+export function useProviderQuotaCostPreflight() {
+  return useQuery({
+    queryKey: ["ops", "provider-quota-cost-preflight"],
+    queryFn: () => api.getProviderQuotaCostPreflight(),
+  });
+}
