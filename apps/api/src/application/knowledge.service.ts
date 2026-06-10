@@ -75,6 +75,14 @@ export class KnowledgeService {
     return row;
   }
 
+  async restoreSource(ctx: RequestContext, sourceId: string): Promise<KnowledgeSourceRow> {
+    const row = await runInProject(this.db, ctx.projectId, (tx) =>
+      repo.restoreSource(tx, ctx.projectId, sourceId),
+    );
+    if (!row) throw new NotFoundError(`knowledge_source ${sourceId} not found`);
+    return row;
+  }
+
   async archiveEntry(ctx: RequestContext, entryId: string): Promise<KnowledgeEntryRow> {
     const row = await runInProject(this.db, ctx.projectId, (tx) =>
       repo.archiveEntry(tx, ctx.projectId, entryId),

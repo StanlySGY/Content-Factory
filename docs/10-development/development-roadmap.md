@@ -486,7 +486,7 @@ MVP 后再进入：
 - MCP 市场安装与热加载。
 - Skill 质量门禁自动化。
 - 微信公众号真实发布集成。
-- 知识库检索与 RAG：后端 MVP 已补齐 knowledge source / entry / entry archive/restore / keyword search / task candidates 和 context pack materialization；尚未接 embedding、向量库、LLM rerank 和 UI。
+- 知识库检索与 RAG：后端 MVP 已补齐 knowledge source / entry / source archive/restore / entry archive/restore / keyword search / task candidates 和 context pack materialization；尚未接 embedding、向量库、LLM rerank 和 UI。
 - 多团队权限和审计：RBAC 后端 MVP 已具备，后续仍需全局 enforcement、auth/session 接入、RBAC audit hardening 与 UI。
 - Agent 效果评估和成本分析：后端 MVP 已补齐 execution result 评价账本、人工评分、确定性 rule evaluator runner、job 级 summary 和只读 evaluation analytics；尚未接 LLM judge、真实成本归因、dashboard 和 UI。
 
@@ -513,6 +513,8 @@ MVP 后再进入：
 > **Knowledge Entry Archive Backend MVP 已补齐**：Product Gap 9 新增 `POST /api/knowledge/entries/:id/archive`，可停用单条 knowledge entry；既有 keyword search、task candidates 与 context pack materialization 会自然排除 archived entry。它不做 hard delete、不做批量归档、不自动刷新 context pack、不做 UI。证据见 `docs/reviews/product-gap-9-knowledge-entry-archive-audit.md`。
 
 > **Knowledge Entry Restore Backend MVP 已补齐**：Product Gap 10 新增 `POST /api/knowledge/entries/:id/restore`，可将 archived knowledge entry 恢复为 active，并重新进入 keyword search / task candidates / context pack materialization；若 parent source 已 archived，则返回 409。它不恢复 source、不做批量恢复、不自动刷新 context pack、不做 UI。证据见 `docs/reviews/product-gap-10-knowledge-entry-restore-audit.md`。
+
+> **Knowledge Source Restore Backend MVP 已补齐**：Product Gap 11 新增 `POST /api/knowledge/sources/:id/restore`，可将 archived knowledge source 恢复为 active，并让其下 active entries 重新进入 keyword search / task candidates / context pack materialization。它不自动恢复 archived entries、不做批量恢复、不自动刷新 context pack、不做 UI。证据见 `docs/reviews/product-gap-11-knowledge-source-restore-audit.md`。
 
 > **Agent Evaluation Backend MVP 已补齐**：Product Gap 5 新增 `execution_result_evaluations`、人工/规则评价 API、result 评价列表和 job 级 evaluation summary。它不调用 LLM、不做自动评测、不改 `execution_results` append-only 账本、不做 UI。证据见 `docs/reviews/product-gap-5-agent-evaluation-backend-audit.md`。
 

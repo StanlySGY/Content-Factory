@@ -68,6 +68,15 @@ export async function archiveSource(db: Db, projectId: string, id: string): Prom
   return row ?? null;
 }
 
+export async function restoreSource(db: Db, projectId: string, id: string): Promise<KnowledgeSourceRow | null> {
+  const [row] = await db
+    .update(knowledgeSources)
+    .set({ status: "active", updatedAt: sql`now()` })
+    .where(and(eq(knowledgeSources.id, id), eq(knowledgeSources.projectId, projectId)))
+    .returning();
+  return row ?? null;
+}
+
 export async function archiveEntry(db: Db, projectId: string, id: string): Promise<KnowledgeEntryRow | null> {
   const [row] = await db
     .update(knowledgeEntries)
