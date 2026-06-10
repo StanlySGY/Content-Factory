@@ -65,3 +65,10 @@ export function useAgentRealProviderConfigPreflight() {
     queryFn: () => api.getAgentRealProviderConfigPreflight(),
   });
 }
+
+export function useAgentRealProviderTransportDisabledHarness() {
+  return useQuery({
+    queryKey: ["ops", "agent-real-provider-transport-disabled-harness"],
+    queryFn: () => api.getAgentRealProviderTransportDisabledHarness(),
+  });
+}

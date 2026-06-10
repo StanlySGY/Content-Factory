@@ -580,6 +580,24 @@ button {
 .provider-config-gate-card {
   min-height: 196px;
 }
+.provider-transport-kpi-grid {
+  margin-bottom: var(--sp-5);
+}
+.provider-transport-grid {
+  align-items: start;
+}
+.provider-transport-mode-card {
+  margin-bottom: var(--sp-5);
+}
+.provider-transport-mode-card .ops-card-head {
+  margin-bottom: var(--sp-3);
+}
+.provider-transport-detail-facts {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.provider-transport-gate-card {
+  min-height: 188px;
+}
 
 /* ---- Knowledge inventory ---- */
 .knowledge-kpi-grid {

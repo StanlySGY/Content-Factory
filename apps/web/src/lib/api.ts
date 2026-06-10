@@ -1,5 +1,6 @@
 import type {
   AgentRealProviderConfigPreflightResponse,
+  AgentRealProviderTransportDisabledHarnessResponse,
   AgentProfileDTO,
   AgentSessionDTO,
   AgentSessionStatus,
@@ -346,6 +347,11 @@ export const api = {
     request<AgentRealProviderConfigPreflightResponse>(
       "GET",
       "/execution/ops/agent-real-provider-config-preflight",
+    ),
+  getAgentRealProviderTransportDisabledHarness: () =>
+    request<AgentRealProviderTransportDisabledHarnessResponse>(
+      "GET",
+      "/execution/ops/agent-real-provider-transport-disabled-harness",
     ),
   getMcpRealRuntimeReadiness: () =>
     request<McpRealRuntimeReadinessResponse>(

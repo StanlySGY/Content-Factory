@@ -86,10 +86,11 @@ MCP 与 Publisher 真实入口还需分别开启：
 16. 打开 Web `/execution/writebacks`，确认 execution writeback ledger 按 job/result 只读展示 status、subject、idempotency_key、plan、error 与时间戳，且未触发 guard、transaction-plan、dry-run、apply-guard、transaction-prototype、retry、replay 或写操作。
 17. 打开 Web `/ops/provider-quota`，确认 provider quota/cost preflight 只读展示 quota policy、distributed quota、cost metrics、token usage、billing disabled 与 runtime/network gate，且未消费 quota、未执行 provider 请求、未触发 staging smoke 或写操作。
 18. 打开 Web `/ops/agent-provider-config`，确认 agent real provider config preflight 只读展示 provider kind、model、endpoint_ref、credential ref readiness、secret material boundary、timeout/quota/cost profile 与 real adapter blocked reason，且未解析 secret、未发网络探测、未执行真实 provider 请求或写操作。
-19. 打开 Web `/rbac`，确认 organizations、organization members 与默认项目 memberships 只读展示，且未触发权限写操作。
-20. 打开 Web `/evaluations`，确认 evaluation analytics、low-quality results 与 result evaluations 只读展示，且未触发 create evaluation 或 rule runner。
-21. 打开 Web `/mcp/marketplace`，确认 marketplace entries、project installations 与 server binding 只读展示，且未触发 install/disable/uninstall、hot-load 或 tool invocation。
-22. 若进入真实启用，按 `production-candidate-next-actions.md` 选择单一路线逐项开启 gate，不混开 Agent / MCP / Publisher / writeback。
+19. 打开 Web `/ops/agent-provider-transport`，确认 agent real provider transport disabled harness 只读展示 request shape、disabled transport、fail-closed error、network/secret boundary 与 redacted request，且未执行 transport、未发网络请求、未读取 secret material、未写 execution 表。
+20. 打开 Web `/rbac`，确认 organizations、organization members 与默认项目 memberships 只读展示，且未触发权限写操作。
+21. 打开 Web `/evaluations`，确认 evaluation analytics、low-quality results 与 result evaluations 只读展示，且未触发 create evaluation 或 rule runner。
+22. 打开 Web `/mcp/marketplace`，确认 marketplace entries、project installations 与 server binding 只读展示，且未触发 install/disable/uninstall、hot-load 或 tool invocation。
+23. 若进入真实启用，按 `production-candidate-next-actions.md` 选择单一路线逐项开启 gate，不混开 Agent / MCP / Publisher / writeback。
 
 ## 5. 生产候选验证
 
@@ -113,6 +114,7 @@ MCP 与 Publisher 真实入口还需分别开启：
 | execution writeback ledger | Web `/execution/writebacks` 只读展示 execution writebacks 的 status、subject、idempotency_key、plan、error 与时间戳，不触发 guard/transaction-plan/dry-run/apply-guard/transaction-prototype/retry/replay 或写操作 |
 | provider quota/cost preflight | Web `/ops/provider-quota` 只读展示 quota policy、distributed quota、cost metrics、token usage、billing disabled 与 runtime/network gate，不消费 quota、不执行 provider 请求、不触发 staging smoke 或写操作 |
 | agent provider config preflight | Web `/ops/agent-provider-config` 只读展示 provider kind、model、endpoint_ref、credential ref readiness、secret material boundary、timeout/quota/cost profile 与 real adapter blocked reason，不解析 secret、不发网络探测、不执行真实 provider 请求或写操作 |
+| agent provider transport disabled harness | Web `/ops/agent-provider-transport` 只读展示 request shape、disabled transport、fail-closed error、network/secret boundary 与 redacted request，不执行 transport、不发网络请求、不读取 secret material、不写 execution 表 |
 | rbac management | Web `/rbac` 只读展示 organizations、organization members 与默认项目 memberships，不触发 create/update/deactivate/grant/revoke/check-access |
 | evaluation dashboard | Web `/evaluations` 只读展示 analytics、low-quality results 与 result evaluations，不触发 create/evaluate-rule/batch rule evaluation |
 | mcp marketplace | Web `/mcp/marketplace` 只读展示 marketplace entries、project installations 与 server binding，不触发 create/install/disable/uninstall/hot-load/tool invocation |
