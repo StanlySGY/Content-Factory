@@ -486,7 +486,7 @@ MVP 后再进入：
 - MCP 市场安装与热加载。
 - Skill 质量门禁自动化。
 - 微信公众号真实发布集成。
-- 知识库检索与 RAG：后端 MVP 已补齐 knowledge source / entry / keyword search / task candidates；尚未接 embedding、向量库、LLM rerank、context pack materialization 和 UI。
+- 知识库检索与 RAG：后端 MVP 已补齐 knowledge source / entry / keyword search / task candidates 和 context pack materialization；尚未接 embedding、向量库、LLM rerank 和 UI。
 - 多团队权限和审计：RBAC 后端 MVP 已具备，后续仍需全局 enforcement、auth/session 接入、RBAC audit hardening 与 UI。
 - Agent 效果评估和成本分析：后端 MVP 已补齐 execution result 评价账本、人工评分、确定性 rule evaluator runner、job 级 summary 和只读 evaluation analytics；尚未接 LLM judge、真实成本归因、dashboard 和 UI。
 
@@ -507,6 +507,8 @@ MVP 后再进入：
 > **Multi-tenant RBAC Backend MVP 已补齐**：Product Gap 3 新增 `organizations` / `organization_members` / `project_memberships`、组织成员管理、项目成员授权/撤销、`project.read/write/admin` 权限检查 API。它不替换默认 actor/project context、不全局拦截既有业务 API、不做 UI。证据见 `docs/reviews/product-gap-3-rbac-backend-audit.md`。
 
 > **Knowledge/RAG Backend MVP 已补齐**：Product Gap 4 新增 `knowledge_sources` / `knowledge_entries`、知识源创建/归档、知识条目创建、项目内关键词检索和任务知识候选 API。它不引入向量库、不调用 LLM、不自动写 `context_packs`、不做 UI。证据见 `docs/reviews/product-gap-4-knowledge-rag-backend-audit.md`。
+
+> **Knowledge Context Pack Materialization Backend MVP 已补齐**：Product Gap 8 新增 `POST /api/tasks/:taskId/knowledge-context-pack`，可把关键词命中的 active knowledge entries 物化为 task 级 `context_packs`，并在 `data` / `source_refs` 中保留 entry/source 追溯信息。它不做 embedding、不调用 LLM、不做 rerank、不自动刷新 context pack、不做 UI。证据见 `docs/reviews/product-gap-8-knowledge-context-pack-materialization-audit.md`。
 
 > **Agent Evaluation Backend MVP 已补齐**：Product Gap 5 新增 `execution_result_evaluations`、人工/规则评价 API、result 评价列表和 job 级 evaluation summary。它不调用 LLM、不做自动评测、不改 `execution_results` append-only 账本、不做 UI。证据见 `docs/reviews/product-gap-5-agent-evaluation-backend-audit.md`。
 

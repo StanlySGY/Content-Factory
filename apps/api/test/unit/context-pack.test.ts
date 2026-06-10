@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildKnowledgeContextPackPayload,
   createContextPack,
   uniquenessKey,
 } from "../../src/domain/context-pack/context-pack.js";
@@ -51,5 +52,31 @@ describe("uniquenessKey", () => {
   });
   it("derives stage-level key when stage_run_id present", () => {
     expect(uniquenessKey({ content_task_id: "t1", stage_run_id: "sr1", scope: "stage", version: 3 })).toBe("stage:sr1:stage:3");
+  });
+});
+
+describe("buildKnowledgeContextPackPayload", () => {
+  it("builds traceable knowledge materialization data and source refs", () => {
+    expect(
+      buildKnowledgeContextPackPayload("wechat", [
+        { id: "entry-1", title: "Publishing rules", source_id: "source-1" },
+        { id: "entry-2", title: "Compliance note", source_id: "source-1" },
+        { id: "entry-3", title: "Audience note", source_id: "source-2" },
+      ]),
+    ).toEqual({
+      data: {
+        materialized_from: "knowledge_entries",
+        query: "wechat",
+        knowledge_entries: [
+          { id: "entry-1", title: "Publishing rules", reason: "keyword_match" },
+          { id: "entry-2", title: "Compliance note", reason: "keyword_match" },
+          { id: "entry-3", title: "Audience note", reason: "keyword_match" },
+        ],
+      },
+      source_refs: {
+        knowledge_entry_ids: ["entry-1", "entry-2", "entry-3"],
+        knowledge_source_ids: ["source-1", "source-2"],
+      },
+    });
   });
 });
