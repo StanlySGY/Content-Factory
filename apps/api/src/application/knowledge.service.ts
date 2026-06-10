@@ -75,6 +75,14 @@ export class KnowledgeService {
     return row;
   }
 
+  async archiveEntry(ctx: RequestContext, entryId: string): Promise<KnowledgeEntryRow> {
+    const row = await runInProject(this.db, ctx.projectId, (tx) =>
+      repo.archiveEntry(tx, ctx.projectId, entryId),
+    );
+    if (!row) throw new NotFoundError(`knowledge_entry ${entryId} not found`);
+    return row;
+  }
+
   async search(ctx: RequestContext, query: KnowledgeSearchQuery): Promise<KnowledgeSearchResult> {
     const normalizedQuery = normalizeKnowledgeQuery(query.q);
     const limit = normalizeKnowledgeLimit(query.limit);

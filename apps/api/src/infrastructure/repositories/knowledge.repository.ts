@@ -59,6 +59,15 @@ export async function archiveSource(db: Db, projectId: string, id: string): Prom
   return row ?? null;
 }
 
+export async function archiveEntry(db: Db, projectId: string, id: string): Promise<KnowledgeEntryRow | null> {
+  const [row] = await db
+    .update(knowledgeEntries)
+    .set({ status: "archived", updatedAt: sql`now()` })
+    .where(and(eq(knowledgeEntries.id, id), eq(knowledgeEntries.projectId, projectId)))
+    .returning();
+  return row ?? null;
+}
+
 export async function createEntry(db: Db, input: KnowledgeEntryWrite): Promise<KnowledgeEntryRow> {
   const [row] = await db.insert(knowledgeEntries).values({
     projectId: input.project_id,
