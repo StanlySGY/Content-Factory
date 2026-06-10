@@ -6,6 +6,7 @@ import type {
   AgentProfileDTO,
   AgentSessionDTO,
   AgentSessionStatus,
+  AddOrganizationMemberBody,
   ApproveReviewBody,
   AssetVersionDTO,
   AuditEventDTO,
@@ -29,6 +30,7 @@ import type {
   ExecutionWritebackDTO,
   ExecutionWritebackExecutorRegistrationReadinessResponse,
   FinalRcProductionCandidateReadinessResponse,
+  GrantProjectMembershipBody,
   KnowledgeEntryDTO,
   KnowledgeSearchQuery,
   KnowledgeSourceDTO,
@@ -71,6 +73,7 @@ import type {
   ToolInvocationDTO,
   UpdateAgentProfileBody,
   UpdateContextPackBody,
+  UpdateOrganizationMemberBody,
   UpdatePublisherChannelBody,
   UpdateTaskBody,
   WorkQueueItemDTO,
@@ -296,7 +299,7 @@ export const api = {
   listToolInvocations: (toolId: string) =>
     request<ToolInvocationDTO[]>("GET", `/mcp/tools/${toolId}/invocations`),
 
-  // ── RBAC Management（只读管理面）──
+  // ── RBAC Management ──
   listRbacOrganizations: () =>
     request<OrganizationDTO[]>("GET", "/rbac/organizations"),
   listRbacOrganizationMembers: (organizationId: string) =>
@@ -304,8 +307,18 @@ export const api = {
       "GET",
       `/rbac/organizations/${organizationId}/members`,
     ),
+  addRbacOrganizationMember: (organizationId: string, body: AddOrganizationMemberBody) =>
+    request<OrganizationMemberDTO>("POST", `/rbac/organizations/${organizationId}/members`, body),
+  updateRbacOrganizationMember: (id: string, body: UpdateOrganizationMemberBody) =>
+    request<OrganizationMemberDTO>("PATCH", `/rbac/organization-members/${id}`, body),
+  deactivateRbacOrganizationMember: (id: string) =>
+    request<OrganizationMemberDTO>("POST", `/rbac/organization-members/${id}/deactivate`),
   listRbacProjectMemberships: (projectId: string) =>
     request<ProjectMembershipDTO[]>("GET", `/rbac/projects/${projectId}/memberships`),
+  grantRbacProjectMembership: (projectId: string, body: GrantProjectMembershipBody) =>
+    request<ProjectMembershipDTO>("POST", `/rbac/projects/${projectId}/memberships`, body),
+  revokeRbacProjectMembership: (id: string) =>
+    request<ProjectMembershipDTO>("POST", `/rbac/project-memberships/${id}/revoke`),
 
   // ── Knowledge Inventory（只读管理面）──
   listKnowledgeSources: (q: ListKnowledgeSourcesQuery = {}) =>

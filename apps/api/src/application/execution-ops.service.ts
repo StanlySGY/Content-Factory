@@ -1025,16 +1025,17 @@ export class ExecutionOpsService {
         deliveredCapabilities: [
           "organization, member, and project membership APIs",
           "role and membership persistence model",
-          "readonly RBAC management UI",
+          "RBAC management UI with member and project membership controls",
+          "RBAC member and project membership mutation UI",
         ],
         missingProductRequirements: [
           "auth and session integration",
           "global API authorization enforcement",
-          "role mutation UI with approval/audit policy",
+          "approval and audit policy for role mutations",
           "cross-project access denial regression matrix",
         ],
         safetyBoundaries: [
-          "current UI is readonly and does not mutate permissions",
+          "current UI only calls explicit RBAC control-plane mutation APIs",
           "route readiness does not grant access or change membership",
           "production enforcement remains a separate rollout gate",
         ],

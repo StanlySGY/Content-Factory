@@ -1120,6 +1120,28 @@ button {
 .rbac-detail-column {
   min-width: 0;
 }
+.rbac-member-form,
+.rbac-project-grant-form {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(140px, 0.45fr) auto;
+  align-items: end;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+.rbac-form-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+.rbac-inline-select {
+  width: 100%;
+  min-width: 112px;
+  height: 34px;
+  border: 1px solid var(--border-muted);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  padding: 0 var(--sp-2);
+}
 .rbac-section-head {
   display: flex;
   align-items: center;
@@ -1710,6 +1732,8 @@ button {
   .marketplace-kpi-grid,
   .publisher-kpi-grid,
   .publisher-channel-form,
+  .rbac-member-form,
+  .rbac-project-grant-form,
   .ops-grid,
   .ops-drilldown-grid,
   .knowledge-grid,

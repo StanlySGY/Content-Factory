@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import type { OrganizationDTO, OrganizationMemberDTO, ProjectMembershipDTO } from "@cf/shared";
@@ -86,6 +87,8 @@ const projectMemberships: ProjectMembershipDTO[] = [
     updated_at: "2026-06-10T00:14:00.000Z",
   },
 ];
+const activeOrganizationMember = organizationMembers[0]!;
+const activeProjectMembership = projectMemberships[0]!;
 
 function renderRoute() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -114,8 +117,8 @@ describe("RbacManagementPage", () => {
     expect(apiMock.listRbacProjectMemberships).toHaveBeenCalledWith(DEFAULT_PROJECT_ID);
 
     expect(screen.getByText("Archive Team")).toBeInTheDocument();
-    expect(screen.getByText("owner")).toBeInTheDocument();
-    expect(screen.getByText("viewer")).toBeInTheDocument();
+    expect(screen.getAllByText("owner").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("viewer").length).toBeGreaterThan(0);
     expect(screen.getByText("inactive")).toBeInTheDocument();
     expect(screen.getByText("revoked")).toBeInTheDocument();
     expect(screen.getAllByText(DEFAULT_PROJECT_ID).length).toBeGreaterThan(0);
@@ -126,6 +129,69 @@ describe("RbacManagementPage", () => {
     expect(apiMock.deactivateRbacOrganizationMember).not.toHaveBeenCalled();
     expect(apiMock.grantRbacProjectMembership).not.toHaveBeenCalled();
     expect(apiMock.revokeRbacProjectMembership).not.toHaveBeenCalled();
+    expect(apiMock.checkRbacProjectAccess).not.toHaveBeenCalled();
+  });
+
+  it("manages organization member roles and project memberships from the RBAC UI", async () => {
+    apiMock.listRbacOrganizations.mockResolvedValue([selectedOrganization, archivedOrganization]);
+    apiMock.listRbacOrganizationMembers.mockResolvedValue(organizationMembers);
+    apiMock.listRbacProjectMemberships.mockResolvedValue(projectMemberships);
+    apiMock.addRbacOrganizationMember.mockResolvedValue({
+      ...activeOrganizationMember,
+      id: "00000000-0000-0000-0000-000000000903",
+      user_id: "00000000-0000-0000-0000-000000000003",
+      role: "member",
+    });
+    apiMock.updateRbacOrganizationMember.mockResolvedValue({
+      ...activeOrganizationMember,
+      role: "admin",
+    });
+    apiMock.deactivateRbacOrganizationMember.mockResolvedValue({
+      ...activeOrganizationMember,
+      status: "inactive",
+    });
+    apiMock.grantRbacProjectMembership.mockResolvedValue({
+      ...activeProjectMembership,
+      id: "00000000-0000-0000-0000-000000001003",
+      organization_member_id: activeOrganizationMember.id,
+      role: "editor",
+    });
+    apiMock.revokeRbacProjectMembership.mockResolvedValue({
+      ...activeProjectMembership,
+      status: "revoked",
+    });
+
+    renderRoute();
+
+    await screen.findByText("Content Ops");
+    await userEvent.type(screen.getByLabelText("User ID"), "00000000-0000-0000-0000-000000000003");
+    await userEvent.selectOptions(screen.getByLabelText("Organization role"), "member");
+    await userEvent.click(screen.getByRole("button", { name: "添加成员" }));
+
+    expect(apiMock.addRbacOrganizationMember).toHaveBeenCalledWith(selectedOrganization.id, {
+      user_id: "00000000-0000-0000-0000-000000000003",
+      role: "member",
+    });
+
+    await userEvent.selectOptions(screen.getByLabelText(`Role for ${activeOrganizationMember.id}`), "admin");
+    await userEvent.click(screen.getByRole("button", { name: `停用 ${activeOrganizationMember.id}` }));
+
+    expect(apiMock.updateRbacOrganizationMember).toHaveBeenCalledWith(activeOrganizationMember.id, {
+      role: "admin",
+    });
+    expect(apiMock.deactivateRbacOrganizationMember).toHaveBeenCalledWith(activeOrganizationMember.id);
+
+    await userEvent.selectOptions(screen.getByLabelText("Member for project grant"), activeOrganizationMember.id);
+    await userEvent.selectOptions(screen.getByLabelText("Project role"), "editor");
+    await userEvent.click(screen.getByRole("button", { name: "授权项目" }));
+
+    expect(apiMock.grantRbacProjectMembership).toHaveBeenCalledWith(DEFAULT_PROJECT_ID, {
+      organization_member_id: activeOrganizationMember.id,
+      role: "editor",
+    });
+
+    await userEvent.click(screen.getByRole("button", { name: `撤销 ${activeProjectMembership.id}` }));
+    expect(apiMock.revokeRbacProjectMembership).toHaveBeenCalledWith(activeProjectMembership.id);
     expect(apiMock.checkRbacProjectAccess).not.toHaveBeenCalled();
   });
 });
