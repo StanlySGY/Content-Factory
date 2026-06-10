@@ -18,14 +18,18 @@ import type {
   ExecutionMonitoringReadinessResponse,
   ExecutionWritebackExecutorRegistrationReadinessResponse,
   FinalRcProductionCandidateReadinessResponse,
+  ListPublishRecordsQuery,
+  ListPublisherChannelsQuery,
   ListTasksQuery,
   ListWorkflowsQuery,
   McpRealRuntimeReadinessResponse,
   PaginatedTasks,
   PendingReviewDTO,
+  PublishRecordDTO,
   ProductionActivationPreflightResponse,
   ProductionReadinessP1Response,
   PublishVersionBody,
+  PublisherChannelDTO,
   PublisherRealRuntimeReadinessResponse,
   RequestRevisionBody,
   ReviewRecordDTO,
@@ -203,6 +207,12 @@ export const api = {
     request<AgentSessionDTO[]>("GET", `/agents/${id}/sessions`),
   getAgentSession: (id: string) =>
     request<AgentSessionDTO>("GET", `/agent-sessions/${id}`),
+
+  // ── Publisher Platform（只读工作台）──
+  listPublisherChannels: (q: ListPublisherChannelsQuery = {}) =>
+    request<PublisherChannelDTO[]>("GET", `/publisher/channels${toQuery(q)}`),
+  listPublishRecords: (q: ListPublishRecordsQuery = {}) =>
+    request<PublishRecordDTO[]>("GET", `/publish-records${toQuery(q)}`),
 
   // ── Final RC Ops ──
   getFinalRcReadiness: () =>

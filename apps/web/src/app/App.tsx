@@ -13,6 +13,7 @@ import { DashboardPage } from "../features/dashboard/DashboardPage.js";
 import { EditorPage } from "../features/editor/EditorPage.js";
 import { OpsMonitoringPage } from "../features/ops/OpsMonitoringPage.js";
 import { OpsReadinessPage } from "../features/ops/OpsReadinessPage.js";
+import { PublisherWorkbenchPage } from "../features/publisher/PublisherWorkbenchPage.js";
 import { PendingReviewsPage } from "../features/reviews/PendingReviewsPage.js";
 import { ReviewQueuePage } from "../features/reviews/ReviewQueuePage.js";
 import { StageRunDetailPage } from "../features/stage-runs/StageRunDetailPage.js";
@@ -48,6 +49,7 @@ export function App() {
         <Route path="/work-queue" element={<WorkQueuePage />} />
         <Route path="/ops/readiness" element={<OpsReadinessPage />} />
         <Route path="/ops/monitoring" element={<OpsMonitoringPage />} />
+        <Route path="/publisher" element={<PublisherWorkbenchPage />} />
         <Route path="/stage-runs/:id" element={<StageRunDetailPage />} />
         <Route path="/agents" element={<AgentListPage />} />
         <Route path="/agents/new" element={<NewAgentPage />} />

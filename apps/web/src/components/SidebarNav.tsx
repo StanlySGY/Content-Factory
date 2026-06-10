@@ -1,6 +1,6 @@
 import { NavLink } from "react-router-dom";
 
-const FUTURE = ["知识库", "MCP 管理", "发布工作台", "RBAC 管理", "评估看板"];
+const FUTURE = ["知识库", "MCP 管理", "RBAC 管理", "评估看板"];
 
 export function SidebarNav() {
   return (
@@ -14,6 +14,7 @@ export function SidebarNav() {
       <NavLink to="/work-queue">工作队列</NavLink>
       <NavLink to="/agents">Agent 管理</NavLink>
       <NavLink to="/assets">素材中心</NavLink>
+      <NavLink to="/publisher">发布工作台</NavLink>
       <NavLink to="/ops/readiness">运维门禁</NavLink>
       <NavLink to="/ops/monitoring">运维监控</NavLink>
       <div className="nav-group">后续 Sprint</div>
