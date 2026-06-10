@@ -667,6 +667,29 @@ button {
 .secret-resolver-gate-card {
   min-height: 176px;
 }
+.provider-http-boundary-kpi-grid {
+  margin-bottom: var(--sp-5);
+}
+.provider-http-boundary-grid {
+  align-items: start;
+}
+.provider-http-boundary-mode-card {
+  margin-bottom: var(--sp-5);
+}
+.provider-http-boundary-mode-card .ops-card-head {
+  margin-bottom: var(--sp-3);
+}
+.provider-http-boundary-detail-facts {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.provider-http-boundary-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+}
+.provider-http-boundary-gate-card {
+  min-height: 176px;
+}
 
 /* ---- Knowledge inventory ---- */
 .knowledge-kpi-grid {

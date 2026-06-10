@@ -87,6 +87,13 @@ export function useSecretResolverReadiness() {
   });
 }
 
+export function useProviderHttpBoundary() {
+  return useQuery({
+    queryKey: ["ops", "provider-http-boundary"],
+    queryFn: () => api.getProviderHttpBoundary(),
+  });
+}
+
 export function useSecretInjectionPreflight() {
   return useQuery({
     queryKey: ["ops", "secret-injection-preflight"],

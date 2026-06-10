@@ -60,12 +60,13 @@ Content Factory 当前处于 **Final RC / production candidate** 收口阶段：
 | Secret Injection Preflight UI | 已完成 | Web 新增 `/ops/secret-injection` 只读 secret injection preflight 可视化入口，展示 resolver kind、secret store/injection readiness、allowed ref schemes、supported purposes、snapshot/DTO persistence boundary、audit metadata requirement 与 runtime/network gate；不读取 secret material、不注入 header、不执行 transport 或写 execution 表 |
 | Agent Real Adapter Registration Guard UI | 已完成 | Web 新增 `/ops/agent-registration-guard` 只读 agent real adapter registration guard 可视化入口，展示 registration readiness、disabled fixture、descriptor status、config gates、readiness gates、missing requirements 与 fail-closed error；不注册真实 adapter、不启动 worker、不执行 provider 请求或写 execution 表 |
 | Secret Resolver Readiness UI | 已完成 | Web 新增 `/ops/secret-resolver` 只读 secret resolver readiness 可视化入口，展示 resolver kind、available、allowed ref schemes、supported purposes、env/network/process boundary 与 runtime/adapter mode；不读取 secret material、不返回 secret material、不写 execution/outbox 表 |
+| Provider HTTP Boundary UI | 已完成 | Web 新增 `/ops/provider-http-boundary` 只读 provider HTTP boundary 可视化入口，展示 fake HTTP client、network/real HTTP disabled、abort/timeout/request-id/status-code mapping、secret material injection boundary、allowed adapter modes、runtime/adapter mode 与 blocked reason；不执行真实网络请求、不注入 secret material、不写 execution/outbox 表 |
 
 下一步建议：
 
 | 优先级 | 任务 | 完成条件 |
 | --- | --- | --- |
-| P2 | Provider HTTP Boundary UI | Web 新增只读 provider HTTP boundary 可视化入口，展示 `/api/execution/ops/provider-http-boundary` 的 fake HTTP client、network/real HTTP disabled、abort/timeout/request-id/status-code mapping、secret material injection boundary、allowed adapter modes、runtime/adapter mode 与 blocked reason；不执行真实网络请求、不注入 secret material、不写 execution/outbox 表 |
+| P2 | Agent Real HTTP Adapter Readiness UI | Web 新增只读 agent real HTTP adapter readiness 可视化入口，展示 `/api/execution/ops/agent-real-http-adapter` 的 real HTTP skeleton、transport/worker registration gate、runtime/network/allowlist、timeout/abort harness、transport signal forwarding、secret material boundary 与 blocked reason；不注册真实 transport、不发网络请求、不读取或注入 secret material、不写 execution/outbox 表 |
 
 ## 4. P2：扩展路线
 

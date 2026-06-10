@@ -522,6 +522,8 @@ MVP 后再进入：
 
 > **Secret Resolver Readiness UI 已补齐**：Web 新增 `/ops/secret-resolver`，只读展示 secret resolver readiness 的 resolver kind、available、allowed ref schemes、supported purposes、env/network/process boundary 与 runtime/adapter mode。它不读取 secret material、不返回 secret material、不写 execution/outbox 表。
 
+> **Provider HTTP Boundary UI 已补齐**：Web 新增 `/ops/provider-http-boundary`，只读展示 provider HTTP boundary 的 fake HTTP client、network/real HTTP disabled、abort/timeout/request-id/status-code mapping、secret material injection boundary、allowed adapter modes、runtime/adapter mode 与 blocked reason。它不执行真实网络请求、不注入 secret material、不写 execution/outbox 表。
+
 > **Publisher Platform Backend MVP 已补齐**：Product Gap 2 新增项目级 `publisher_channels`、渠道创建/列表/详情/更新/禁用/归档 API，并让 `publish_records` 创建前校验渠道处于 active。它不新增真实发布网络行为、不做 UI、不代表完整多渠道运营平台已完成。证据见 `docs/reviews/product-gap-2-publisher-platform-backend-audit.md`。
 
 > **Multi-tenant RBAC Backend MVP 已补齐**：Product Gap 3 新增 `organizations` / `organization_members` / `project_memberships`、组织成员管理、项目成员授权/撤销、`project.read/write/admin` 权限检查 API。它不替换默认 actor/project context、不全局拦截既有业务 API、不做 UI。证据见 `docs/reviews/product-gap-3-rbac-backend-audit.md`。

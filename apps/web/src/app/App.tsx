@@ -25,6 +25,7 @@ import { AgentProviderConfigPreflightPage } from "../features/ops/AgentProviderC
 import { AgentProviderTransportDisabledHarnessPage } from "../features/ops/AgentProviderTransportDisabledHarnessPage.js";
 import { OpsMonitoringPage } from "../features/ops/OpsMonitoringPage.js";
 import { OpsReadinessPage } from "../features/ops/OpsReadinessPage.js";
+import { ProviderHttpBoundaryPage } from "../features/ops/ProviderHttpBoundaryPage.js";
 import { ProviderQuotaCostPreflightPage } from "../features/ops/ProviderQuotaCostPreflightPage.js";
 import { SecretInjectionPreflightPage } from "../features/ops/SecretInjectionPreflightPage.js";
 import { SecretResolverReadinessPage } from "../features/ops/SecretResolverReadinessPage.js";
@@ -78,6 +79,7 @@ export function App() {
         <Route path="/ops/provider-quota" element={<ProviderQuotaCostPreflightPage />} />
         <Route path="/ops/agent-provider-config" element={<AgentProviderConfigPreflightPage />} />
         <Route path="/ops/agent-provider-transport" element={<AgentProviderTransportDisabledHarnessPage />} />
+        <Route path="/ops/provider-http-boundary" element={<ProviderHttpBoundaryPage />} />
         <Route path="/ops/agent-registration-guard" element={<AgentRealAdapterRegistrationGuardPage />} />
         <Route path="/ops/secret-resolver" element={<SecretResolverReadinessPage />} />
         <Route path="/ops/secret-injection" element={<SecretInjectionPreflightPage />} />

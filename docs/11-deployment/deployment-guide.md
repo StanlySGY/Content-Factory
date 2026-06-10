@@ -89,11 +89,12 @@ MCP 与 Publisher 真实入口还需分别开启：
 19. 打开 Web `/ops/agent-provider-transport`，确认 agent real provider transport disabled harness 只读展示 request shape、disabled transport、fail-closed error、network/secret boundary 与 redacted request，且未执行 transport、未发网络请求、未读取 secret material、未写 execution 表。
 20. 打开 Web `/ops/agent-registration-guard`，确认 agent real adapter registration guard 只读展示 registration readiness、disabled fixture、descriptor status、config/readiness gates、missing requirements 与 fail-closed error，且未注册真实 adapter、未启动 worker、未执行 provider 请求或写 execution 表。
 21. 打开 Web `/ops/secret-resolver`，确认 secret resolver readiness 只读展示 resolver kind、available、allowed ref schemes、supported purposes、env/network/process boundary 与 runtime/adapter mode，且未读取或返回 secret material、未写 execution/outbox 表。
-22. 打开 Web `/ops/secret-injection`，确认 secret injection preflight 只读展示 resolver、secret store/injection readiness、allowed ref schemes、supported purposes、persistence boundary、audit metadata 与 runtime gate，且未读取 secret material、未注入 header、未执行 transport 或写操作。
-23. 打开 Web `/rbac`，确认 organizations、organization members 与默认项目 memberships 只读展示，且未触发权限写操作。
-24. 打开 Web `/evaluations`，确认 evaluation analytics、low-quality results 与 result evaluations 只读展示，且未触发 create evaluation 或 rule runner。
-25. 打开 Web `/mcp/marketplace`，确认 marketplace entries、project installations 与 server binding 只读展示，且未触发 install/disable/uninstall、hot-load 或 tool invocation。
-26. 若进入真实启用，按 `production-candidate-next-actions.md` 选择单一路线逐项开启 gate，不混开 Agent / MCP / Publisher / writeback。
+22. 打开 Web `/ops/provider-http-boundary`，确认 provider HTTP boundary 只读展示 fake HTTP client、network/real HTTP disabled、HTTP mapping、secret material boundary、allowed adapter modes、runtime/adapter mode 与 blocked reason，且未执行真实网络请求、未注入 secret material、未写 execution/outbox 表。
+23. 打开 Web `/ops/secret-injection`，确认 secret injection preflight 只读展示 resolver、secret store/injection readiness、allowed ref schemes、supported purposes、persistence boundary、audit metadata 与 runtime gate，且未读取 secret material、未注入 header、未执行 transport 或写操作。
+24. 打开 Web `/rbac`，确认 organizations、organization members 与默认项目 memberships 只读展示，且未触发权限写操作。
+25. 打开 Web `/evaluations`，确认 evaluation analytics、low-quality results 与 result evaluations 只读展示，且未触发 create evaluation 或 rule runner。
+26. 打开 Web `/mcp/marketplace`，确认 marketplace entries、project installations 与 server binding 只读展示，且未触发 install/disable/uninstall、hot-load 或 tool invocation。
+27. 若进入真实启用，按 `production-candidate-next-actions.md` 选择单一路线逐项开启 gate，不混开 Agent / MCP / Publisher / writeback。
 
 ## 5. 生产候选验证
 
@@ -121,6 +122,7 @@ MCP 与 Publisher 真实入口还需分别开启：
 | secret injection preflight | Web `/ops/secret-injection` 只读展示 resolver、secret store/injection readiness、allowed ref schemes、supported purposes、persistence boundary、audit metadata 与 runtime gate，不读取 secret material、不注入 header、不执行 transport 或写操作 |
 | agent adapter registration guard | Web `/ops/agent-registration-guard` 只读展示 registration readiness、disabled fixture、descriptor status、config/readiness gates、missing requirements 与 fail-closed error，不注册真实 adapter、不启动 worker、不执行 provider 请求或写 execution 表 |
 | secret resolver readiness | Web `/ops/secret-resolver` 只读展示 resolver kind、available、allowed ref schemes、supported purposes、env/network/process boundary 与 runtime/adapter mode，不读取或返回 secret material、不写 execution/outbox 表 |
+| provider HTTP boundary | Web `/ops/provider-http-boundary` 只读展示 fake HTTP client、network/real HTTP disabled、abort/timeout/request-id/status-code mapping、secret material boundary、allowed adapter modes、runtime/adapter mode 与 blocked reason，不执行真实网络请求、不注入 secret material、不写 execution/outbox 表 |
 | rbac management | Web `/rbac` 只读展示 organizations、organization members 与默认项目 memberships，不触发 create/update/deactivate/grant/revoke/check-access |
 | evaluation dashboard | Web `/evaluations` 只读展示 analytics、low-quality results 与 result evaluations，不触发 create/evaluate-rule/batch rule evaluation |
 | mcp marketplace | Web `/mcp/marketplace` 只读展示 marketplace entries、project installations 与 server binding，不触发 create/install/disable/uninstall/hot-load/tool invocation |

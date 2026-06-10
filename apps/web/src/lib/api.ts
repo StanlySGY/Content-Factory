@@ -49,6 +49,7 @@ import type {
   PaginatedTasks,
   PendingReviewDTO,
   ProjectMembershipDTO,
+  ProviderHttpBoundaryResponse,
   ProviderQuotaCostPreflightReadinessResponse,
   PublishRecordDTO,
   ProductionActivationPreflightResponse,
@@ -365,6 +366,11 @@ export const api = {
     request<SecretResolverReadinessResponse>(
       "GET",
       "/execution/ops/secret-resolver-readiness",
+    ),
+  getProviderHttpBoundary: () =>
+    request<ProviderHttpBoundaryResponse>(
+      "GET",
+      "/execution/ops/provider-http-boundary",
     ),
   getSecretInjectionPreflight: () =>
     request<SecretInjectionPreflightReadinessResponse>(

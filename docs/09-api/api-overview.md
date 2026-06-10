@@ -157,6 +157,7 @@
 - Secret injection preflight 已提供只读 Web 入口 `/ops/secret-injection`，展示 `/api/execution/ops/secret-injection-preflight` 的 resolver、secret store/injection readiness、allowed ref schemes、supported purposes、persistence boundary、audit metadata 与 runtime gate；该入口不读取 secret material、不注入 header、不执行 transport 或写端点。
 - Agent real adapter registration guard 已提供只读 Web 入口 `/ops/agent-registration-guard`，展示 `/api/execution/ops/agent-real-adapter-registration-guard` 的 registration readiness、disabled fixture、descriptor status、config gates、readiness gates、missing requirements 与 fail-closed error；该入口不注册真实 adapter、不启动 worker、不执行 provider 请求或写端点。
 - Secret resolver readiness 已提供只读 Web 入口 `/ops/secret-resolver`，展示 `/api/execution/ops/secret-resolver-readiness` 的 resolver kind、available、allowed ref schemes、supported purposes、env/network/process boundary 与 runtime/adapter mode；该入口不读取 secret material、不返回 secret material、不写 execution/outbox 表。
+- Provider HTTP boundary 已提供只读 Web 入口 `/ops/provider-http-boundary`，展示 `/api/execution/ops/provider-http-boundary` 的 fake HTTP client、network/real HTTP disabled、abort/timeout/request-id/status-code mapping、secret material injection boundary、allowed adapter modes、runtime/adapter mode 与 blocked reason；该入口不执行真实网络请求、不注入 secret material、不写 execution/outbox 表。
 
 ## 6. 高风险动作的风险元数据
 
