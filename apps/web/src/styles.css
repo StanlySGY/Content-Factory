@@ -644,6 +644,29 @@ button {
 .registration-guard-gate-card {
   min-height: 188px;
 }
+.secret-resolver-kpi-grid {
+  margin-bottom: var(--sp-5);
+}
+.secret-resolver-grid {
+  align-items: start;
+}
+.secret-resolver-mode-card {
+  margin-bottom: var(--sp-5);
+}
+.secret-resolver-mode-card .ops-card-head {
+  margin-bottom: var(--sp-3);
+}
+.secret-resolver-detail-facts {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.secret-resolver-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+}
+.secret-resolver-gate-card {
+  min-height: 176px;
+}
 
 /* ---- Knowledge inventory ---- */
 .knowledge-kpi-grid {

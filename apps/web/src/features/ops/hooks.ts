@@ -80,6 +80,13 @@ export function useAgentRealAdapterRegistrationGuard() {
   });
 }
 
+export function useSecretResolverReadiness() {
+  return useQuery({
+    queryKey: ["ops", "secret-resolver-readiness"],
+    queryFn: () => api.getSecretResolverReadiness(),
+  });
+}
+
 export function useSecretInjectionPreflight() {
   return useQuery({
     queryKey: ["ops", "secret-injection-preflight"],

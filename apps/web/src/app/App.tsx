@@ -27,6 +27,7 @@ import { OpsMonitoringPage } from "../features/ops/OpsMonitoringPage.js";
 import { OpsReadinessPage } from "../features/ops/OpsReadinessPage.js";
 import { ProviderQuotaCostPreflightPage } from "../features/ops/ProviderQuotaCostPreflightPage.js";
 import { SecretInjectionPreflightPage } from "../features/ops/SecretInjectionPreflightPage.js";
+import { SecretResolverReadinessPage } from "../features/ops/SecretResolverReadinessPage.js";
 import { PublisherWorkbenchPage } from "../features/publisher/PublisherWorkbenchPage.js";
 import { RbacManagementPage } from "../features/rbac/RbacManagementPage.js";
 import { PendingReviewsPage } from "../features/reviews/PendingReviewsPage.js";
@@ -78,6 +79,7 @@ export function App() {
         <Route path="/ops/agent-provider-config" element={<AgentProviderConfigPreflightPage />} />
         <Route path="/ops/agent-provider-transport" element={<AgentProviderTransportDisabledHarnessPage />} />
         <Route path="/ops/agent-registration-guard" element={<AgentRealAdapterRegistrationGuardPage />} />
+        <Route path="/ops/secret-resolver" element={<SecretResolverReadinessPage />} />
         <Route path="/ops/secret-injection" element={<SecretInjectionPreflightPage />} />
         <Route path="/publisher" element={<PublisherWorkbenchPage />} />
         <Route path="/stage-runs/:id" element={<StageRunDetailPage />} />

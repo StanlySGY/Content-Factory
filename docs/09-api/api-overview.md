@@ -156,6 +156,7 @@
 - Agent real provider transport disabled harness 已提供只读 Web 入口 `/ops/agent-provider-transport`，展示 `/api/execution/ops/agent-real-provider-transport-disabled-harness` 的 request shape、disabled transport、fail-closed error、network/secret boundary 与 redacted request；该入口不执行 transport、不发网络请求、不读取 secret material、不写 execution 表。
 - Secret injection preflight 已提供只读 Web 入口 `/ops/secret-injection`，展示 `/api/execution/ops/secret-injection-preflight` 的 resolver、secret store/injection readiness、allowed ref schemes、supported purposes、persistence boundary、audit metadata 与 runtime gate；该入口不读取 secret material、不注入 header、不执行 transport 或写端点。
 - Agent real adapter registration guard 已提供只读 Web 入口 `/ops/agent-registration-guard`，展示 `/api/execution/ops/agent-real-adapter-registration-guard` 的 registration readiness、disabled fixture、descriptor status、config gates、readiness gates、missing requirements 与 fail-closed error；该入口不注册真实 adapter、不启动 worker、不执行 provider 请求或写端点。
+- Secret resolver readiness 已提供只读 Web 入口 `/ops/secret-resolver`，展示 `/api/execution/ops/secret-resolver-readiness` 的 resolver kind、available、allowed ref schemes、supported purposes、env/network/process boundary 与 runtime/adapter mode；该入口不读取 secret material、不返回 secret material、不写 execution/outbox 表。
 
 ## 6. 高风险动作的风险元数据
 

@@ -60,6 +60,7 @@ import type {
   ReviewRecordDTO,
   ReviewStatus,
   SecretInjectionPreflightReadinessResponse,
+  SecretResolverReadinessResponse,
   StageRunDTO,
   StagingSmokeReadinessResponse,
   TaskKnowledgeCandidatesResponse,
@@ -359,6 +360,11 @@ export const api = {
     request<AgentRealAdapterRegistrationGuardResponse>(
       "GET",
       "/execution/ops/agent-real-adapter-registration-guard",
+    ),
+  getSecretResolverReadiness: () =>
+    request<SecretResolverReadinessResponse>(
+      "GET",
+      "/execution/ops/secret-resolver-readiness",
     ),
   getSecretInjectionPreflight: () =>
     request<SecretInjectionPreflightReadinessResponse>(
