@@ -52,6 +52,7 @@ import type {
   StageRunDTO,
   StagingSmokeReadinessResponse,
   TaskKnowledgeCandidatesResponse,
+  ToolInvocationDTO,
   UpdateAgentProfileBody,
   UpdateContextPackBody,
   UpdateTaskBody,
@@ -257,6 +258,8 @@ export const api = {
   listMcpServers: () => request<McpServerDTO[]>("GET", "/mcp/servers"),
   listMcpTools: (serverId: string) =>
     request<McpToolDTO[]>("GET", `/mcp/servers/${serverId}/tools`),
+  listToolInvocations: (toolId: string) =>
+    request<ToolInvocationDTO[]>("GET", `/mcp/tools/${toolId}/invocations`),
 
   // ── RBAC Management（只读管理面）──
   listRbacOrganizations: () =>

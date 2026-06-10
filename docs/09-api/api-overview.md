@@ -128,7 +128,7 @@
 | `POST` | `/api/publish-records` | 创建发布准备记录 | 是 |
 | `GET` | `/api/publish-records` | 查询发布记录 | 否 |
 
-> Agent/MCP 为配置 + mock/日志壳层（ADR-016）；发布准备须校验审核通过（roadmap §7.5），锚定 `asset_version_id`（db §5.21）。
+> Agent/MCP 为配置 + mock/日志壳层（ADR-016）；Web `/mcp/invocations` 只读消费 `GET /api/mcp/tools/:id/invocations`，不触发 mock invoke、health check、真实 transport、重放或写操作。发布准备须校验审核通过（roadmap §7.5），锚定 `asset_version_id`（db §5.21）。
 
 ### 4.5 Final RC 后端扩展 MVP
 
@@ -146,6 +146,7 @@
 
 - 追溯视图：按 `stage_run` 聚合 Agent/工具/Skill/插件调用，数据源 `v_invocations`（db §5.17），支撑 ui §3.2 调用追溯视图与 PRD §2.3 过程可追溯率硬指标。
 - 输入/输出以摘要返回，敏感值已脱敏（ADR-012）；高风险调用标记 `risk_level`。
+- MCP tool invocation 账本已提供只读 Web 入口 `/mcp/invocations`，按 server/tool 选择后展示 invocation status、caller、risk、duration 与输入/输出摘要；该入口不调用写端点。
 
 ## 6. 高风险动作的风险元数据
 

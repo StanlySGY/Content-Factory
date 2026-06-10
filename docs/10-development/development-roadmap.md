@@ -502,6 +502,8 @@ MVP 后再进入：
 
 > **MCP Marketplace Backend MVP 已补齐**：Product Gap 1 新增本地 `mcp_marketplace_entries` / `mcp_marketplace_installations`、Manifest 校验、安装/禁用/卸载 API。安装只写本项目 MCP 配置（`mcp_servers` / `mcp_tools`），不调用外部 marketplace、不执行 tool invocation、不做 UI。证据见 `docs/reviews/product-gap-1-mcp-marketplace-backend-audit.md`。
 
+> **MCP Invocation Ledger UI 已补齐**：Web 新增 `/mcp/invocations`，只读展示 MCP server/tool inventory 与 selected tool 的 invocation ledger，包含 status、caller、risk、duration 和输入/输出摘要。它不触发 mock invoke、health check、真实 transport、replay 或写操作。
+
 > **Publisher Platform Backend MVP 已补齐**：Product Gap 2 新增项目级 `publisher_channels`、渠道创建/列表/详情/更新/禁用/归档 API，并让 `publish_records` 创建前校验渠道处于 active。它不新增真实发布网络行为、不做 UI、不代表完整多渠道运营平台已完成。证据见 `docs/reviews/product-gap-2-publisher-platform-backend-audit.md`。
 
 > **Multi-tenant RBAC Backend MVP 已补齐**：Product Gap 3 新增 `organizations` / `organization_members` / `project_memberships`、组织成员管理、项目成员授权/撤销、`project.read/write/admin` 权限检查 API。它不替换默认 actor/project context、不全局拦截既有业务 API、不做 UI。证据见 `docs/reviews/product-gap-3-rbac-backend-audit.md`。

@@ -16,6 +16,7 @@ export function SidebarNav() {
       <NavLink end to="/knowledge">知识库</NavLink>
       <NavLink to="/knowledge/candidates">知识候选</NavLink>
       <NavLink end to="/mcp">MCP 管理</NavLink>
+      <NavLink to="/mcp/invocations">MCP 调用</NavLink>
       <NavLink to="/mcp/marketplace">MCP 市场</NavLink>
       <NavLink to="/rbac">RBAC 管理</NavLink>
       <NavLink to="/publisher">发布工作台</NavLink>

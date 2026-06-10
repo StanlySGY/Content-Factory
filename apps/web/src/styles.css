@@ -874,6 +874,82 @@ button {
   word-break: break-word;
 }
 
+/* ---- MCP invocation ledger ---- */
+.invocation-kpi-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.invocation-grid {
+  display: grid;
+  grid-template-columns: minmax(420px, 0.9fr) minmax(0, 1.15fr);
+  gap: var(--sp-4);
+}
+.invocation-detail-column {
+  min-width: 0;
+}
+.invocation-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+.invocation-section-head span {
+  color: var(--text-secondary);
+  font-size: 12px;
+  word-break: break-all;
+}
+.invocation-table tbody tr {
+  cursor: default;
+}
+.invocation-table tbody tr:hover {
+  background: var(--bg-surface);
+}
+.invocation-table tbody tr.selected {
+  background: var(--accent-primary-weak);
+}
+.invocation-table strong,
+.invocation-table span,
+.invocation-table code {
+  display: block;
+}
+.invocation-table span {
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin-top: 2px;
+}
+.invocation-table code {
+  color: var(--text-secondary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  margin-top: 2px;
+  word-break: break-all;
+}
+.invocation-select-button {
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  padding: 0;
+  text-align: left;
+}
+.invocation-select-button:hover {
+  color: var(--accent-primary);
+}
+.invocation-server-table,
+.invocation-tool-table,
+.invocation-ledger-table {
+  table-layout: fixed;
+}
+.invocation-server-table th,
+.invocation-server-table td,
+.invocation-tool-table th,
+.invocation-tool-table td,
+.invocation-ledger-table th,
+.invocation-ledger-table td {
+  word-break: break-word;
+}
+
 /* ---- RBAC management ---- */
 .rbac-kpi-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1207,6 +1283,7 @@ button {
   .knowledge-kpi-grid,
   .candidate-kpi-grid,
   .mcp-kpi-grid,
+  .invocation-kpi-grid,
   .rbac-kpi-grid,
   .evaluation-kpi-grid,
   .marketplace-kpi-grid,
@@ -1218,6 +1295,7 @@ button {
   .mcp-readiness-facts,
   .mcp-readiness-lists,
   .mcp-grid,
+  .invocation-grid,
   .rbac-grid,
   .evaluation-distribution,
   .evaluation-grid,
