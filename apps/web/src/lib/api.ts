@@ -1,5 +1,6 @@
 import type {
   AgentRealAdapterRegistrationGuardResponse,
+  AgentRealHttpAdapterReadinessResponse,
   AgentRealProviderConfigPreflightResponse,
   AgentRealProviderTransportDisabledHarnessResponse,
   AgentProfileDTO,
@@ -48,6 +49,7 @@ import type {
   OutboxEventDTO,
   PaginatedTasks,
   PendingReviewDTO,
+  ProductRouteReadinessResponse,
   ProjectMembershipDTO,
   ProviderHttpBoundaryResponse,
   ProviderQuotaCostPreflightReadinessResponse,
@@ -338,6 +340,8 @@ export const api = {
     ),
   getProductionReadinessP1: () =>
     request<ProductionReadinessP1Response>("GET", "/execution/ops/production-readiness-p1"),
+  getProductRouteReadiness: () =>
+    request<ProductRouteReadinessResponse>("GET", "/execution/ops/product-route-readiness"),
   getExecutionMonitoringReadiness: () =>
     request<ExecutionMonitoringReadinessResponse>("GET", "/execution/ops/monitoring-readiness"),
   getStagingSmokeReadiness: () =>
@@ -361,6 +365,11 @@ export const api = {
     request<AgentRealAdapterRegistrationGuardResponse>(
       "GET",
       "/execution/ops/agent-real-adapter-registration-guard",
+    ),
+  getAgentRealHttpAdapterReadiness: () =>
+    request<AgentRealHttpAdapterReadinessResponse>(
+      "GET",
+      "/execution/ops/agent-real-http-adapter",
     ),
   getSecretResolverReadiness: () =>
     request<SecretResolverReadinessResponse>(

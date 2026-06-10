@@ -102,6 +102,7 @@ MCP 与 Publisher 真实入口还需分别开启：
 
 | 验证 | 通过条件 |
 | --- | --- |
+| `production-launch-readiness` | 4 步 gate 均 `ready=true`：只启用单一路线、外部 secret registry + rollback flags、monitoring/alerting + real low-privilege smoke、Agent provider staging/quota/cost/error mapping |
 | `final-rc-readiness` | 目标环境达到候选条件；`external_call_performed=false`；Web `/ops/readiness` 总览与 drilldown 均与 API 结果一致 |
 | Secret Store | secret material 不落响应、不入 `execution_results` 明文快照 |
 | allowlist | 所有真实外部 endpoint host 都在 allowlist 内 |

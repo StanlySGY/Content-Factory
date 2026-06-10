@@ -25,7 +25,7 @@ describe("staging smoke domain", () => {
   });
 
   it("rejects unsupported runtime mode and invalid max jobs", () => {
-    expect(() => validateStagingSmokeRunRequest({ runtimeMode: "real" as "mock_only", maxJobs: 1 }))
+    expect(() => validateStagingSmokeRunRequest({ runtimeMode: "unsupported" as "mock_only", maxJobs: 1 }))
       .toThrow("unsupported staging smoke runtime mode");
     expect(() => validateStagingSmokeRunRequest({ runtimeMode: "mock_only", maxJobs: 0 }))
       .toThrow("staging smoke maxJobs must be an integer >= 1");

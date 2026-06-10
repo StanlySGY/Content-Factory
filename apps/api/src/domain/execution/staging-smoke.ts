@@ -2,7 +2,7 @@ import type { ExecutionJobStatus, ExecutionJobType } from "@cf/shared";
 import { ValidationError } from "../errors.js";
 import type { ExecutionResultSummary } from "./result.js";
 
-export type StagingSmokeRuntimeMode = "mock_only";
+export type StagingSmokeRuntimeMode = "mock_only" | "real_low_privilege";
 
 export interface StagingSmokeRunRequest {
   runtimeMode: StagingSmokeRuntimeMode;
@@ -19,6 +19,8 @@ export interface StagingSmokeReadiness {
   externalCallPerformed: false;
   networkPushEnabled: false;
   runEndpoint: "/api/execution/ops/staging-smoke-runs";
+  credentialRef: string | null;
+  lowPrivilegeKeyRequired: boolean;
   missingRequirements: string[];
   warnings: string[];
 }
@@ -34,7 +36,7 @@ export interface StagingSmokePlan {
 export interface StagingSmokeReport {
   mode: "staging_smoke_report";
   enabled: true;
-  externalCallPerformed: false;
+  externalCallPerformed: boolean;
   runtimeMode: StagingSmokeRuntimeMode;
   jobId: string;
   jobType: ExecutionJobType;
@@ -52,7 +54,7 @@ export interface StagingSmokeReport {
 }
 
 export function validateStagingSmokeRunRequest(req: StagingSmokeRunRequest): void {
-  if (req.runtimeMode !== "mock_only")
+  if (req.runtimeMode !== "mock_only" && req.runtimeMode !== "real_low_privilege")
     throw new ValidationError(`unsupported staging smoke runtime mode: ${String(req.runtimeMode)}`);
   if (!Number.isInteger(req.maxJobs) || req.maxJobs < 1)
     throw new ValidationError("staging smoke maxJobs must be an integer >= 1");
@@ -62,9 +64,14 @@ export function buildStagingSmokeReadiness(input: {
   enabled: boolean;
   runtimeMode: StagingSmokeRuntimeMode;
   maxJobs: number;
+  credentialRef?: string | null;
 }): StagingSmokeReadiness {
   validateStagingSmokeRunRequest({ runtimeMode: input.runtimeMode, maxJobs: input.maxJobs });
+  const credentialRef = input.credentialRef ?? null;
   const missingRequirements = input.enabled ? [] : ["staging smoke automation must be enabled"];
+  if (input.runtimeMode === "real_low_privilege" && (!credentialRef || credentialRef.trim().length === 0)) {
+    missingRequirements.push("low-privilege staging smoke credential ref must be configured");
+  }
   return {
     mode: "staging_smoke_readiness",
     ready: missingRequirements.length === 0,
@@ -75,8 +82,12 @@ export function buildStagingSmokeReadiness(input: {
     externalCallPerformed: false,
     networkPushEnabled: false,
     runEndpoint: "/api/execution/ops/staging-smoke-runs",
+    credentialRef,
+    lowPrivilegeKeyRequired: input.runtimeMode === "real_low_privilege",
     missingRequirements,
-    warnings: ["staging smoke runs are mock-only and do not call real providers"],
+    warnings: input.runtimeMode === "real_low_privilege" ?
+      ["real low-privilege smoke may perform one provider call when explicitly run"] :
+      ["staging smoke runs are mock-only and do not call real providers"],
   };
 }
 
@@ -107,7 +118,7 @@ export function buildStagingSmokeReport(input: Omit<StagingSmokeReport, "mode" |
   return {
     mode: "staging_smoke_report",
     enabled: true,
-    externalCallPerformed: false,
+    externalCallPerformed: input.runtimeMode === "real_low_privilege",
     ...input,
   };
 }

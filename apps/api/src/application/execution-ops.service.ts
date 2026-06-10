@@ -168,12 +168,16 @@ export interface ExecutionOpsConfig {
   credentialEnvSource: NodeJS.ProcessEnv | Record<string, string | undefined>;
   agentOpenAICompatibleEndpoint: string | null;
   providerQuotaLimits: ProviderQuotaLimits;
+  productionEnablementScope: "agent" | "mcp" | "publisher" | "writeback" | null;
   monitoringEnabled: boolean;
   monitoringExporterFormat: "prometheus_text";
+  alertingProvider: "grafana" | "pagerduty" | "alertmanager" | "manual" | null;
   monitoringThresholds: ExecutionMonitoringThresholds;
   stagingSmokeEnabled: boolean;
   stagingSmokeRuntimeMode: StagingSmokeRuntimeMode;
   stagingSmokeMaxJobs: number;
+  stagingSmokeCredentialRef: string | null;
+  agentProviderStagingEnabled: boolean;
   mcpRealRuntimeEnabled: boolean;
   mcpTransportMode: MCPTransportMode;
   mcpEndpointRegistry: string[];
@@ -182,6 +186,84 @@ export interface ExecutionOpsConfig {
   publisherEndpointRegistry: string[];
   publisherChannelAllowlist: string[];
   writebackExecutorEnabled: boolean;
+}
+
+type ProductionLaunchRoute = "agent" | "mcp" | "publisher" | "writeback";
+
+interface ProductionLaunchStep {
+  ready: boolean;
+  status: "ready" | "blocked";
+  missingRequirements: string[];
+}
+
+interface ProductionLaunchEnablementStep extends ProductionLaunchStep {
+  selectedScope: ProductionLaunchRoute | null;
+  activeRoutes: ProductionLaunchRoute[];
+}
+
+interface ProductionLaunchSafetyStep extends ProductionLaunchStep {
+  secretStoreKind: "env" | "external_registry";
+  secretRotationPolicyDefined: boolean;
+  networkAllowlist: string[];
+  rollbackFlags: string[];
+}
+
+interface ProductionLaunchOpsStep extends ProductionLaunchStep {
+  monitoringEnabled: boolean;
+  alertingProvider: "grafana" | "pagerduty" | "alertmanager" | "manual" | null;
+  stagingSmokeRuntimeMode: StagingSmokeRuntimeMode;
+  stagingSmokeCredentialRef: string | null;
+}
+
+interface ProductionLaunchAgentStep extends ProductionLaunchStep {
+  providerStagingEnabled: boolean;
+  endpointHost: string | null;
+  errorMappingReady: boolean;
+  quotaEnforced: boolean;
+  costCalibrated: boolean;
+}
+
+export interface ProductionLaunchReadiness {
+  mode: "production_launch_readiness";
+  ready: boolean;
+  status: "ready" | "blocked";
+  selectedScope: ProductionLaunchRoute | null;
+  activeRoutes: ProductionLaunchRoute[];
+  missingRequirements: string[];
+  warnings: string[];
+  steps: {
+    enablementScope: ProductionLaunchEnablementStep;
+    safetyFoundation: ProductionLaunchSafetyStep;
+    opsClosure: ProductionLaunchOpsStep;
+    agentProduction: ProductionLaunchAgentStep;
+  };
+}
+
+type ProductRouteKey =
+  | "publisher_platform"
+  | "mcp_marketplace"
+  | "multi_tenant_rbac"
+  | "knowledge_rag"
+  | "agent_evaluation";
+
+interface ProductRouteReadinessItem {
+  key: ProductRouteKey;
+  title: string;
+  mvpReady: boolean;
+  productionReady: boolean;
+  status: "ready" | "blocked";
+  evidenceEndpoints: string[];
+  deliveredCapabilities: string[];
+  missingProductRequirements: string[];
+  safetyBoundaries: string[];
+}
+
+export interface ProductRouteReadiness {
+  mode: "product_route_readiness";
+  ready: boolean;
+  status: "ready" | "blocked";
+  routeCount: 5;
+  routes: ProductRouteReadinessItem[];
 }
 
 export interface ProviderSafetySummary {
@@ -405,6 +487,25 @@ interface ExistsRow {
 function envNameFromKeyRef(keyRef: string): string | null {
   if (!keyRef.startsWith("env://")) return null;
   return keyRef.slice("env://".length);
+}
+
+function endpointHost(endpoint: string | null): string | null {
+  if (!endpoint) return null;
+  try {
+    return new URL(endpoint).hostname;
+  } catch {
+    return null;
+  }
+}
+
+function step<T extends Record<string, unknown>>(missingRequirements: string[], extra: T): ProductionLaunchStep & T {
+  const ready = missingRequirements.length === 0;
+  return {
+    ready,
+    status: ready ? "ready" : "blocked",
+    missingRequirements,
+    ...extra,
+  };
 }
 
 // ExecutionOpsService：execution layer 安全运维入口（health / stale 恢复 / outbox 批处理 / manual retry）。
@@ -727,6 +828,290 @@ export class ExecutionOpsService {
     };
   }
 
+  getProductionLaunchReadiness(): ProductionLaunchReadiness {
+    const secretManager = this.getSecretManagerReadiness();
+    const monitoring = this.getMonitoringReadiness();
+    const smoke = this.getStagingSmokeReadiness();
+    const host = endpointHost(this.config.agentOpenAICompatibleEndpoint);
+    const activeRoutes: ProductionLaunchRoute[] = [];
+    const agentRouteActive =
+      this.config.runtimeSafetyPolicy.mode === "real_enabled" &&
+      this.config.runtimeAdapterMode === "real" &&
+      this.config.runtimeSafetyPolicy.allowRealExecution;
+    if (agentRouteActive) activeRoutes.push("agent");
+    if (this.config.mcpRealRuntimeEnabled) activeRoutes.push("mcp");
+    if (this.config.publisherRealRuntimeEnabled) activeRoutes.push("publisher");
+    if (this.config.writebackExecutorEnabled) activeRoutes.push("writeback");
+
+    const enablementMissing: string[] = [];
+    if (!this.config.productionEnablementScope) {
+      enablementMissing.push("production enablement scope must be selected");
+    }
+    if (activeRoutes.length !== 1) {
+      enablementMissing.push("exactly one real production route must be active");
+    }
+    if (
+      this.config.productionEnablementScope &&
+      activeRoutes.length === 1 &&
+      activeRoutes[0] !== this.config.productionEnablementScope
+    ) {
+      enablementMissing.push("selected production route must match the active route");
+    }
+
+    const safetyMissing: string[] = [];
+    if (this.config.secretStoreKind !== "external_registry") {
+      safetyMissing.push("production secret store kind must be external_registry");
+    }
+    if (!secretManager.ready) safetyMissing.push(...secretManager.missingRequirements);
+    if (!this.config.secretRotationPolicyEnabled) safetyMissing.push("secret rotation policy must be configured");
+    if (this.config.networkAllowlist.length === 0) safetyMissing.push("production network allowlist must be configured");
+    if (!this.config.runtimeSafetyPolicy.redactSnapshots) safetyMissing.push("runtime snapshot redaction must be enabled");
+
+    const opsMissing: string[] = [];
+    if (!monitoring.ready) opsMissing.push(...monitoring.missingRequirements);
+    if (!this.config.alertingProvider) opsMissing.push("alerting provider must be configured");
+    if (!smoke.ready) opsMissing.push(...smoke.missingRequirements);
+    if (this.config.stagingSmokeRuntimeMode !== "real_low_privilege") {
+      opsMissing.push("staging smoke runtime mode must be real_low_privilege");
+    }
+
+    const agentMissing: string[] = [];
+    if (!this.config.agentProviderStagingEnabled) agentMissing.push("agent provider staging must be enabled");
+    if (!host) agentMissing.push("agent OpenAI-compatible endpoint must be configured");
+    if (host && !this.config.networkAllowlist.includes(host)) {
+      agentMissing.push("agent endpoint host must be allowlisted");
+    }
+    if (this.config.providerQuotaLimits.dailyRequestLimit === null) {
+      agentMissing.push("daily provider request limit must be configured");
+    }
+    if (this.config.providerQuotaLimits.dailyCostLimitCents === null) {
+      agentMissing.push("daily provider cost limit must be configured");
+    }
+    if (this.config.providerQuotaLimits.estimatedCostPerRequestCents <= 0) {
+      agentMissing.push("estimated provider cost per request must be configured");
+    }
+
+    const steps: ProductionLaunchReadiness["steps"] = {
+      enablementScope: step(enablementMissing, {
+        selectedScope: this.config.productionEnablementScope,
+        activeRoutes,
+      }),
+      safetyFoundation: step(safetyMissing, {
+        secretStoreKind: this.config.secretStoreKind,
+        secretRotationPolicyDefined: this.config.secretRotationPolicyEnabled,
+        networkAllowlist: [...this.config.networkAllowlist],
+        rollbackFlags: [
+          "EXECUTION_RUNTIME_MODE=mock",
+          "EXECUTION_RUNTIME_ADAPTER_MODE=mock",
+          "EXECUTION_ALLOW_REAL_RUNTIME=false",
+          "EXECUTION_ALLOW_NETWORK=false",
+          "EXECUTION_WRITEBACK_EXECUTOR_ENABLED=false",
+          "EXECUTION_MCP_REAL_RUNTIME_ENABLED=false",
+          "EXECUTION_PUBLISHER_REAL_RUNTIME_ENABLED=false",
+        ],
+      }),
+      opsClosure: step(opsMissing, {
+        monitoringEnabled: this.config.monitoringEnabled,
+        alertingProvider: this.config.alertingProvider,
+        stagingSmokeRuntimeMode: this.config.stagingSmokeRuntimeMode,
+        stagingSmokeCredentialRef: this.config.stagingSmokeCredentialRef,
+      }),
+      agentProduction: step(agentMissing, {
+        providerStagingEnabled: this.config.agentProviderStagingEnabled,
+        endpointHost: host,
+        errorMappingReady: true,
+        quotaEnforced: this.config.providerQuotaLimits.dailyRequestLimit !== null,
+        costCalibrated: this.config.providerQuotaLimits.estimatedCostPerRequestCents > 0,
+      }),
+    };
+    const missingRequirements = [
+      ...steps.enablementScope.missingRequirements,
+      ...steps.safetyFoundation.missingRequirements,
+      ...steps.opsClosure.missingRequirements,
+      ...steps.agentProduction.missingRequirements,
+    ];
+    const ready = missingRequirements.length === 0;
+    return {
+      mode: "production_launch_readiness",
+      ready,
+      status: ready ? "ready" : "blocked",
+      selectedScope: this.config.productionEnablementScope,
+      activeRoutes,
+      missingRequirements,
+      warnings: [
+        "production launch readiness performs checks only; it does not call providers",
+        "run staging-smoke-runs separately in the target environment to collect real evidence",
+      ],
+      steps,
+    };
+  }
+
+  getProductRouteReadiness(): ProductRouteReadiness {
+    const routes: ProductRouteReadinessItem[] = [
+      {
+        key: "publisher_platform",
+        title: "Publisher Platform",
+        mvpReady: true,
+        productionReady: false,
+        status: "ready",
+        evidenceEndpoints: [
+          "/api/publisher/channels",
+          "/api/publish-records",
+          "/api/execution/ops/publisher-real-runtime-readiness",
+          "/publisher",
+        ],
+        deliveredCapabilities: [
+          "publisher channels and publish_records APIs",
+          "asset_version-pinned publish records",
+          "default-closed Publisher real runtime readiness",
+          "readonly Publisher workbench UI",
+        ],
+        missingProductRequirements: [
+          "channel configuration write UI",
+          "real external publishing approval workflow",
+          "withdraw and resend operations",
+          "multi-channel orchestration",
+        ],
+        safetyBoundaries: [
+          "readiness checks do not call external publisher endpoints",
+          "publish_records preserve asset_version_id immutability",
+          "real Publisher runtime remains behind explicit gates",
+        ],
+      },
+      {
+        key: "mcp_marketplace",
+        title: "MCP Marketplace",
+        mvpReady: true,
+        productionReady: false,
+        status: "ready",
+        evidenceEndpoints: [
+          "/api/mcp/marketplace/entries",
+          "/api/mcp/marketplace/installations",
+          "/api/mcp/tools/:id/invocations",
+          "/api/execution/ops/mcp-real-runtime-readiness",
+          "/mcp/marketplace",
+          "/mcp/invocations",
+        ],
+        deliveredCapabilities: [
+          "marketplace entry and installation APIs",
+          "tool invocation ledger read model",
+          "default-closed MCP real runtime readiness",
+          "readonly marketplace and invocation ledger UIs",
+        ],
+        missingProductRequirements: [
+          "external marketplace discovery",
+          "MCP SDK transport integration",
+          "SSE and stdio transports",
+          "hot-load install and disable execution",
+        ],
+        safetyBoundaries: [
+          "readiness checks do not invoke MCP tools",
+          "real MCP runtime remains endpoint and tool allowlist gated",
+          "marketplace UI does not install, disable, or uninstall entries",
+        ],
+      },
+      {
+        key: "multi_tenant_rbac",
+        title: "Multi-tenant RBAC",
+        mvpReady: true,
+        productionReady: false,
+        status: "ready",
+        evidenceEndpoints: [
+          "/api/rbac/organizations",
+          "/api/rbac/organizations/:id/members",
+          "/api/rbac/projects/:id/memberships",
+          "/rbac",
+        ],
+        deliveredCapabilities: [
+          "organization, member, and project membership APIs",
+          "role and membership persistence model",
+          "readonly RBAC management UI",
+        ],
+        missingProductRequirements: [
+          "auth and session integration",
+          "global API authorization enforcement",
+          "role mutation UI with approval/audit policy",
+          "cross-project access denial regression matrix",
+        ],
+        safetyBoundaries: [
+          "current UI is readonly and does not mutate permissions",
+          "route readiness does not grant access or change membership",
+          "production enforcement remains a separate rollout gate",
+        ],
+      },
+      {
+        key: "knowledge_rag",
+        title: "Knowledge / RAG",
+        mvpReady: true,
+        productionReady: false,
+        status: "ready",
+        evidenceEndpoints: [
+          "/api/knowledge/sources",
+          "/api/knowledge/sources/:id/entries",
+          "/api/tasks/:id/knowledge-candidates",
+          "/api/tasks/:id/knowledge-context-pack",
+          "/knowledge",
+          "/knowledge/candidates",
+        ],
+        deliveredCapabilities: [
+          "knowledge source and entry APIs",
+          "keyword task candidate search",
+          "manual context pack materialization",
+          "readonly inventory and candidate review UIs",
+        ],
+        missingProductRequirements: [
+          "embedding pipeline",
+          "vector index integration",
+          "LLM rerank path",
+          "automatic context pack refresh policy",
+        ],
+        safetyBoundaries: [
+          "current search is keyword based and does not call LLMs",
+          "context pack materialization is explicit, not automatic",
+          "archived sources and entries are excluded from candidates",
+        ],
+      },
+      {
+        key: "agent_evaluation",
+        title: "Agent Evaluation",
+        mvpReady: true,
+        productionReady: false,
+        status: "ready",
+        evidenceEndpoints: [
+          "/api/execution/results/:id/evaluations",
+          "/api/execution/evaluations/analytics",
+          "/api/execution/evaluations/low-quality",
+          "/evaluations",
+        ],
+        deliveredCapabilities: [
+          "human and deterministic rule evaluation ledger",
+          "job-level evaluation summary",
+          "evaluation analytics and low-quality queries",
+          "readonly evaluation dashboard UI",
+        ],
+        missingProductRequirements: [
+          "LLM judge integration",
+          "model comparison workflows",
+          "scheduled regression evaluation runner",
+          "real cost attribution calibration",
+        ],
+        safetyBoundaries: [
+          "rule evaluation does not call external LLMs",
+          "evaluations append records without mutating execution_results",
+          "dashboard is readonly and does not trigger evaluations",
+        ],
+      },
+    ];
+    const ready = routes.length === 5 && routes.every((route) => route.mvpReady && route.status === "ready");
+    return {
+      mode: "product_route_readiness",
+      ready,
+      status: ready ? "ready" : "blocked",
+      routeCount: 5,
+      routes,
+    };
+  }
+
   getStagingSmokePlan() {
     return buildStagingSmokePlan({ automated: this.config.stagingSmokeEnabled });
   }
@@ -736,6 +1121,7 @@ export class ExecutionOpsService {
       enabled: this.config.stagingSmokeEnabled,
       runtimeMode: this.config.stagingSmokeRuntimeMode,
       maxJobs: this.config.stagingSmokeMaxJobs,
+      credentialRef: this.config.stagingSmokeCredentialRef,
     });
   }
 
@@ -889,6 +1275,14 @@ export class ExecutionOpsService {
             mockDelayMs: 0,
             smoke: true,
           },
+          ...(this.config.stagingSmokeRuntimeMode === "real_low_privilege" ? {
+            prompt: "Content Factory staging smoke check. Reply with a short success message.",
+            credential_ref: {
+              provider: "openai_compatible",
+              key_ref: this.config.stagingSmokeCredentialRef,
+              scope: "project",
+            },
+          } : {}),
         },
       });
       await outboxRepo.createOutboxEvent(tx, {

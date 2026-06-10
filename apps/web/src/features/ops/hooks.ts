@@ -52,6 +52,13 @@ export function useOpsMonitoringReadiness() {
   });
 }
 
+export function useProductRouteReadiness() {
+  return useQuery({
+    queryKey: ["ops", "product-route-readiness"],
+    queryFn: () => api.getProductRouteReadiness(),
+  });
+}
+
 export function useProviderQuotaCostPreflight() {
   return useQuery({
     queryKey: ["ops", "provider-quota-cost-preflight"],
@@ -77,6 +84,13 @@ export function useAgentRealAdapterRegistrationGuard() {
   return useQuery({
     queryKey: ["ops", "agent-real-adapter-registration-guard"],
     queryFn: () => api.getAgentRealAdapterRegistrationGuard(),
+  });
+}
+
+export function useAgentRealHttpAdapterReadiness() {
+  return useQuery({
+    queryKey: ["ops", "agent-real-http-adapter"],
+    queryFn: () => api.getAgentRealHttpAdapterReadiness(),
   });
 }
 

@@ -162,9 +162,9 @@ describe("ExecutionWritebackLedgerPage", () => {
     expect(screen.getByText("writeback:mcp:002")).toBeInTheDocument();
     expect(apiMock.listExecutionJobs).toHaveBeenCalledWith({});
 
+    expect(await screen.findByText("attempt 1")).toBeInTheDocument();
     expect(apiMock.listExecutionJobResults).toHaveBeenCalledWith(selectedJob.id);
     expect(apiMock.listExecutionResultWritebacks).toHaveBeenCalledWith(selectedResultId);
-    expect(await screen.findByText("attempt 1")).toBeInTheDocument();
     expect(screen.getByText("attempt 2")).toBeInTheDocument();
     expect(screen.getByText("planned")).toBeInTheDocument();
     expect(screen.getAllByText("failed").length).toBeGreaterThan(0);

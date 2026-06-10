@@ -23,7 +23,9 @@ import {
   McpRealRuntimeReadinessResponseSchema,
   ProcessOutboxBatchBodySchema,
   ProcessOutboxBatchResponseSchema,
+  ProductRouteReadinessResponseSchema,
   ProductionActivationPreflightResponseSchema,
+  ProductionLaunchReadinessResponseSchema,
   ProductionReadinessP1ResponseSchema,
   PublisherRealRuntimeReadinessResponseSchema,
   ProviderHttpBoundaryResponseSchema,
@@ -68,7 +70,9 @@ import {
   toExecutionWritebackTransactionPrototypeReadinessDTO,
   toExecutionMonitoringReadinessDTO,
   toMcpRealRuntimeReadinessDTO,
+  toProductRouteReadinessDTO,
   toProductionActivationPreflightDTO,
+  toProductionLaunchReadinessDTO,
   toProductionReadinessP1DTO,
   toPublisherRealRuntimeReadinessDTO,
   toRuntimeAdapterDryRunResponseDTO,
@@ -155,6 +159,18 @@ export const executionOpsRoutes: FastifyPluginAsyncTypebox<ExecutionOpsRoutesOpt
     "/api/execution/ops/production-readiness-p1",
     { schema: { response: { 200: ProductionReadinessP1ResponseSchema } } },
     async () => toProductionReadinessP1DTO(await executionOpsService.getProductionReadinessP1()),
+  );
+
+  app.get(
+    "/api/execution/ops/production-launch-readiness",
+    { schema: { response: { 200: ProductionLaunchReadinessResponseSchema } } },
+    async () => toProductionLaunchReadinessDTO(executionOpsService.getProductionLaunchReadiness()),
+  );
+
+  app.get(
+    "/api/execution/ops/product-route-readiness",
+    { schema: { response: { 200: ProductRouteReadinessResponseSchema } } },
+    async () => toProductRouteReadinessDTO(executionOpsService.getProductRouteReadiness()),
   );
 
   app.get(

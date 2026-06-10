@@ -217,6 +217,7 @@ EXECUTION_WRITEBACK_EXECUTOR_ENABLED=false
 P1 多实例启用前置检查：
 
 ```text
+GET /api/execution/ops/production-launch-readiness
 GET /api/execution/ops/production-readiness-p1
 GET /api/execution/ops/secret-manager-readiness
 GET /api/execution/ops/monitoring-readiness
@@ -239,6 +240,25 @@ P1 已将产品化 Agent runtime 的 quota/cost enforcement 切到 `execution_pr
 | staging smoke | 默认关闭；开启后创建 1 个 mock-only execution job 并汇总 report |
 
 `staging-smoke-plan` 返回当前 smoke 步骤，`staging-smoke-runs` 仅在 `EXECUTION_STAGING_SMOKE_ENABLED=true` 时可用，且 `external_call_performed=false`，不会触发真实 LLM / MCP / Publisher。
+
+生产启动 4 步收口由 `production-launch-readiness` 聚合，默认 fail-closed：
+
+| 步骤 | Gate | 关键配置 |
+| --- | --- | --- |
+| 真实启用范围 | `enablement_scope.ready=true` | `EXECUTION_PRODUCTION_ENABLEMENT_SCOPE=agent`，且只启用一条真实路线 |
+| 生产安全底座 | `safety_foundation.ready=true` | `EXECUTION_SECRET_STORE_KIND=external_registry`、secret rotation、allowlist、snapshot redaction、rollback flags |
+| 运维闭环 | `ops_closure.ready=true` | `EXECUTION_MONITORING_ENABLED=true`、`EXECUTION_ALERTING_PROVIDER=<grafana|pagerduty|alertmanager|manual>`、`EXECUTION_STAGING_SMOKE_RUNTIME_MODE=real_low_privilege` |
+| Agent Production | `agent_production.ready=true` | provider staging enabled、endpoint host allowlisted、DB quota/cost limits、HTTP error mapping |
+
+低权限真实 smoke 使用：
+
+```text
+EXECUTION_STAGING_SMOKE_RUNTIME_MODE=real_low_privilege
+EXECUTION_STAGING_SMOKE_CREDENTIAL_REF=secret://llm/openai
+POST /api/execution/ops/staging-smoke-runs
+```
+
+此模式只在显式运行 smoke 时执行一次 provider 调用；readiness 本身不发网络请求、不读取或返回 secret material。报告中 `external_call_performed=true`，但不得包含 API key、`Bearer` 或 `sk-`。
 
 P1.1 external registry contract adapter：
 

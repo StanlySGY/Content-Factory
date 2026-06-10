@@ -49,7 +49,9 @@ import type {
   OrganizationMemberDTO,
   OutboxEventDTO,
   PendingReviewDTO,
+  ProductRouteReadinessResponse,
   ProductionActivationPreflightResponse,
+  ProductionLaunchReadinessResponse,
   ProjectMembershipDTO,
   ProductionReadinessP1Response,
   PublishRecordDTO,
@@ -143,6 +145,8 @@ import type {
   FinalRcProductionCandidateReadiness,
   ProviderHttpBoundaryReadiness,
   ProviderSafetySummary,
+  ProductRouteReadiness,
+  ProductionLaunchReadiness,
   ProductionReadinessP1,
   SecretManagerReadiness,
   SecretInjectionPreflightReadiness,
@@ -1514,6 +1518,77 @@ export function toProductionReadinessP1DTO(s: ProductionReadinessP1): Production
   };
 }
 
+export function toProductionLaunchReadinessDTO(
+  s: ProductionLaunchReadiness,
+): ProductionLaunchReadinessResponse {
+  return {
+    mode: s.mode,
+    ready: s.ready,
+    status: s.status,
+    selected_scope: s.selectedScope,
+    active_routes: s.activeRoutes,
+    missing_requirements: s.missingRequirements,
+    warnings: s.warnings,
+    steps: {
+      enablement_scope: {
+        ready: s.steps.enablementScope.ready,
+        status: s.steps.enablementScope.status,
+        missing_requirements: s.steps.enablementScope.missingRequirements,
+        selected_scope: s.steps.enablementScope.selectedScope,
+        active_routes: s.steps.enablementScope.activeRoutes,
+      },
+      safety_foundation: {
+        ready: s.steps.safetyFoundation.ready,
+        status: s.steps.safetyFoundation.status,
+        missing_requirements: s.steps.safetyFoundation.missingRequirements,
+        secret_store_kind: s.steps.safetyFoundation.secretStoreKind,
+        secret_rotation_policy_defined: s.steps.safetyFoundation.secretRotationPolicyDefined,
+        network_allowlist: s.steps.safetyFoundation.networkAllowlist,
+        rollback_flags: s.steps.safetyFoundation.rollbackFlags,
+      },
+      ops_closure: {
+        ready: s.steps.opsClosure.ready,
+        status: s.steps.opsClosure.status,
+        missing_requirements: s.steps.opsClosure.missingRequirements,
+        monitoring_enabled: s.steps.opsClosure.monitoringEnabled,
+        alerting_provider: s.steps.opsClosure.alertingProvider,
+        staging_smoke_runtime_mode: s.steps.opsClosure.stagingSmokeRuntimeMode,
+        staging_smoke_credential_ref: s.steps.opsClosure.stagingSmokeCredentialRef,
+      },
+      agent_production: {
+        ready: s.steps.agentProduction.ready,
+        status: s.steps.agentProduction.status,
+        missing_requirements: s.steps.agentProduction.missingRequirements,
+        provider_staging_enabled: s.steps.agentProduction.providerStagingEnabled,
+        endpoint_host: s.steps.agentProduction.endpointHost,
+        error_mapping_ready: s.steps.agentProduction.errorMappingReady,
+        quota_enforced: s.steps.agentProduction.quotaEnforced,
+        cost_calibrated: s.steps.agentProduction.costCalibrated,
+      },
+    },
+  };
+}
+
+export function toProductRouteReadinessDTO(s: ProductRouteReadiness): ProductRouteReadinessResponse {
+  return {
+    mode: s.mode,
+    ready: s.ready,
+    status: s.status,
+    route_count: s.routeCount,
+    routes: s.routes.map((route) => ({
+      key: route.key,
+      title: route.title,
+      mvp_ready: route.mvpReady,
+      production_ready: route.productionReady,
+      status: route.status,
+      evidence_endpoints: route.evidenceEndpoints,
+      delivered_capabilities: route.deliveredCapabilities,
+      missing_product_requirements: route.missingProductRequirements,
+      safety_boundaries: route.safetyBoundaries,
+    })),
+  };
+}
+
 export function toExecutionMonitoringReadinessDTO(
   s: ExecutionMonitoringReadiness,
 ): ExecutionMonitoringReadinessResponse {
@@ -1573,6 +1648,8 @@ export function toStagingSmokeReadinessDTO(s: StagingSmokeReadiness): StagingSmo
     external_call_performed: s.externalCallPerformed,
     network_push_enabled: s.networkPushEnabled,
     run_endpoint: s.runEndpoint,
+    credential_ref: s.credentialRef,
+    low_privilege_key_required: s.lowPrivilegeKeyRequired,
     missing_requirements: s.missingRequirements,
     warnings: s.warnings,
   };

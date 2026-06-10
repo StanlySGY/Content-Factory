@@ -54,6 +54,8 @@ const stagingSmokeReadiness: StagingSmokeReadinessResponse = {
   status: "blocked",
   enabled: false,
   runtime_mode: "mock_only",
+  credential_ref: null,
+  low_privilege_key_required: false,
   max_jobs: 1,
   external_call_performed: false,
   network_push_enabled: false,

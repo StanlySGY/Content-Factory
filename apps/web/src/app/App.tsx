@@ -21,10 +21,12 @@ import { ToolInvocationLedgerPage } from "../features/mcp-invocations/ToolInvoca
 import { McpMarketplaceManagementPage } from "../features/mcp-marketplace/McpMarketplaceManagementPage.js";
 import { McpManagementPage } from "../features/mcp/McpManagementPage.js";
 import { AgentRealAdapterRegistrationGuardPage } from "../features/ops/AgentRealAdapterRegistrationGuardPage.js";
+import { AgentRealHttpAdapterReadinessPage } from "../features/ops/AgentRealHttpAdapterReadinessPage.js";
 import { AgentProviderConfigPreflightPage } from "../features/ops/AgentProviderConfigPreflightPage.js";
 import { AgentProviderTransportDisabledHarnessPage } from "../features/ops/AgentProviderTransportDisabledHarnessPage.js";
 import { OpsMonitoringPage } from "../features/ops/OpsMonitoringPage.js";
 import { OpsReadinessPage } from "../features/ops/OpsReadinessPage.js";
+import { ProductRouteReadinessPage } from "../features/ops/ProductRouteReadinessPage.js";
 import { ProviderHttpBoundaryPage } from "../features/ops/ProviderHttpBoundaryPage.js";
 import { ProviderQuotaCostPreflightPage } from "../features/ops/ProviderQuotaCostPreflightPage.js";
 import { SecretInjectionPreflightPage } from "../features/ops/SecretInjectionPreflightPage.js";
@@ -75,12 +77,14 @@ export function App() {
         <Route path="/mcp/marketplace" element={<McpMarketplaceManagementPage />} />
         <Route path="/rbac" element={<RbacManagementPage />} />
         <Route path="/ops/readiness" element={<OpsReadinessPage />} />
+        <Route path="/ops/product-routes" element={<ProductRouteReadinessPage />} />
         <Route path="/ops/monitoring" element={<OpsMonitoringPage />} />
         <Route path="/ops/provider-quota" element={<ProviderQuotaCostPreflightPage />} />
         <Route path="/ops/agent-provider-config" element={<AgentProviderConfigPreflightPage />} />
         <Route path="/ops/agent-provider-transport" element={<AgentProviderTransportDisabledHarnessPage />} />
         <Route path="/ops/provider-http-boundary" element={<ProviderHttpBoundaryPage />} />
         <Route path="/ops/agent-registration-guard" element={<AgentRealAdapterRegistrationGuardPage />} />
+        <Route path="/ops/agent-real-http-adapter" element={<AgentRealHttpAdapterReadinessPage />} />
         <Route path="/ops/secret-resolver" element={<SecretResolverReadinessPage />} />
         <Route path="/ops/secret-injection" element={<SecretInjectionPreflightPage />} />
         <Route path="/publisher" element={<PublisherWorkbenchPage />} />

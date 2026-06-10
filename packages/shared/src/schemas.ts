@@ -2607,6 +2607,110 @@ export const ProductionReadinessP1ResponseSchema = Type.Object(
 );
 export type ProductionReadinessP1Response = Static<typeof ProductionReadinessP1ResponseSchema>;
 
+const ProductionLaunchRouteSchema = StringEnum(["agent", "mcp", "publisher", "writeback"] as const);
+const ProductionLaunchBaseStepSchema = {
+  ready: Type.Boolean(),
+  status: StringEnum(["ready", "blocked"] as const),
+  missing_requirements: Type.Array(Type.String()),
+};
+const ProductionLaunchEnablementStepSchema = Type.Object(
+  {
+    ...ProductionLaunchBaseStepSchema,
+    selected_scope: Nullable(ProductionLaunchRouteSchema),
+    active_routes: Type.Array(ProductionLaunchRouteSchema),
+  },
+  { additionalProperties: false },
+);
+const ProductionLaunchSafetyStepSchema = Type.Object(
+  {
+    ...ProductionLaunchBaseStepSchema,
+    secret_store_kind: StringEnum(["env", "external_registry"] as const),
+    secret_rotation_policy_defined: Type.Boolean(),
+    network_allowlist: Type.Array(Type.String()),
+    rollback_flags: Type.Array(Type.String()),
+  },
+  { additionalProperties: false },
+);
+const ProductionLaunchOpsStepSchema = Type.Object(
+  {
+    ...ProductionLaunchBaseStepSchema,
+    monitoring_enabled: Type.Boolean(),
+    alerting_provider: Nullable(StringEnum(["grafana", "pagerduty", "alertmanager", "manual"] as const)),
+    staging_smoke_runtime_mode: StringEnum(["mock_only", "real_low_privilege"] as const),
+    staging_smoke_credential_ref: Nullable(Type.String()),
+  },
+  { additionalProperties: false },
+);
+const ProductionLaunchAgentStepSchema = Type.Object(
+  {
+    ...ProductionLaunchBaseStepSchema,
+    provider_staging_enabled: Type.Boolean(),
+    endpoint_host: Nullable(Type.String()),
+    error_mapping_ready: Type.Boolean(),
+    quota_enforced: Type.Boolean(),
+    cost_calibrated: Type.Boolean(),
+  },
+  { additionalProperties: false },
+);
+
+export const ProductionLaunchReadinessResponseSchema = Type.Object(
+  {
+    mode: StringEnum(["production_launch_readiness"] as const),
+    ready: Type.Boolean(),
+    status: StringEnum(["ready", "blocked"] as const),
+    selected_scope: Nullable(ProductionLaunchRouteSchema),
+    active_routes: Type.Array(ProductionLaunchRouteSchema),
+    missing_requirements: Type.Array(Type.String()),
+    warnings: Type.Array(Type.String()),
+    steps: Type.Object(
+      {
+        enablement_scope: ProductionLaunchEnablementStepSchema,
+        safety_foundation: ProductionLaunchSafetyStepSchema,
+        ops_closure: ProductionLaunchOpsStepSchema,
+        agent_production: ProductionLaunchAgentStepSchema,
+      },
+      { additionalProperties: false },
+    ),
+  },
+  { additionalProperties: false },
+);
+export type ProductionLaunchReadinessResponse = Static<typeof ProductionLaunchReadinessResponseSchema>;
+
+const ProductRouteKeySchema = StringEnum([
+  "publisher_platform",
+  "mcp_marketplace",
+  "multi_tenant_rbac",
+  "knowledge_rag",
+  "agent_evaluation",
+] as const);
+
+const ProductRouteReadinessItemSchema = Type.Object(
+  {
+    key: ProductRouteKeySchema,
+    title: Type.String(),
+    mvp_ready: Type.Boolean(),
+    production_ready: Type.Boolean(),
+    status: StringEnum(["ready", "blocked"] as const),
+    evidence_endpoints: Type.Array(Type.String()),
+    delivered_capabilities: Type.Array(Type.String()),
+    missing_product_requirements: Type.Array(Type.String()),
+    safety_boundaries: Type.Array(Type.String()),
+  },
+  { additionalProperties: false },
+);
+
+export const ProductRouteReadinessResponseSchema = Type.Object(
+  {
+    mode: StringEnum(["product_route_readiness"] as const),
+    ready: Type.Boolean(),
+    status: StringEnum(["ready", "blocked"] as const),
+    route_count: Type.Literal(5),
+    routes: Type.Array(ProductRouteReadinessItemSchema),
+  },
+  { additionalProperties: false },
+);
+export type ProductRouteReadinessResponse = Static<typeof ProductRouteReadinessResponseSchema>;
+
 export const StagingSmokePlanResponseSchema = Type.Object(
   {
     mode: StringEnum(["staging_smoke_plan"] as const),
@@ -2625,11 +2729,13 @@ export const StagingSmokeReadinessResponseSchema = Type.Object(
     ready: Type.Boolean(),
     status: StringEnum(["ready", "blocked"] as const),
     enabled: Type.Boolean(),
-    runtime_mode: StringEnum(["mock_only"] as const),
+    runtime_mode: StringEnum(["mock_only", "real_low_privilege"] as const),
     max_jobs: Type.Integer(),
     external_call_performed: Type.Boolean(),
     network_push_enabled: Type.Boolean(),
     run_endpoint: Type.String(),
+    credential_ref: Nullable(Type.String()),
+    low_privilege_key_required: Type.Boolean(),
     missing_requirements: Type.Array(Type.String()),
     warnings: Type.Array(Type.String()),
   },
@@ -2732,7 +2838,7 @@ export const StagingSmokeReportResponseSchema = Type.Object(
     mode: StringEnum(["staging_smoke_report"] as const),
     enabled: Type.Boolean(),
     external_call_performed: Type.Boolean(),
-    runtime_mode: StringEnum(["mock_only"] as const),
+    runtime_mode: StringEnum(["mock_only", "real_low_privilege"] as const),
     job_id: Uuid(),
     job_type: ExecutionJobTypeSchema,
     job_status: ExecutionJobStatusSchema,

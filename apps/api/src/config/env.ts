@@ -34,15 +34,19 @@ export interface Env {
   executionProviderDailyRequestLimit: number | null;
   executionProviderDailyCostLimitCents: number | null;
   executionProviderEstimatedCostPerRequestCents: number;
+  executionProductionEnablementScope: "agent" | "mcp" | "publisher" | "writeback" | null;
   executionMonitoringEnabled: boolean;
   executionMonitoringExporterFormat: "prometheus_text";
+  executionAlertingProvider: "grafana" | "pagerduty" | "alertmanager" | "manual" | null;
   executionAlertFailedJobsThreshold: number;
   executionAlertOutboxBacklogThreshold: number;
   executionAlertWritebackFailedThreshold: number;
   executionAlertRateLimitedThreshold: number;
   executionStagingSmokeEnabled: boolean;
-  executionStagingSmokeRuntimeMode: "mock_only";
+  executionStagingSmokeRuntimeMode: "mock_only" | "real_low_privilege";
   executionStagingSmokeMaxJobs: number;
+  executionStagingSmokeCredentialRef: string | null;
+  executionAgentProviderStagingEnabled: boolean;
   executionMcpRealRuntimeEnabled: boolean;
   executionMcpTransportMode: "streamable_http";
   executionMcpEndpointRegistry: string[];
@@ -93,8 +97,20 @@ function monitoringExporterFormat(value: string | undefined): Env["executionMoni
 
 function stagingSmokeRuntimeMode(value: string | undefined): Env["executionStagingSmokeRuntimeMode"] {
   if (value === undefined || value === "") return "mock_only";
-  if (value === "mock_only") return value;
+  if (value === "mock_only" || value === "real_low_privilege") return value;
   throw new Error(`invalid EXECUTION_STAGING_SMOKE_RUNTIME_MODE: ${value}`);
+}
+
+function productionEnablementScope(value: string | undefined): Env["executionProductionEnablementScope"] {
+  if (value === undefined || value === "") return null;
+  if (value === "agent" || value === "mcp" || value === "publisher" || value === "writeback") return value;
+  throw new Error(`invalid EXECUTION_PRODUCTION_ENABLEMENT_SCOPE: ${value}`);
+}
+
+function alertingProvider(value: string | undefined): Env["executionAlertingProvider"] {
+  if (value === undefined || value === "") return null;
+  if (value === "grafana" || value === "pagerduty" || value === "alertmanager" || value === "manual") return value;
+  throw new Error(`invalid EXECUTION_ALERTING_PROVIDER: ${value}`);
 }
 
 function mcpTransportMode(value: string | undefined): Env["executionMcpTransportMode"] {
@@ -164,8 +180,10 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
       0,
       "EXECUTION_PROVIDER_ESTIMATED_COST_PER_REQUEST_CENTS",
     ),
+    executionProductionEnablementScope: productionEnablementScope(source.EXECUTION_PRODUCTION_ENABLEMENT_SCOPE),
     executionMonitoringEnabled: bool(source.EXECUTION_MONITORING_ENABLED, false),
     executionMonitoringExporterFormat: monitoringExporterFormat(source.EXECUTION_MONITORING_EXPORTER_FORMAT),
+    executionAlertingProvider: alertingProvider(source.EXECUTION_ALERTING_PROVIDER),
     executionAlertFailedJobsThreshold: nonNegativeInt(
       source.EXECUTION_ALERT_FAILED_JOBS_THRESHOLD,
       1,
@@ -193,6 +211,8 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
       1,
       "EXECUTION_STAGING_SMOKE_MAX_JOBS",
     ),
+    executionStagingSmokeCredentialRef: source.EXECUTION_STAGING_SMOKE_CREDENTIAL_REF ?? null,
+    executionAgentProviderStagingEnabled: bool(source.EXECUTION_AGENT_PROVIDER_STAGING_ENABLED, false),
     executionMcpRealRuntimeEnabled: bool(source.EXECUTION_MCP_REAL_RUNTIME_ENABLED, false),
     executionMcpTransportMode: mcpTransportMode(source.EXECUTION_MCP_TRANSPORT_MODE),
     executionMcpEndpointRegistry: csv(source.EXECUTION_MCP_ENDPOINT_REGISTRY),

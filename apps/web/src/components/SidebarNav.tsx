@@ -24,12 +24,14 @@ export function SidebarNav() {
       <NavLink to="/rbac">RBAC 管理</NavLink>
       <NavLink to="/publisher">发布工作台</NavLink>
       <NavLink to="/ops/readiness">运维门禁</NavLink>
+      <NavLink to="/ops/product-routes">产品路线</NavLink>
       <NavLink to="/ops/monitoring">运维监控</NavLink>
       <NavLink to="/ops/provider-quota">额度成本</NavLink>
       <NavLink to="/ops/agent-provider-config">Provider 配置</NavLink>
       <NavLink to="/ops/agent-provider-transport">Provider 传输</NavLink>
       <NavLink to="/ops/provider-http-boundary">HTTP 边界</NavLink>
       <NavLink to="/ops/agent-registration-guard">Agent 注册门禁</NavLink>
+      <NavLink to="/ops/agent-real-http-adapter">Real HTTP 适配</NavLink>
       <NavLink to="/ops/secret-resolver">Secret 解析</NavLink>
       <NavLink to="/ops/secret-injection">Secret 注入</NavLink>
     </nav>

@@ -14,6 +14,8 @@ Content Factory 当前处于 **Final RC / production candidate** 收口阶段：
 
 生产候选的含义是“安全门禁与默认关闭边界已闭合”，不是“真实生产环境已启用”。
 
+当前已新增 `GET /api/execution/ops/production-launch-readiness`，用于把内部/小范围生产启用压成 4 个可验证 gate：单一路线选择、生产安全底座、运维闭环、Agent Production。该 endpoint 只读、不发 provider 请求；真实 provider smoke 仍需显式调用 `POST /api/execution/ops/staging-smoke-runs`。
+
 ## 2. P0：生产启用前置项
 
 | 优先级 | 任务 | 完成条件 |
@@ -61,12 +63,13 @@ Content Factory 当前处于 **Final RC / production candidate** 收口阶段：
 | Agent Real Adapter Registration Guard UI | 已完成 | Web 新增 `/ops/agent-registration-guard` 只读 agent real adapter registration guard 可视化入口，展示 registration readiness、disabled fixture、descriptor status、config gates、readiness gates、missing requirements 与 fail-closed error；不注册真实 adapter、不启动 worker、不执行 provider 请求或写 execution 表 |
 | Secret Resolver Readiness UI | 已完成 | Web 新增 `/ops/secret-resolver` 只读 secret resolver readiness 可视化入口，展示 resolver kind、available、allowed ref schemes、supported purposes、env/network/process boundary 与 runtime/adapter mode；不读取 secret material、不返回 secret material、不写 execution/outbox 表 |
 | Provider HTTP Boundary UI | 已完成 | Web 新增 `/ops/provider-http-boundary` 只读 provider HTTP boundary 可视化入口，展示 fake HTTP client、network/real HTTP disabled、abort/timeout/request-id/status-code mapping、secret material injection boundary、allowed adapter modes、runtime/adapter mode 与 blocked reason；不执行真实网络请求、不注入 secret material、不写 execution/outbox 表 |
+| Agent Real HTTP Adapter Readiness UI | 已完成 | Web 新增 `/ops/agent-real-http-adapter` 只读 agent real HTTP adapter readiness 可视化入口，展示 `/api/execution/ops/agent-real-http-adapter` 的 real HTTP skeleton、transport/worker registration gate、runtime/network/allowlist、timeout/abort harness、transport signal forwarding、secret material boundary 与 blocked reason；不注册真实 transport、不发网络请求、不读取或注入 secret material、不写 execution/outbox 表 |
 
 下一步建议：
 
 | 优先级 | 任务 | 完成条件 |
 | --- | --- | --- |
-| P2 | Agent Real HTTP Adapter Readiness UI | Web 新增只读 agent real HTTP adapter readiness 可视化入口，展示 `/api/execution/ops/agent-real-http-adapter` 的 real HTTP skeleton、transport/worker registration gate、runtime/network/allowlist、timeout/abort harness、transport signal forwarding、secret material boundary 与 blocked reason；不注册真实 transport、不发网络请求、不读取或注入 secret material、不写 execution/outbox 表 |
+| P2 | 暂无新增 P2 UI 项 | 当前 P2 Agent Real HTTP Adapter Readiness UI 已完成；后续新增项需单独进入设计与验收。 |
 
 ## 4. P2：扩展路线
 
