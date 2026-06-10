@@ -154,6 +154,7 @@
 - Provider quota/cost preflight 已提供只读 Web 入口 `/ops/provider-quota`，展示 `/api/execution/ops/provider-quota-cost-preflight` 的 quota policy、distributed quota、cost metrics、token usage、billing disabled 与 runtime/network gate；该入口不消费 quota、不执行 provider 请求、不触发 staging smoke 或写端点。
 - Agent real provider config preflight 已提供只读 Web 入口 `/ops/agent-provider-config`，展示 `/api/execution/ops/agent-real-provider-config-preflight` 的 provider kind、model、endpoint_ref、credential ref readiness、secret material boundary、timeout/quota/cost profile 与 real adapter blocked reason；该入口不解析 secret、不发网络探测、不执行真实 provider 请求或写端点。
 - Agent real provider transport disabled harness 已提供只读 Web 入口 `/ops/agent-provider-transport`，展示 `/api/execution/ops/agent-real-provider-transport-disabled-harness` 的 request shape、disabled transport、fail-closed error、network/secret boundary 与 redacted request；该入口不执行 transport、不发网络请求、不读取 secret material、不写 execution 表。
+- Secret injection preflight 已提供只读 Web 入口 `/ops/secret-injection`，展示 `/api/execution/ops/secret-injection-preflight` 的 resolver、secret store/injection readiness、allowed ref schemes、supported purposes、persistence boundary、audit metadata 与 runtime gate；该入口不读取 secret material、不注入 header、不执行 transport 或写端点。
 
 ## 6. 高风险动作的风险元数据
 

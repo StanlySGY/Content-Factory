@@ -25,6 +25,7 @@ import { AgentProviderTransportDisabledHarnessPage } from "../features/ops/Agent
 import { OpsMonitoringPage } from "../features/ops/OpsMonitoringPage.js";
 import { OpsReadinessPage } from "../features/ops/OpsReadinessPage.js";
 import { ProviderQuotaCostPreflightPage } from "../features/ops/ProviderQuotaCostPreflightPage.js";
+import { SecretInjectionPreflightPage } from "../features/ops/SecretInjectionPreflightPage.js";
 import { PublisherWorkbenchPage } from "../features/publisher/PublisherWorkbenchPage.js";
 import { RbacManagementPage } from "../features/rbac/RbacManagementPage.js";
 import { PendingReviewsPage } from "../features/reviews/PendingReviewsPage.js";
@@ -75,6 +76,7 @@ export function App() {
         <Route path="/ops/provider-quota" element={<ProviderQuotaCostPreflightPage />} />
         <Route path="/ops/agent-provider-config" element={<AgentProviderConfigPreflightPage />} />
         <Route path="/ops/agent-provider-transport" element={<AgentProviderTransportDisabledHarnessPage />} />
+        <Route path="/ops/secret-injection" element={<SecretInjectionPreflightPage />} />
         <Route path="/publisher" element={<PublisherWorkbenchPage />} />
         <Route path="/stage-runs/:id" element={<StageRunDetailPage />} />
         <Route path="/agents" element={<AgentListPage />} />

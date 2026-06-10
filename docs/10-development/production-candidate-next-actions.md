@@ -57,12 +57,13 @@ Content Factory 当前处于 **Final RC / production candidate** 收口阶段：
 | Provider Quota / Cost Preflight UI | 已完成 | Web 新增 `/ops/provider-quota` 只读 provider quota/cost preflight 可视化入口，展示 quota policy、distributed quota、cost metrics、token usage、billing disabled 与 runtime/network gate；不消费 quota、不执行 provider 请求、不触发 staging smoke 或任何写操作 |
 | Agent Real Provider Config Preflight UI | 已完成 | Web 新增 `/ops/agent-provider-config` 只读 agent real provider config preflight 可视化入口，展示 provider kind、model、endpoint_ref、credential ref readiness、secret material redaction、timeout/quota/cost profile 与 real adapter blocked reason；不解析 secret、不发网络探测、不执行真实 provider 请求或写操作 |
 | Agent Real Provider Transport Disabled Harness UI | 已完成 | Web 新增 `/ops/agent-provider-transport` 只读 agent real provider transport disabled harness 可视化入口，展示 request shape、url_ref、timeout、disabled transport readiness、fail-closed error、network/secret boundary 与 redacted request；不执行 transport、不发网络请求、不读取 secret material、不写 execution 表 |
+| Secret Injection Preflight UI | 已完成 | Web 新增 `/ops/secret-injection` 只读 secret injection preflight 可视化入口，展示 resolver kind、secret store/injection readiness、allowed ref schemes、supported purposes、snapshot/DTO persistence boundary、audit metadata requirement 与 runtime/network gate；不读取 secret material、不注入 header、不执行 transport 或写 execution 表 |
 
 下一步建议：
 
 | 优先级 | 任务 | 完成条件 |
 | --- | --- | --- |
-| P2 | Secret Injection Preflight UI | Web 新增只读 secret injection preflight 可视化入口，展示 `/api/execution/ops/secret-injection-preflight` 的 resolver kind、secret store/injection readiness、allowed ref schemes、supported purposes、snapshot/DTO persistence boundary、audit metadata requirement 与 runtime/network gate；不读取 secret material、不注入 header、不执行 transport 或写 execution 表 |
+| P2 | Agent Real Adapter Registration Guard UI | Web 新增只读 agent real adapter registration guard 可视化入口，展示 `/api/execution/ops/agent-real-adapter-registration-guard` 的 registration readiness、disabled fixture、descriptor status、config gates、readiness gates、missing requirements 与 fail-closed error；不注册真实 adapter、不启动 worker、不执行 provider 请求或写 execution 表 |
 
 ## 4. P2：扩展路线
 

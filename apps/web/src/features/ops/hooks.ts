@@ -72,3 +72,10 @@ export function useAgentRealProviderTransportDisabledHarness() {
     queryFn: () => api.getAgentRealProviderTransportDisabledHarness(),
   });
 }
+
+export function useSecretInjectionPreflight() {
+  return useQuery({
+    queryKey: ["ops", "secret-injection-preflight"],
+    queryFn: () => api.getSecretInjectionPreflight(),
+  });
+}

@@ -58,6 +58,7 @@ import type {
   RequestRevisionBody,
   ReviewRecordDTO,
   ReviewStatus,
+  SecretInjectionPreflightReadinessResponse,
   StageRunDTO,
   StagingSmokeReadinessResponse,
   TaskKnowledgeCandidatesResponse,
@@ -352,6 +353,11 @@ export const api = {
     request<AgentRealProviderTransportDisabledHarnessResponse>(
       "GET",
       "/execution/ops/agent-real-provider-transport-disabled-harness",
+    ),
+  getSecretInjectionPreflight: () =>
+    request<SecretInjectionPreflightReadinessResponse>(
+      "GET",
+      "/execution/ops/secret-injection-preflight",
     ),
   getMcpRealRuntimeReadiness: () =>
     request<McpRealRuntimeReadinessResponse>(

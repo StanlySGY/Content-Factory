@@ -598,6 +598,29 @@ button {
 .provider-transport-gate-card {
   min-height: 188px;
 }
+.secret-injection-kpi-grid {
+  margin-bottom: var(--sp-5);
+}
+.secret-injection-grid {
+  align-items: start;
+}
+.secret-injection-mode-card {
+  margin-bottom: var(--sp-5);
+}
+.secret-injection-mode-card .ops-card-head {
+  margin-bottom: var(--sp-3);
+}
+.secret-injection-detail-facts {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.secret-injection-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+}
+.secret-injection-gate-card {
+  min-height: 188px;
+}
 
 /* ---- Knowledge inventory ---- */
 .knowledge-kpi-grid {
