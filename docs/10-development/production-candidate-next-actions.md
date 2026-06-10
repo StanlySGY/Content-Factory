@@ -53,12 +53,13 @@ Content Factory 当前处于 **Final RC / production candidate** 收口阶段：
 | Tool Invocation Ledger UI | 已完成 | Web 新增 `/mcp/invocations` 只读 MCP tool invocation 账本入口，按工具展示 invocation status、risk、duration、caller 与输入/输出摘要；不触发 mock invoke、真实 transport、重放或任何写操作 |
 | Execution Result Ledger UI | 已完成 | Web 新增 `/execution/results` 只读 execution result 账本入口，按 job 展示 `execution_results` attempts、latest status、error_type、duration、request/response snapshot 与 result summary；不触发 tick、retry、evaluate-rule、writeback、replay 或任何写操作 |
 | Execution Outbox Event Ledger UI | 已完成 | Web 新增 `/execution/outbox` 只读 execution outbox event 账本入口，按 job 展示 `outbox_events` event_type、processed/error、retry_count、claim 状态与 payload 摘要；不触发 process-batch、retry、tick、relay、replay、writeback 或任何写操作 |
+| Execution Writeback Ledger UI | 已完成 | Web 新增 `/execution/writebacks` 只读 execution writeback 账本入口，按 job/result 展示 `execution_writebacks` status、subject、idempotency_key、plan、error 与 created/updated 时间；不触发 apply、dry-run、transaction-prototype、retry、replay 或任何写操作 |
 
 下一步建议：
 
 | 优先级 | 任务 | 完成条件 |
 | --- | --- | --- |
-| P2 | Execution Writeback Ledger UI | Web 新增只读 execution writeback 账本入口，按 result 展示 `execution_writebacks` status、subject、idempotency_key、error、created/updated 时间与 planned/applied/skipped/failed 摘要；不触发 apply、dry-run、transaction-prototype、retry、replay 或任何写操作 |
+| P2 | Provider Quota / Cost Preflight UI | Web 新增只读 provider quota/cost preflight 可视化入口，展示 `/api/execution/ops/provider-quota-cost-preflight` 的 quota policy、distributed quota、cost metrics、token usage、billing disabled 与 runtime/network gate；不消费 quota、不执行 provider 请求、不触发 staging smoke 或任何写操作 |
 
 ## 4. P2：扩展路线
 

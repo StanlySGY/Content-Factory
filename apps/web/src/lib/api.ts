@@ -21,6 +21,7 @@ import type {
   ExecutionResultDTO,
   ExecutionResultEvaluationDTO,
   ExecutionResultSummaryDTO,
+  ExecutionWritebackDTO,
   ExecutionWritebackExecutorRegistrationReadinessResponse,
   FinalRcProductionCandidateReadinessResponse,
   KnowledgeEntryDTO,
@@ -259,6 +260,11 @@ export const api = {
     request<ExecutionResultSummaryDTO>(
       "GET",
       `/execution/jobs/${jobId}/result-summary`,
+    ),
+  listExecutionResultWritebacks: (resultId: string) =>
+    request<ExecutionWritebackDTO[]>(
+      "GET",
+      `/execution/results/${resultId}/writebacks`,
     ),
   listExecutionJobEvents: (jobId: string) =>
     request<OutboxEventDTO[]>("GET", `/execution/jobs/${jobId}/events`),

@@ -13,6 +13,7 @@ export function SidebarNav() {
       <NavLink to="/agents">Agent 管理</NavLink>
       <NavLink to="/execution/results">执行结果</NavLink>
       <NavLink to="/execution/outbox">出箱事件</NavLink>
+      <NavLink to="/execution/writebacks">回写账本</NavLink>
       <NavLink to="/evaluations">评估看板</NavLink>
       <NavLink to="/assets">素材中心</NavLink>
       <NavLink end to="/knowledge">知识库</NavLink>

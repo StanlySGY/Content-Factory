@@ -14,6 +14,7 @@ import { AgentEvaluationDashboardPage } from "../features/evaluations/AgentEvalu
 import { EditorPage } from "../features/editor/EditorPage.js";
 import { ExecutionOutboxLedgerPage } from "../features/execution-outbox/ExecutionOutboxLedgerPage.js";
 import { ExecutionResultLedgerPage } from "../features/execution-results/ExecutionResultLedgerPage.js";
+import { ExecutionWritebackLedgerPage } from "../features/execution-writebacks/ExecutionWritebackLedgerPage.js";
 import { KnowledgeCandidateReviewPage } from "../features/knowledge-candidates/KnowledgeCandidateReviewPage.js";
 import { KnowledgeInventoryPage } from "../features/knowledge/KnowledgeInventoryPage.js";
 import { ToolInvocationLedgerPage } from "../features/mcp-invocations/ToolInvocationLedgerPage.js";
@@ -58,6 +59,7 @@ export function App() {
         <Route path="/work-queue" element={<WorkQueuePage />} />
         <Route path="/execution/results" element={<ExecutionResultLedgerPage />} />
         <Route path="/execution/outbox" element={<ExecutionOutboxLedgerPage />} />
+        <Route path="/execution/writebacks" element={<ExecutionWritebackLedgerPage />} />
         <Route path="/evaluations" element={<AgentEvaluationDashboardPage />} />
         <Route path="/knowledge" element={<KnowledgeInventoryPage />} />
         <Route path="/knowledge/candidates" element={<KnowledgeCandidateReviewPage />} />

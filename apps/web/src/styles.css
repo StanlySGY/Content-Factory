@@ -1326,6 +1326,82 @@ button {
   word-break: break-word;
 }
 
+/* ---- Execution writeback ledger ---- */
+.execution-writeback-kpi-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.execution-writeback-grid {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.8fr) minmax(280px, 0.7fr) minmax(0, 1.2fr);
+  gap: var(--sp-4);
+}
+.execution-writeback-detail-column {
+  min-width: 0;
+}
+.execution-writeback-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+.execution-writeback-section-head span {
+  color: var(--text-secondary);
+  font-size: 12px;
+  word-break: break-all;
+}
+.execution-writeback-table tbody tr {
+  cursor: default;
+}
+.execution-writeback-table tbody tr:hover {
+  background: var(--bg-surface);
+}
+.execution-writeback-table tbody tr.selected {
+  background: var(--accent-primary-weak);
+}
+.execution-writeback-table strong,
+.execution-writeback-table span,
+.execution-writeback-table code {
+  display: block;
+}
+.execution-writeback-table span {
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin-top: 2px;
+}
+.execution-writeback-table code {
+  color: var(--text-secondary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  margin-top: 2px;
+  word-break: break-all;
+}
+.execution-writeback-select-button {
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  padding: 0;
+  text-align: left;
+}
+.execution-writeback-select-button:hover {
+  color: var(--accent-primary);
+}
+.execution-writeback-job-table,
+.execution-writeback-result-table,
+.execution-writeback-ledger-table {
+  table-layout: fixed;
+}
+.execution-writeback-job-table th,
+.execution-writeback-job-table td,
+.execution-writeback-result-table th,
+.execution-writeback-result-table td,
+.execution-writeback-ledger-table th,
+.execution-writeback-ledger-table td {
+  word-break: break-word;
+}
+
 /* ---- MCP marketplace management ---- */
 .marketplace-kpi-grid {
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -1455,6 +1531,7 @@ button {
   .evaluation-kpi-grid,
   .execution-result-kpi-grid,
   .execution-outbox-kpi-grid,
+  .execution-writeback-kpi-grid,
   .marketplace-kpi-grid,
   .publisher-kpi-grid,
   .ops-grid,
@@ -1470,6 +1547,7 @@ button {
   .evaluation-grid,
   .execution-result-grid,
   .execution-outbox-grid,
+  .execution-writeback-grid,
   .marketplace-grid {
     grid-template-columns: 1fr;
   }

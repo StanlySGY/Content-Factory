@@ -83,10 +83,11 @@ MCP 与 Publisher 真实入口还需分别开启：
 13. 打开 Web `/mcp/invocations`，确认 MCP tool invocation ledger 按 tool 只读展示 status、caller、risk、duration 与输入/输出摘要，且未触发 mock invoke、health check、真实 transport、replay 或写操作。
 14. 打开 Web `/execution/results`，确认 execution result ledger 按 job 只读展示 attempts、latest status、error_type、duration、request/response snapshot 与 result summary，且未触发 tick、retry、evaluate-rule、writeback、replay 或写操作。
 15. 打开 Web `/execution/outbox`，确认 execution outbox event ledger 按 job 只读展示 event_type、processed/error、retry_count、claim 状态与 payload 摘要，且未触发 process-batch、process event、relay、retry、tick、writeback、replay 或写操作。
-16. 打开 Web `/rbac`，确认 organizations、organization members 与默认项目 memberships 只读展示，且未触发权限写操作。
-17. 打开 Web `/evaluations`，确认 evaluation analytics、low-quality results 与 result evaluations 只读展示，且未触发 create evaluation 或 rule runner。
-18. 打开 Web `/mcp/marketplace`，确认 marketplace entries、project installations 与 server binding 只读展示，且未触发 install/disable/uninstall、hot-load 或 tool invocation。
-19. 若进入真实启用，按 `production-candidate-next-actions.md` 选择单一路线逐项开启 gate，不混开 Agent / MCP / Publisher / writeback。
+16. 打开 Web `/execution/writebacks`，确认 execution writeback ledger 按 job/result 只读展示 status、subject、idempotency_key、plan、error 与时间戳，且未触发 guard、transaction-plan、dry-run、apply-guard、transaction-prototype、retry、replay 或写操作。
+17. 打开 Web `/rbac`，确认 organizations、organization members 与默认项目 memberships 只读展示，且未触发权限写操作。
+18. 打开 Web `/evaluations`，确认 evaluation analytics、low-quality results 与 result evaluations 只读展示，且未触发 create evaluation 或 rule runner。
+19. 打开 Web `/mcp/marketplace`，确认 marketplace entries、project installations 与 server binding 只读展示，且未触发 install/disable/uninstall、hot-load 或 tool invocation。
+20. 若进入真实启用，按 `production-candidate-next-actions.md` 选择单一路线逐项开启 gate，不混开 Agent / MCP / Publisher / writeback。
 
 ## 5. 生产候选验证
 
@@ -107,6 +108,7 @@ MCP 与 Publisher 真实入口还需分别开启：
 | mcp invocation ledger | Web `/mcp/invocations` 只读展示 MCP tool invocation status、caller、risk、duration 与输入/输出摘要，不触发 mock invoke、health-check、真实 transport、replay 或写操作 |
 | execution result ledger | Web `/execution/results` 只读展示 execution job results、attempt snapshots 与 result summary，不触发 tick/retry/evaluate-rule/writeback/replay 或写操作 |
 | execution outbox ledger | Web `/execution/outbox` 只读展示 outbox events、processed/error、retry_count、claim 状态与 payload 摘要，不触发 process-batch/process event/relay/retry/tick/writeback/replay 或写操作 |
+| execution writeback ledger | Web `/execution/writebacks` 只读展示 execution writebacks 的 status、subject、idempotency_key、plan、error 与时间戳，不触发 guard/transaction-plan/dry-run/apply-guard/transaction-prototype/retry/replay 或写操作 |
 | rbac management | Web `/rbac` 只读展示 organizations、organization members 与默认项目 memberships，不触发 create/update/deactivate/grant/revoke/check-access |
 | evaluation dashboard | Web `/evaluations` 只读展示 analytics、low-quality results 与 result evaluations，不触发 create/evaluate-rule/batch rule evaluation |
 | mcp marketplace | Web `/mcp/marketplace` 只读展示 marketplace entries、project installations 与 server binding，不触发 create/install/disable/uninstall/hot-load/tool invocation |
