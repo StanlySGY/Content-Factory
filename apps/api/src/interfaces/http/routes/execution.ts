@@ -1,6 +1,8 @@
 import type { FastifyPluginAsyncTypebox } from "@fastify/type-provider-typebox";
 import {
   CreateBridgeJobSchema,
+  CrossModelRegressionRunResponseSchema,
+  CrossModelRegressionRunSchema,
   CreateExecutionJobSchema,
   CreateExecutionResultEvaluationSchema,
   ExecutionEvaluationAnalyticsSchema,
@@ -55,6 +57,7 @@ import type { Env } from "../../../config/env.js";
 import { isOutboxProcessed } from "../../../domain/execution/outbox.js";
 import {
   toExecutionJobDTO,
+  toCrossModelRegressionRunResponse,
   toExecutionEvaluationAnalyticsDTO,
   toEvaluationCostAttributionResponse,
   toEvaluationCostSettlementRunResponse,
@@ -259,6 +262,24 @@ export const executionRoutes: FastifyPluginAsyncTypebox<ExecutionRoutesOptions> 
         skippedResultIds: result.skippedResultIds,
       });
     },
+  );
+
+  app.post(
+    "/api/execution/evaluations/cross-model-regression-run",
+    {
+      schema: {
+        body: CrossModelRegressionRunSchema,
+        response: { 200: CrossModelRegressionRunResponseSchema },
+      },
+    },
+    async (request) =>
+      toCrossModelRegressionRunResponse(
+        await executionResultEvaluationService.runCrossModelRegression(
+          { projectId: "execution", actorId: env.defaultUserId, requestId: request.id },
+          request.body,
+          { executionJobService, executionWorker },
+        ),
+      ),
   );
 
   // 单条执行结果（404 不存在）

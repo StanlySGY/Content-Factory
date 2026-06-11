@@ -41,7 +41,9 @@ describe("product route readiness", () => {
       expect(route.production_ready).toBe(false);
       expect(route.evidence_endpoints.length).toBeGreaterThan(0);
       expect(route.delivered_capabilities.length).toBeGreaterThan(0);
-      expect(route.missing_product_requirements.length).toBeGreaterThan(0);
+      expect(Array.isArray(route.missing_product_requirements)).toBe(true);
+      if (route.key !== "agent_evaluation")
+        expect(route.missing_product_requirements.length).toBeGreaterThan(0);
       expect(route.safety_boundaries.length).toBeGreaterThan(0);
     }
     const publisherRoute = body.routes.find((route: { key: string }) => route.key === "publisher_platform");
@@ -72,13 +74,15 @@ describe("product route readiness", () => {
     expect(agentEvaluationRoute.delivered_capabilities).toContain("provider metadata cost attribution calibration");
     expect(agentEvaluationRoute.delivered_capabilities).toContain("real-runtime LLM judge evaluation workflow");
     expect(agentEvaluationRoute.delivered_capabilities).toContain("billing-grade cost settlement ledger");
+    expect(agentEvaluationRoute.delivered_capabilities).toContain("cross-model regression orchestration");
     expect(agentEvaluationRoute.evidence_endpoints).toContain("/api/execution/evaluations/cost-settlement-run");
+    expect(agentEvaluationRoute.evidence_endpoints).toContain("/api/execution/evaluations/cross-model-regression-run");
     expect(agentEvaluationRoute.missing_product_requirements).not.toContain("scheduled regression evaluation runner");
     expect(agentEvaluationRoute.missing_product_requirements).not.toContain("model comparison workflows");
     expect(agentEvaluationRoute.missing_product_requirements).not.toContain("real cost attribution calibration");
     expect(agentEvaluationRoute.missing_product_requirements).not.toContain("LLM judge integration");
     expect(agentEvaluationRoute.missing_product_requirements).not.toContain("billing-grade cost settlement");
-    expect(agentEvaluationRoute.missing_product_requirements).toContain("cross-model regression orchestration");
+    expect(agentEvaluationRoute.missing_product_requirements).not.toContain("cross-model regression orchestration");
     const knowledgeRoute = body.routes.find((route: { key: string }) => route.key === "knowledge_rag");
     expect(knowledgeRoute.delivered_capabilities).toContain("deterministic local embedding pipeline");
     expect(knowledgeRoute.delivered_capabilities).toContain("knowledge embedding readiness endpoint");

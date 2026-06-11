@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type {
   CreateExecutionResultEvaluationBody,
+  CrossModelRegressionRunBody,
   EvaluationCostSettlementRunBody,
   EvaluationCostAttributionQuery,
   EvaluationModelComparisonQuery,
@@ -27,7 +28,12 @@ import {
   type LowQualityEvaluationList,
 } from "../domain/execution/evaluation.js";
 import type { Db } from "../infrastructure/db/client.js";
-import type { ExecutionCostSettlementRow, ExecutionResultEvaluationRow, ExecutionResultRow } from "../infrastructure/db/schema.js";
+import type {
+  ExecutionCostSettlementRow,
+  ExecutionJobRow,
+  ExecutionResultEvaluationRow,
+  ExecutionResultRow,
+} from "../infrastructure/db/schema.js";
 import * as costSettlementRepo from "../infrastructure/repositories/execution-cost-settlement.repository.js";
 import * as jobRepo from "../infrastructure/repositories/execution-job.repository.js";
 import * as evaluationRepo from "../infrastructure/repositories/execution-result-evaluation.repository.js";
@@ -68,6 +74,24 @@ export interface EvaluationCostSettlementRun {
   writesPerformed: boolean;
   skippedResultIds: string[];
   settlements: ExecutionCostSettlementRow[];
+}
+
+export interface CrossModelRegressionRunItem {
+  model: string;
+  job: ExecutionJobRow;
+  result: ExecutionResultRow;
+  evaluation: ExecutionResultEvaluationRow;
+}
+
+export interface CrossModelRegressionRun {
+  mode: "cross_model_regression_run";
+  runId: string;
+  modelCount: number;
+  jobCount: number;
+  evaluationCount: number;
+  runtimeJobsExecuted: true;
+  writesPerformed: true;
+  items: CrossModelRegressionRunItem[];
 }
 
 export class ExecutionResultEvaluationService {
@@ -288,6 +312,69 @@ export class ExecutionResultEvaluationService {
     };
   }
 
+  async runCrossModelRegression(
+    ctx: RequestContext,
+    input: CrossModelRegressionRunBody,
+    deps: { executionJobService: ExecutionJobService; executionWorker: ExecutionWorker },
+  ): Promise<CrossModelRegressionRun> {
+    const prompt = input.prompt.trim();
+    if (!prompt) throw new ValidationError("cross-model regression prompt is required");
+    const models = normalizeCrossModelRegressionModels(input.models);
+    const runId = input.idempotency_key.trim();
+    const items: CrossModelRegressionRunItem[] = [];
+
+    for (const [index, model] of models.entries()) {
+      const job = await deps.executionJobService.createJob({
+        type: "agent",
+        payload: {
+          prompt,
+          model,
+          ...(input.credential_ref ? { credential_ref: input.credential_ref } : {}),
+          regression: {
+            mode: "cross_model_regression",
+            run_id: runId,
+            model_index: index,
+            model_count: models.length,
+          },
+        },
+        idempotency_key: `cross-model-${runId}-${index}`,
+        max_attempts: input.max_attempts ?? 1,
+      });
+      const completed = await deps.executionWorker.tickJob(job.id);
+      const result = (await resultRepo.listResultsByJob(this.db, job.id)).at(-1);
+      if (!result) throw new ValidationError(`cross-model regression job ${job.id} did not persist a result`);
+      const ruleEvaluation = buildRuleEvaluation({
+        status: result.status,
+        runtimeStatus: result.runtimeStatus,
+        errorType: result.errorType,
+        retryable: result.retryable,
+        durationMs: result.durationMs,
+      });
+      const evaluation = await this.createEvaluation(ctx, result.id, {
+        ...ruleEvaluation,
+        tags: normalizeEvaluationTags([
+          ...(ruleEvaluation.tags ?? []),
+          "cross-model-regression",
+          ...(input.tags ?? []),
+          `model:${model}`,
+          `regression:${runId}`,
+        ]),
+      });
+      items.push({ model, job: completed, result, evaluation });
+    }
+
+    return {
+      mode: "cross_model_regression_run",
+      runId,
+      modelCount: models.length,
+      jobCount: items.length,
+      evaluationCount: items.length,
+      runtimeJobsExecuted: true,
+      writesPerformed: true,
+      items,
+    };
+  }
+
   async listLowQuality(threshold = 60, limit = 20): Promise<LowQualityEvaluationList> {
     return listLowQualityEvaluations(await evaluationRepo.listAllEvaluations(this.db), threshold, limit);
   }
@@ -311,6 +398,14 @@ export class ExecutionResultEvaluationService {
     }
     return out;
   }
+}
+
+function normalizeCrossModelRegressionModels(models: string[]): string[] {
+  const normalized = models.map((model) => model.trim()).filter(Boolean);
+  const unique = [...new Set(normalized)];
+  if (unique.length < 2) throw new ValidationError("cross-model regression requires at least two unique models");
+  if (unique.length !== normalized.length) throw new ValidationError("cross-model regression models must be unique");
+  return unique;
 }
 
 function buildLlmJudgePrompt(result: ExecutionResultRow, prompt?: string): string {

@@ -1322,6 +1322,47 @@ export const RegressionEvaluationRunResponseSchema = Type.Object(
 );
 export type RegressionEvaluationRunResponse = Static<typeof RegressionEvaluationRunResponseSchema>;
 
+export const CrossModelRegressionRunSchema = Type.Object(
+  {
+    prompt: Type.String({ minLength: 1, maxLength: 4000 }),
+    models: Type.Array(Type.String({ minLength: 1, maxLength: 120 }), { minItems: 2, maxItems: 10 }),
+    idempotency_key: Type.String({ minLength: 1, maxLength: 120 }),
+    credential_ref: Type.Optional(LlmJudgeCredentialRefSchema),
+    max_attempts: Type.Optional(Type.Integer({ minimum: 1, maximum: 5 })),
+    tags: Type.Optional(Type.Array(Type.String({ minLength: 1, maxLength: 80 }), { maxItems: 50 })),
+  },
+  { additionalProperties: false },
+);
+export type CrossModelRegressionRunBody = Static<typeof CrossModelRegressionRunSchema>;
+
+export const CrossModelRegressionRunItemSchema = Type.Object(
+  {
+    model: Type.String(),
+    execution_job_id: Uuid(),
+    execution_result_id: Uuid(),
+    evaluation_id: Uuid(),
+    job_status: Type.String(),
+    result_status: Type.String(),
+    evaluator_type: ExecutionResultEvaluatorTypeSchema,
+  },
+  { additionalProperties: false },
+);
+
+export const CrossModelRegressionRunResponseSchema = Type.Object(
+  {
+    mode: Type.Literal("cross_model_regression_run"),
+    run_id: Type.String(),
+    model_count: Type.Integer(),
+    job_count: Type.Integer(),
+    evaluation_count: Type.Integer(),
+    runtime_jobs_executed: Type.Boolean(),
+    writes_performed: Type.Boolean(),
+    items: Type.Array(CrossModelRegressionRunItemSchema),
+  },
+  { additionalProperties: false },
+);
+export type CrossModelRegressionRunResponse = Static<typeof CrossModelRegressionRunResponseSchema>;
+
 export const ExecutionEvaluationAnalyticsSchema = Type.Object(
   {
     evaluation_count: Type.Integer(),

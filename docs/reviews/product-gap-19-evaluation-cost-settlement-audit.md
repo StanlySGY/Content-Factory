@@ -100,7 +100,7 @@ TDD 记录：
 
 | 后续项 | 说明 |
 | --- | --- |
-| Cross-model regression orchestration | 为同一任务族跨模型调度、评估、结算和对比 |
+| Cross-model regression orchestration | 已由 Product Gap 20 补齐 Backend MVP；后续是生产治理与 UI 确认策略 |
 | Provider billing reconciliation | 对接真实 provider invoice / usage export，对账而不是仅按显式 rate card 结算 |
 | Rate card registry | 将 rate card 版本、审批、有效期和币种策略产品化 |
 | UI settlement review | 若未来在 Web 展示/触发结算，需要单独设计权限、确认、预算和审计 UX |

@@ -10,6 +10,7 @@ import type {
   ContentTaskDTO,
   ContextPackDTO,
   EditorStateDTO,
+  CrossModelRegressionRunResponse,
   ExecutionJobDTO,
   ExecutionResultDTO,
   ExecutionWritebackDTO,
@@ -124,7 +125,11 @@ import type {
   ExecutionResultEvaluationSummary,
   LowQualityEvaluationList,
 } from "../domain/execution/evaluation.js";
-import type { EvaluationCostSettlementRun, LlmJudgeEvaluationRun } from "./execution-result-evaluation.service.js";
+import type {
+  CrossModelRegressionRun,
+  EvaluationCostSettlementRun,
+  LlmJudgeEvaluationRun,
+} from "./execution-result-evaluation.service.js";
 import type {
   ExecutionWritebackApplyGuard,
   ExecutionWritebackApplyGuardReadiness,
@@ -1185,6 +1190,29 @@ export function toRegressionEvaluationRunResponse(input: {
     skipped_count: input.skippedResultIds.length,
     evaluations: input.created.map(toExecutionResultEvaluationDTO),
     skipped_result_ids: input.skippedResultIds,
+  };
+}
+
+export function toCrossModelRegressionRunResponse(
+  input: CrossModelRegressionRun,
+): CrossModelRegressionRunResponse {
+  return {
+    mode: input.mode,
+    run_id: input.runId,
+    model_count: input.modelCount,
+    job_count: input.jobCount,
+    evaluation_count: input.evaluationCount,
+    runtime_jobs_executed: input.runtimeJobsExecuted,
+    writes_performed: input.writesPerformed,
+    items: input.items.map((item) => ({
+      model: item.model,
+      execution_job_id: item.job.id,
+      execution_result_id: item.result.id,
+      evaluation_id: item.evaluation.id,
+      job_status: item.job.status,
+      result_status: item.result.status,
+      evaluator_type: item.evaluation.evaluatorType as CrossModelRegressionRunResponse["items"][number]["evaluator_type"],
+    })),
   };
 }
 

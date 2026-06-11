@@ -99,6 +99,6 @@ TDD 记录：
 | 后续项 | 说明 |
 | --- | --- |
 | Billing-grade cost settlement | 接入 provider billing/rate card、模型价格、币种、时间窗口与误差审计 |
-| Cross-model regression orchestration | 为同一任务族跨模型调度、评估和对比 |
+| Cross-model regression orchestration | 已由 Product Gap 20 补齐 Backend MVP；后续是生产治理与 UI 确认策略 |
 | Judge prompt governance | 增加 prompt/version registry、人工审核、回放与漂移审计 |
 | UI trigger policy | 若未来要在 Web 触发 judge，需要单独设计权限、确认、预算和审计 UX |

@@ -488,7 +488,7 @@ MVP 后再进入：
 - 微信公众号真实发布集成。
 - 知识库检索与 RAG：后端 MVP 已补齐 knowledge source / entry / source archive/restore / entry archive/restore / inventory read API / keyword search / task candidates、context pack materialization、本地 deterministic embedding pipeline、embedding readiness endpoint、本地 vector retrieval endpoint 和 append-only context pack auto-refresh policy；Web 已补齐 knowledge inventory 与 candidate review 只读 UI；尚未接生产级 vector index 和 LLM rerank。
 - 多团队权限和审计：RBAC 后端 MVP 已具备，Web 已支持成员与项目授权管理，角色变更要求 `approval_ref`，成员和 membership 变更已写入审计链，项目级 RBAC 端点已有跨项目拒绝回归矩阵；后端已接入 header-based session context 和全局项目业务 API enforcement，后续仍需生产 auth provider、session lifecycle hardening 和组织项目归属模型。
-- Agent 效果评估和成本分析：后端 MVP 已补齐 execution result 评价账本、人工评分、确定性 rule evaluator runner、real-runtime LLM judge evaluation API、默认关闭 deterministic regression evaluation runner、job 级 summary、只读 evaluation analytics、tag-based 模型对比 API、provider metadata 成本归因校准 API 和显式费率卡成本结算 ledger API；Web 已补齐只读 evaluation dashboard；尚未接跨模型回归评测编排。
+- Agent 效果评估和成本分析：后端 MVP 已补齐 execution result 评价账本、人工评分、确定性 rule evaluator runner、real-runtime LLM judge evaluation API、默认关闭 deterministic regression evaluation runner、job 级 summary、只读 evaluation analytics、tag-based 模型对比 API、provider metadata 成本归因校准 API、显式费率卡成本结算 ledger API 和跨模型回归评测编排 API；Web 已补齐只读 evaluation dashboard；后续若产品化触发入口，需要另做权限、预算与审计 UX。
 
 ## 11. Sprint-5 Execution Layer 现状（Phase 1.x 冻结）
 
@@ -561,6 +561,8 @@ MVP 后再进入：
 > **LLM Judge Evaluation Backend MVP 已补齐**：Product Gap 18 新增 `POST /api/execution/results/:id/evaluate-llm`，为目标 execution result 创建独立 judge agent job，经 real runtime、secret injection、network allowlist、provider quota 和 result ledger 后解析严格 JSON，并追加 `llm` evaluation。它不修改原始 execution job/result，不伪造评分，不替代 billing-grade 成本结算或跨模型回归评测编排。证据见 `docs/reviews/product-gap-18-llm-judge-evaluation-audit.md`。
 
 > **Evaluation Cost Settlement Backend MVP 已补齐**：Product Gap 19 新增 `execution_cost_settlements` 和 `POST /api/execution/evaluations/cost-settlement-run`，可用显式 rate card 基于已持久化 provider token usage 追加成本结算记录，并通过 `(execution_result_id, rate_card_version)` 幂等。它不调用 provider/LLM、不修改 execution jobs/results/evaluations、不替代跨模型回归评测编排。证据见 `docs/reviews/product-gap-19-evaluation-cost-settlement-audit.md`。
+
+> **Cross-model Regression Orchestration Backend MVP 已补齐**：Product Gap 20 新增 `POST /api/execution/evaluations/cross-model-regression-run`，可对同一 prompt 按多个 model 创建隔离 execution jobs、同步 tick，并为每个 result 追加带 `model:<id>` / `regression:<run_id>` tag 的 rule evaluation。它复用现有 execution job/result/evaluation ledger，不新增专用状态表，不替代生产级评测治理或 UI 确认策略。证据见 `docs/reviews/product-gap-20-cross-model-regression-orchestration-audit.md`。
 
 > **不再继续 P2.x**：后续剩余工作进入独立产品路线，例如 Publisher Platform、MCP Marketplace、多租户 RBAC、Knowledge/RAG、Agent Evaluation。
 
