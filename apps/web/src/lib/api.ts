@@ -21,6 +21,8 @@ import type {
   CreateTaskBody,
   CreateWorkflowBody,
   EditorStateDTO,
+  EvaluationCostAttributionQuery,
+  EvaluationCostAttributionResponse,
   EvaluationModelComparisonQuery,
   EvaluationModelComparisonResponse,
   ExecutionMonitoringReadinessResponse,
@@ -261,6 +263,11 @@ export const api = {
     request<EvaluationModelComparisonResponse>(
       "GET",
       `/execution/evaluations/model-comparison${toQuery(q)}`,
+    ),
+  getEvaluationCostAttribution: (q: EvaluationCostAttributionQuery = {}) =>
+    request<EvaluationCostAttributionResponse>(
+      "GET",
+      `/execution/evaluations/cost-attribution${toQuery(q)}`,
     ),
   listLowQualityEvaluations: (q: ListLowQualityEvaluationsQuery = {}) =>
     request<LowQualityEvaluationsResponse>(

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type {
+  EvaluationCostAttributionResponse,
   EvaluationModelComparisonResponse,
   ExecutionEvaluationAnalyticsDTO,
   ExecutionResultEvaluationDTO,
@@ -13,10 +14,12 @@ import {
 } from "./hooks.js";
 
 type LowQualityItem = LowQualityEvaluationsResponse["items"][number];
+type CostAttributionItem = EvaluationCostAttributionResponse["items"][number];
 type EvaluationDashboardData = {
   analytics: ExecutionEvaluationAnalyticsDTO;
   lowQuality: LowQualityEvaluationsResponse;
   modelComparison: EvaluationModelComparisonResponse;
+  costAttribution: EvaluationCostAttributionResponse;
 };
 
 function statusTone(score: number) {
@@ -163,6 +166,140 @@ function ModelComparisonCard({
       ) : (
         <EmptyState title="暂无模型对比" hint="带有 model:<id> tag 的 evaluation 会出现在这里。" />
       )}
+    </section>
+  );
+}
+
+function CostAttributionSummary({
+  costAttribution,
+}: {
+  costAttribution: EvaluationCostAttributionResponse;
+}) {
+  return (
+    <div className="evaluation-cost-summary">
+      <div>
+        <strong>{costAttribution.total_estimated_cost_cents} cents estimated</strong>
+        <span>persisted provider metadata</span>
+      </div>
+      <div>
+        <strong>{costAttribution.token_usage_totals.total_tokens} total tokens</strong>
+        <span>
+          {costAttribution.token_usage_totals.prompt_tokens} prompt /{" "}
+          {costAttribution.token_usage_totals.completion_tokens} completion
+        </span>
+      </div>
+      <div>
+        <strong>{costAttribution.llm_calls_performed ? "LLM calls" : "No LLM calls"}</strong>
+        <span>{costAttribution.writes_performed ? "writes performed" : "read-only attribution"}</span>
+      </div>
+    </div>
+  );
+}
+
+function CostSourceChips({ sourceCounts }: { sourceCounts: Record<string, number> }) {
+  const sourceEntries = Object.entries(sourceCounts);
+
+  return (
+    <div className="evaluation-cost-sources">
+      {sourceEntries.length > 0 ? (
+        sourceEntries.map(([source, count]) => (
+          <span key={source}>
+            <strong>{source}</strong>
+            {count}
+          </span>
+        ))
+      ) : (
+        <span className="evaluation-muted">no attributed cost sources</span>
+      )}
+    </div>
+  );
+}
+
+function CostAttributionRow({ item }: { item: CostAttributionItem }) {
+  return (
+    <tr>
+      <td>
+        <strong>{shortId(item.execution_result_id)}</strong>
+        <span>{item.evaluator_type} / cost score {item.cost_score}</span>
+      </td>
+      <td>
+        {item.cost_estimate ? (
+          <>
+            <strong>{item.cost_estimate.amount_cents} {item.cost_estimate.currency}</strong>
+            <span>{item.cost_estimate.source}</span>
+          </>
+        ) : (
+          <span>unattributed</span>
+        )}
+      </td>
+      <td>
+        {item.token_usage ? (
+          <>
+            <strong>{item.token_usage.total_tokens} total</strong>
+            <span>{item.token_usage.prompt_tokens} prompt / {item.token_usage.completion_tokens} completion</span>
+          </>
+        ) : (
+          <span>-</span>
+        )}
+      </td>
+      <td>
+        {item.quota_decision ? (
+          <>
+            <strong>{item.quota_decision.status} / {item.quota_decision.distributed ? "distributed" : "local"}</strong>
+            <span>{item.quota_decision.used_requests} requests / {item.quota_decision.used_cost_cents} cents</span>
+          </>
+        ) : (
+          <span>-</span>
+        )}
+      </td>
+    </tr>
+  );
+}
+
+function CostAttributionTable({ items }: { items: CostAttributionItem[] }) {
+  if (items.length === 0) {
+    return <EmptyState title="暂无成本归因" hint="带 provider runtime metadata 的 evaluation 会出现在这里。" />;
+  }
+
+  return (
+    <table className="table evaluation-table evaluation-cost-attribution-table">
+      <thead>
+        <tr>
+          <th>Result</th>
+          <th>Cost estimate</th>
+          <th>Tokens</th>
+          <th>Quota</th>
+        </tr>
+      </thead>
+      <tbody>
+        {items.map((item) => (
+          <CostAttributionRow item={item} key={item.evaluation_id} />
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function CostAttributionCard({
+  costAttribution,
+}: {
+  costAttribution: EvaluationCostAttributionResponse;
+}) {
+  return (
+    <section className="card evaluation-cost-card">
+      <div className="evaluation-card-head">
+        <div>
+          <h2>Cost attribution</h2>
+          <span>{costAttribution.evaluation_count} evaluations</span>
+        </div>
+        <span className="evaluation-muted">
+          {costAttribution.attributed_evaluation_count} attributed /{" "}
+          {costAttribution.unattributed_evaluation_count} unattributed
+        </span>
+      </div>
+      <CostAttributionSummary costAttribution={costAttribution} />
+      <CostSourceChips sourceCounts={costAttribution.cost_source_counts} />
+      <CostAttributionTable items={costAttribution.items} />
     </section>
   );
 }
@@ -342,6 +479,7 @@ function LoadedEvaluationDashboard({ data }: { data: EvaluationDashboardData }) 
       <Summary analytics={data.analytics} />
       <DistributionCard analytics={data.analytics} />
       <ModelComparisonCard modelComparison={data.modelComparison} />
+      <CostAttributionCard costAttribution={data.costAttribution} />
 
       <div className="evaluation-grid">
         <section>
@@ -370,7 +508,7 @@ export function AgentEvaluationDashboardPage() {
       <div className="page-head">
         <div>
           <h1>评估看板</h1>
-          <p>只读 evaluation analytics、低分结果与 result evaluation ledger</p>
+          <p>只读 evaluation analytics、模型对比、成本归因、低分结果与 result evaluation ledger</p>
         </div>
       </div>
 

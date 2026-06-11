@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import type { EvaluationModelComparisonQuery } from "@cf/shared";
+import type { EvaluationCostAttributionQuery, EvaluationModelComparisonQuery } from "@cf/shared";
 import { api, type ListLowQualityEvaluationsQuery } from "../../lib/api.js";
 
 export const DEFAULT_LOW_QUALITY_QUERY: Required<ListLowQualityEvaluationsQuery> = {
@@ -8,6 +8,10 @@ export const DEFAULT_LOW_QUALITY_QUERY: Required<ListLowQualityEvaluationsQuery>
 };
 
 export const DEFAULT_MODEL_COMPARISON_QUERY: Required<Pick<EvaluationModelComparisonQuery, "limit">> = {
+  limit: 10,
+};
+
+export const DEFAULT_COST_ATTRIBUTION_QUERY: Required<Pick<EvaluationCostAttributionQuery, "limit">> = {
   limit: 10,
 };
 
@@ -20,15 +24,17 @@ export function useEvaluationDashboard() {
       DEFAULT_LOW_QUALITY_QUERY.threshold,
       DEFAULT_LOW_QUALITY_QUERY.limit,
       DEFAULT_MODEL_COMPARISON_QUERY.limit,
+      DEFAULT_COST_ATTRIBUTION_QUERY.limit,
     ],
     queryFn: async () => {
-      const [analytics, lowQuality, modelComparison] = await Promise.all([
+      const [analytics, lowQuality, modelComparison, costAttribution] = await Promise.all([
         api.getExecutionEvaluationAnalytics(),
         api.listLowQualityEvaluations(DEFAULT_LOW_QUALITY_QUERY),
         api.getEvaluationModelComparison(DEFAULT_MODEL_COMPARISON_QUERY),
+        api.getEvaluationCostAttribution(DEFAULT_COST_ATTRIBUTION_QUERY),
       ]);
 
-      return { analytics, lowQuality, modelComparison };
+      return { analytics, lowQuality, modelComparison, costAttribution };
     },
   });
 }

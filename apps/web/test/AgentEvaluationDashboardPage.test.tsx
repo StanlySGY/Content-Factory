@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import type {
+  EvaluationCostAttributionResponse,
   EvaluationModelComparisonResponse,
   ExecutionEvaluationAnalyticsDTO,
   ExecutionResultEvaluationDTO,
@@ -12,6 +13,7 @@ import { App } from "../src/app/App";
 
 const apiMock = vi.hoisted(() => ({
   getExecutionEvaluationAnalytics: vi.fn(),
+  getEvaluationCostAttribution: vi.fn(),
   getEvaluationModelComparison: vi.fn(),
   listLowQualityEvaluations: vi.fn(),
   listExecutionResultEvaluations: vi.fn(),
@@ -26,6 +28,60 @@ vi.mock("../src/lib/api", () => ({
 
 const lowQualityResultId = "00000000-0000-0000-0000-000000001201";
 const lowQualityJobId = "00000000-0000-0000-0000-000000001101";
+
+const costAttribution: EvaluationCostAttributionResponse = {
+  mode: "evaluation_cost_attribution",
+  job_id: null,
+  evaluation_count: 3,
+  attributed_evaluation_count: 2,
+  unattributed_evaluation_count: 1,
+  total_estimated_cost_cents: 37,
+  cost_source_counts: { provider_quota_estimate: 2 },
+  token_usage_totals: {
+    prompt_tokens: 42,
+    completion_tokens: 28,
+    total_tokens: 70,
+  },
+  llm_calls_performed: false,
+  writes_performed: false,
+  items: [
+    {
+      evaluation_id: "00000000-0000-0000-0000-000000001401",
+      execution_result_id: "00000000-0000-0000-0000-000000001201",
+      execution_job_id: "00000000-0000-0000-0000-000000001101",
+      evaluator_type: "human",
+      cost_score: 80,
+      attribution_status: "attributed",
+      cost_estimate: {
+        source: "provider_quota_estimate",
+        amount_cents: 24,
+        currency: "USD",
+      },
+      token_usage: {
+        prompt_tokens: 30,
+        completion_tokens: 14,
+        total_tokens: 44,
+      },
+      quota_decision: {
+        status: "allowed",
+        distributed: true,
+        used_requests: 1,
+        used_cost_cents: 24,
+      },
+    },
+    {
+      evaluation_id: "00000000-0000-0000-0000-000000001402",
+      execution_result_id: "00000000-0000-0000-0000-000000001202",
+      execution_job_id: "00000000-0000-0000-0000-000000001102",
+      evaluator_type: "rule",
+      cost_score: 95,
+      attribution_status: "unattributed",
+      cost_estimate: null,
+      token_usage: null,
+      quota_decision: null,
+    },
+  ],
+};
 
 const modelComparison: EvaluationModelComparisonResponse = {
   mode: "evaluation_model_comparison",
@@ -136,6 +192,7 @@ function renderRoute() {
 describe("AgentEvaluationDashboardPage", () => {
   it("renders readonly evaluation analytics, low-quality results and result evaluations", async () => {
     apiMock.getExecutionEvaluationAnalytics.mockResolvedValue(analytics);
+    apiMock.getEvaluationCostAttribution.mockResolvedValue(costAttribution);
     apiMock.getEvaluationModelComparison.mockResolvedValue(modelComparison);
     apiMock.listLowQualityEvaluations.mockResolvedValue(lowQuality);
     apiMock.listExecutionResultEvaluations.mockResolvedValue(resultEvaluations);
@@ -146,9 +203,18 @@ describe("AgentEvaluationDashboardPage", () => {
     expect(await screen.findByRole("heading", { name: "评估看板" })).toBeInTheDocument();
     expect(await screen.findByText("72.5")).toBeInTheDocument();
     expect(apiMock.getExecutionEvaluationAnalytics).toHaveBeenCalledTimes(1);
+    expect(apiMock.getEvaluationCostAttribution).toHaveBeenCalledWith({ limit: 10 });
     expect(apiMock.getEvaluationModelComparison).toHaveBeenCalledWith({ limit: 10 });
     expect(apiMock.listLowQualityEvaluations).toHaveBeenCalledWith({ threshold: 60, limit: 10 });
     expect(apiMock.listExecutionResultEvaluations).toHaveBeenCalledWith(lowQualityResultId);
+
+    expect(screen.getByRole("heading", { name: "Cost attribution" })).toBeInTheDocument();
+    expect(screen.getByText("2 attributed / 1 unattributed")).toBeInTheDocument();
+    expect(screen.getByText("37 cents estimated")).toBeInTheDocument();
+    expect(screen.getByText("70 total tokens")).toBeInTheDocument();
+    expect(screen.getAllByText("provider_quota_estimate").length).toBeGreaterThan(0);
+    expect(screen.getByText("24 USD")).toBeInTheDocument();
+    expect(screen.getByText("allowed / distributed")).toBeInTheDocument();
 
     expect(screen.getByRole("heading", { name: "Model comparison" })).toBeInTheDocument();
     expect(screen.getByText("2 compared models")).toBeInTheDocument();

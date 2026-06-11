@@ -1208,6 +1208,10 @@ button {
 .evaluation-distribution-card {
   margin-bottom: var(--sp-5);
 }
+.evaluation-comparison-card,
+.evaluation-cost-card {
+  margin-bottom: var(--sp-5);
+}
 .evaluation-card-head {
   display: flex;
   align-items: flex-start;
@@ -1246,6 +1250,48 @@ button {
   color: var(--text-secondary);
   font-size: 20px;
   font-weight: 700;
+}
+.evaluation-cost-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+}
+.evaluation-cost-summary div {
+  padding: var(--sp-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-subtle);
+}
+.evaluation-cost-summary strong,
+.evaluation-cost-summary span {
+  display: block;
+}
+.evaluation-cost-summary strong {
+  margin-bottom: var(--sp-1);
+}
+.evaluation-cost-summary span {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.evaluation-cost-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+}
+.evaluation-cost-sources span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.evaluation-cost-sources strong {
+  color: var(--text-primary);
 }
 .evaluation-grid {
   display: grid;
@@ -1311,7 +1357,8 @@ button {
 }
 .evaluation-low-quality-table,
 .evaluation-ledger-table,
-.evaluation-model-comparison-table {
+.evaluation-model-comparison-table,
+.evaluation-cost-attribution-table {
   table-layout: fixed;
 }
 .evaluation-low-quality-table th,
@@ -1319,7 +1366,9 @@ button {
 .evaluation-ledger-table th,
 .evaluation-ledger-table td,
 .evaluation-model-comparison-table th,
-.evaluation-model-comparison-table td {
+.evaluation-model-comparison-table td,
+.evaluation-cost-attribution-table th,
+.evaluation-cost-attribution-table td {
   word-break: break-word;
 }
 .evaluation-tags {
@@ -1752,6 +1801,7 @@ button {
   .invocation-grid,
   .rbac-grid,
   .evaluation-distribution,
+  .evaluation-cost-summary,
   .evaluation-grid,
   .execution-result-grid,
   .execution-outbox-grid,
