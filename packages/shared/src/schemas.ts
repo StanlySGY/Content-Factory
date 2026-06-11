@@ -1093,6 +1093,15 @@ export const KnowledgeSearchItemSchema = Type.Intersect([
 ]);
 export type KnowledgeSearchItemDTO = Static<typeof KnowledgeSearchItemSchema>;
 
+export const KnowledgeVectorSearchItemSchema = Type.Intersect([
+  KnowledgeEntrySchema,
+  Type.Object({
+    reason: Type.Literal("local_vector_similarity"),
+    similarity_score: Type.Number({ minimum: -1, maximum: 1 }),
+  }, { additionalProperties: false }),
+]);
+export type KnowledgeVectorSearchItemDTO = Static<typeof KnowledgeVectorSearchItemSchema>;
+
 export const CreateKnowledgeSourceSchema = Type.Object(
   {
     name: Type.String({ minLength: 1, maxLength: 160 }),
@@ -1149,6 +1158,20 @@ export const KnowledgeSearchResponseSchema = Type.Object(
   { additionalProperties: false },
 );
 export type KnowledgeSearchResponse = Static<typeof KnowledgeSearchResponseSchema>;
+
+export const KnowledgeVectorSearchResponseSchema = Type.Object(
+  {
+    mode: Type.Literal("knowledge_vector_search"),
+    query: Type.String(),
+    provider: Type.String(),
+    dimensions: Type.Integer({ minimum: 1 }),
+    external_calls_performed: Type.Boolean(),
+    vector_index_integrated: Type.Boolean(),
+    items: Type.Array(KnowledgeVectorSearchItemSchema),
+  },
+  { additionalProperties: false },
+);
+export type KnowledgeVectorSearchResponse = Static<typeof KnowledgeVectorSearchResponseSchema>;
 
 export const TaskKnowledgeCandidatesResponseSchema = Type.Object(
   {

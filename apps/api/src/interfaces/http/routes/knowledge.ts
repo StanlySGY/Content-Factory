@@ -10,6 +10,7 @@ import {
   KnowledgeSearchResponseSchema,
   KnowledgeSourcesResponseSchema,
   KnowledgeSourceResponseSchema,
+  KnowledgeVectorSearchResponseSchema,
   ListKnowledgeEntriesQuerySchema,
   ListKnowledgeSourcesQuerySchema,
   TaskIdParamSchema,
@@ -20,6 +21,7 @@ import {
   toKnowledgeEntryDTO,
   toKnowledgeSearchItemDTO,
   toKnowledgeSourceDTO,
+  toKnowledgeVectorSearchItemDTO,
 } from "../../../application/mappers.js";
 import type { Env } from "../../../config/env.js";
 import { buildContext } from "../context.js";
@@ -129,6 +131,23 @@ export const knowledgeRoutes: FastifyPluginAsyncTypebox<KnowledgeRoutesOptions> 
     async (request) => {
       const result = await knowledgeService.search(buildContext(env, request), request.query);
       return { query: result.query, items: result.items.map(toKnowledgeSearchItemDTO) };
+    },
+  );
+
+  app.get(
+    "/api/knowledge/vector-search",
+    { schema: { querystring: KnowledgeSearchQuerySchema, response: { 200: KnowledgeVectorSearchResponseSchema } } },
+    async (request) => {
+      const result = await knowledgeService.vectorSearch(buildContext(env, request), request.query);
+      return {
+        mode: result.mode,
+        query: result.query,
+        provider: result.provider,
+        dimensions: result.dimensions,
+        external_calls_performed: result.externalCallsPerformed,
+        vector_index_integrated: result.vectorIndexIntegrated,
+        items: result.items.map(toKnowledgeVectorSearchItemDTO),
+      };
     },
   );
 

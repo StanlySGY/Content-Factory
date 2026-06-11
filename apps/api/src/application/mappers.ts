@@ -39,6 +39,7 @@ import type {
   KnowledgeEntryDTO,
   KnowledgeSearchItemDTO,
   KnowledgeSourceDTO,
+  KnowledgeVectorSearchItemDTO,
   LowQualityEvaluationsResponse,
   McpMarketplaceEntryDTO,
   McpMarketplaceInstallationDTO,
@@ -651,6 +652,16 @@ export function toKnowledgeSearchItemDTO(
   return {
     ...toKnowledgeEntryDTO(r),
     reason: r.reason,
+  };
+}
+
+export function toKnowledgeVectorSearchItemDTO(
+  r: KnowledgeEntryRow & { reason: "local_vector_similarity"; similarityScore: number },
+): KnowledgeVectorSearchItemDTO {
+  return {
+    ...toKnowledgeEntryDTO(r),
+    reason: r.reason,
+    similarity_score: r.similarityScore,
   };
 }
 

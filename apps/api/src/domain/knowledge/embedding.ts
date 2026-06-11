@@ -36,6 +36,11 @@ export function buildLocalKnowledgeEmbedding(input: LocalKnowledgeEmbeddingInput
   };
 }
 
+export function calculateLocalKnowledgeVectorSimilarity(left: number[], right: number[]): number {
+  const score = left.reduce((sum, value, index) => sum + value * (right[index] ?? 0), 0);
+  return Number(score.toFixed(6));
+}
+
 function normalizeEmbeddingText(input: LocalKnowledgeEmbeddingInput): string {
   const text = [input.title, input.body, ...input.tags]
     .join("\n")

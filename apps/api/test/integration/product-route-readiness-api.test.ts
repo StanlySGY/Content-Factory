@@ -72,8 +72,10 @@ describe("product route readiness", () => {
     const knowledgeRoute = body.routes.find((route: { key: string }) => route.key === "knowledge_rag");
     expect(knowledgeRoute.delivered_capabilities).toContain("deterministic local embedding pipeline");
     expect(knowledgeRoute.delivered_capabilities).toContain("knowledge embedding readiness endpoint");
+    expect(knowledgeRoute.delivered_capabilities).toContain("local vector retrieval over embedding snapshots");
     expect(knowledgeRoute.missing_product_requirements).not.toContain("embedding pipeline");
-    expect(knowledgeRoute.missing_product_requirements).toContain("vector index integration");
+    expect(knowledgeRoute.missing_product_requirements).not.toContain("vector index integration");
+    expect(knowledgeRoute.missing_product_requirements).toContain("production vector index integration");
     expect(JSON.stringify(body)).not.toContain("sk-");
     expect(JSON.stringify(body)).not.toContain("Bearer");
   });

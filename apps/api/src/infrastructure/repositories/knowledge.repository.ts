@@ -45,6 +45,11 @@ export interface KnowledgeEmbeddingCoverage {
   embeddedActiveEntries: number;
 }
 
+export interface KnowledgeVectorCandidateRow {
+  entry: KnowledgeEntryRow;
+  vector: number[];
+}
+
 export interface KnowledgeSourceFilter {
   status?: string;
   source_type?: string;
@@ -202,6 +207,36 @@ export async function getEmbeddingCoverage(
     activeEntriesTotal: Number(row?.activeEntriesTotal ?? 0),
     embeddedActiveEntries: Number(row?.embeddedActiveEntries ?? 0),
   };
+}
+
+export async function listActiveEmbeddedEntries(
+  db: Db,
+  projectId: string,
+  provider: string,
+): Promise<KnowledgeVectorCandidateRow[]> {
+  const rows = await db
+    .select({
+      entry: knowledgeEntries,
+      vector: knowledgeEntryEmbeddings.vector,
+    })
+    .from(knowledgeEntries)
+    .innerJoin(knowledgeSources, eq(knowledgeSources.id, knowledgeEntries.sourceId))
+    .innerJoin(
+      knowledgeEntryEmbeddings,
+      and(
+        eq(knowledgeEntryEmbeddings.knowledgeEntryId, knowledgeEntries.id),
+        eq(knowledgeEntryEmbeddings.projectId, projectId),
+        eq(knowledgeEntryEmbeddings.provider, provider),
+        eq(knowledgeEntryEmbeddings.status, "active"),
+      ),
+    )
+    .where(and(
+      eq(knowledgeEntries.projectId, projectId),
+      eq(knowledgeEntries.status, "active"),
+      eq(knowledgeSources.status, "active"),
+    ))
+    .orderBy(desc(knowledgeEntries.updatedAt));
+  return rows;
 }
 
 export async function searchEntries(

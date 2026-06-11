@@ -8,6 +8,7 @@ import type {
 import { NotFoundError, ValidationError } from "../domain/errors.js";
 import {
   buildLocalKnowledgeEmbedding,
+  calculateLocalKnowledgeVectorSimilarity,
   LOCAL_KNOWLEDGE_EMBEDDING_DIMENSIONS,
   LOCAL_KNOWLEDGE_EMBEDDING_PROVIDER,
 } from "../domain/knowledge/embedding.js";
@@ -31,6 +32,19 @@ export interface KnowledgeSearchResult {
 
 export interface TaskKnowledgeCandidatesResult extends KnowledgeSearchResult {
   taskId: string;
+}
+
+export interface KnowledgeVectorSearchResult {
+  mode: "knowledge_vector_search";
+  query: string;
+  provider: string;
+  dimensions: number;
+  externalCallsPerformed: false;
+  vectorIndexIntegrated: false;
+  items: Array<KnowledgeEntryRow & {
+    reason: "local_vector_similarity";
+    similarityScore: number;
+  }>;
 }
 
 export interface KnowledgeEmbeddingReadiness {
@@ -208,6 +222,36 @@ export class KnowledgeService {
       missingEmbeddings,
       externalCallsPerformed: false,
       vectorIndexIntegrated: false,
+    };
+  }
+
+  async vectorSearch(ctx: RequestContext, query: KnowledgeSearchQuery): Promise<KnowledgeVectorSearchResult> {
+    const normalizedQuery = normalizeKnowledgeQuery(query.q);
+    const limit = normalizeKnowledgeLimit(query.limit);
+    const queryEmbedding = buildLocalKnowledgeEmbedding({
+      title: normalizedQuery,
+      body: "",
+      tags: [],
+    });
+    const rows = await runInProject(this.db, ctx.projectId, (tx) =>
+      repo.listActiveEmbeddedEntries(tx, ctx.projectId, LOCAL_KNOWLEDGE_EMBEDDING_PROVIDER),
+    );
+    const items = rows
+      .map(({ entry, vector }) => ({
+        ...entry,
+        reason: "local_vector_similarity" as const,
+        similarityScore: calculateLocalKnowledgeVectorSimilarity(queryEmbedding.vector, vector),
+      }))
+      .sort((left, right) => right.similarityScore - left.similarityScore)
+      .slice(0, limit);
+    return {
+      mode: "knowledge_vector_search",
+      query: normalizedQuery,
+      provider: LOCAL_KNOWLEDGE_EMBEDDING_PROVIDER,
+      dimensions: LOCAL_KNOWLEDGE_EMBEDDING_DIMENSIONS,
+      externalCallsPerformed: false,
+      vectorIndexIntegrated: false,
+      items,
     };
   }
 

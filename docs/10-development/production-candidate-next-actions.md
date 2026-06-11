@@ -76,7 +76,7 @@ Content Factory 当前处于 **Final RC / production candidate** 收口阶段：
 | 路线 | 范围 | 当前缺口 |
 | --- | --- | --- |
 | MCP Marketplace | 外部发现、SDK transport、SSE/stdio、热加载、tool invocation ledger 回写 | 当前已有 backend MVP、本地安装控制面 UI 与只读 invocation ledger UI |
-| Knowledge / RAG | 真实 vector index、LLM rerank、context pack 自动刷新 | 当前已有关键词、后端管理 API、本地 deterministic embedding pipeline、embedding readiness endpoint、knowledge inventory UI 与 candidate review UI |
+| Knowledge / RAG | 生产级 vector index、LLM rerank、context pack 自动刷新 | 当前已有关键词、后端管理 API、本地 deterministic embedding pipeline、embedding readiness endpoint、本地 vector retrieval endpoint、knowledge inventory UI 与 candidate review UI |
 | Agent Evaluation | LLM judge、真实成本归因、模型对比、跨模型回归评测编排 | 当前已有人工/规则评价、默认关闭 deterministic regression evaluation runner、analytics API 与只读 dashboard |
 | Skill / Plugin | Skill 路由、质量门禁自动化、插件隔离、供应链验证、UI | 当前不是 MVP 验收项 |
 
