@@ -11,7 +11,10 @@ import { EditorQueryService } from "./application/editor-query.service.js";
 import { ExecutionJobService } from "./application/execution-job.service.js";
 import { ExecutionBridgeService } from "./application/execution-bridge.service.js";
 import { defaultExecutionOpsRuntimeRegistry, ExecutionOpsService } from "./application/execution-ops.service.js";
-import { ExecutionResultEvaluationService } from "./application/execution-result-evaluation.service.js";
+import {
+  ExecutionRegressionEvaluationRunner,
+  ExecutionResultEvaluationService,
+} from "./application/execution-result-evaluation.service.js";
 import { ExecutionResultService } from "./application/execution-result.service.js";
 import { ExecutionWritebackService } from "./application/execution-writeback.service.js";
 import { KnowledgeService } from "./application/knowledge.service.js";
@@ -79,6 +82,7 @@ import { workflowRoutes } from "./interfaces/http/routes/workflows.js";
 export interface BuiltApp {
   app: FastifyInstance;
   outboxRelay: OutboxRelay;
+  executionRegressionEvaluationRunner: ExecutionRegressionEvaluationRunner;
   close: () => Promise<void>;
 }
 
@@ -231,6 +235,13 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
   const executionBridgeService = new ExecutionBridgeService(executionJobService);
   const executionResultService = new ExecutionResultService(db);
   const executionResultEvaluationService = new ExecutionResultEvaluationService(db);
+  const executionRegressionEvaluationRunner = new ExecutionRegressionEvaluationRunner(
+    executionResultEvaluationService,
+    { projectId: "execution", actorId: env.defaultUserId, requestId: "regression-evaluation-runner" },
+    env.executionRegressionEvaluationRunnerEnabled,
+    env.executionRegressionEvaluationRunnerIntervalMs,
+    env.executionRegressionEvaluationRunnerBatchSize,
+  );
   const executionWritebackService = new ExecutionWritebackService(db);
   const knowledgeService = new KnowledgeService(db);
   const publisherChannelService = new PublisherChannelService(db);
@@ -322,6 +333,7 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
     executionBridgeService,
     executionResultService,
     executionResultEvaluationService,
+    executionRegressionEvaluationRunner,
     executionWritebackService,
   });
   await app.register(executionOpsRoutes, { executionOpsService });
@@ -331,13 +343,15 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
 
   if (env.executionWorkerEnabled) executionWorker.start();
   if (env.outboxRelayEnabled) outboxRelay.start();
+  if (env.executionRegressionEvaluationRunnerEnabled) executionRegressionEvaluationRunner.start();
 
   const close = async (): Promise<void> => {
     executionWorker.stop();
     outboxRelay.stop();
+    executionRegressionEvaluationRunner.stop();
     await app.close();
     await Promise.all([appPool.end(), auditPool.end()]);
   };
 
-  return { app, outboxRelay, close };
+  return { app, outboxRelay, executionRegressionEvaluationRunner, close };
 }

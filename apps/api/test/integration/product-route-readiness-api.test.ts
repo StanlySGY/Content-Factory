@@ -62,6 +62,9 @@ describe("product route readiness", () => {
     expect(rbacRoute.missing_product_requirements).not.toContain("cross-project access denial regression matrix");
     expect(rbacRoute.missing_product_requirements).not.toContain("approval policy for role mutations");
     expect(rbacRoute.missing_product_requirements).toContain("global API authorization enforcement");
+    const agentEvaluationRoute = body.routes.find((route: { key: string }) => route.key === "agent_evaluation");
+    expect(agentEvaluationRoute.delivered_capabilities).toContain("default-closed deterministic regression evaluation runner");
+    expect(agentEvaluationRoute.missing_product_requirements).not.toContain("scheduled regression evaluation runner");
     expect(JSON.stringify(body)).not.toContain("sk-");
     expect(JSON.stringify(body)).not.toContain("Bearer");
   });

@@ -41,6 +41,14 @@ export async function listResultsByJob(db: Db, jobId: string): Promise<Execution
     .orderBy(asc(executionResults.attemptNo));
 }
 
+export async function listRecentResults(db: Db, limit: number): Promise<ExecutionResultRow[]> {
+  return db
+    .select()
+    .from(executionResults)
+    .orderBy(desc(executionResults.createdAt))
+    .limit(limit);
+}
+
 export async function getExecutionResult(db: Db, id: string): Promise<ExecutionResultRow | null> {
   const [row] = await db.select().from(executionResults).where(eq(executionResults.id, id)).limit(1);
   return row ?? null;

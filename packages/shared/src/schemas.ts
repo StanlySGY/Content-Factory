@@ -1225,6 +1225,30 @@ export const RuleEvaluationBatchResponseSchema = Type.Object(
 );
 export type RuleEvaluationBatchResponse = Static<typeof RuleEvaluationBatchResponseSchema>;
 
+export const RegressionEvaluationRunSchema = Type.Object(
+  {
+    job_ids: Type.Optional(Type.Array(Uuid(), { maxItems: 100 })),
+    limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
+  },
+  { additionalProperties: false },
+);
+export type RegressionEvaluationRunBody = Static<typeof RegressionEvaluationRunSchema>;
+
+export const RegressionEvaluationRunResponseSchema = Type.Object(
+  {
+    mode: Type.Literal("regression_evaluation_run"),
+    runner_enabled: Type.Boolean(),
+    interval_ms: Type.Integer(),
+    limit: Type.Integer(),
+    created_count: Type.Integer(),
+    skipped_count: Type.Integer(),
+    evaluations: Type.Array(ExecutionResultEvaluationSchema),
+    skipped_result_ids: Type.Array(Uuid()),
+  },
+  { additionalProperties: false },
+);
+export type RegressionEvaluationRunResponse = Static<typeof RegressionEvaluationRunResponseSchema>;
+
 export const ExecutionEvaluationAnalyticsSchema = Type.Object(
   {
     evaluation_count: Type.Integer(),

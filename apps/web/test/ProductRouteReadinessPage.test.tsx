@@ -89,9 +89,9 @@ const readiness: ProductRouteReadinessResponse = {
       production_ready: false,
       status: "ready",
       evidence_endpoints: ["/api/execution/evaluations/analytics"],
-      delivered_capabilities: ["readonly evaluation dashboard UI"],
+      delivered_capabilities: ["readonly evaluation dashboard UI", "default-closed deterministic regression evaluation runner"],
       missing_product_requirements: ["LLM judge integration"],
-      safety_boundaries: ["rule evaluation does not call external LLMs"],
+      safety_boundaries: ["rule evaluation does not call external LLMs", "regression runner is rule-only and default disabled"],
     },
   ],
 };
@@ -127,6 +127,8 @@ describe("ProductRouteReadinessPage", () => {
     expect(screen.getByText("/api/execution/ops/product-route-readiness")).toBeInTheDocument();
     expect(screen.getByText("local publish record withdraw and resend controls")).toBeInTheDocument();
     expect(screen.queryByText("withdraw and resend operations")).not.toBeInTheDocument();
+    expect(screen.getByText("default-closed deterministic regression evaluation runner")).toBeInTheDocument();
+    expect(screen.queryByText("scheduled regression evaluation runner")).not.toBeInTheDocument();
     expect(screen.getByText("LLM judge integration")).toBeInTheDocument();
   });
 });

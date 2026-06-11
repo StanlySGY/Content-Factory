@@ -84,4 +84,41 @@ describe("Product Gap 6 Rule Evaluation Runner Backend MVP", () => {
     });
     expect(response.statusCode).toBe(404);
   });
+
+  it("runs a bounded regression evaluation batch for selected jobs", async () => {
+    const first = await runAgentJob("success");
+    const second = await runAgentJob("failed");
+    expect((await app.inject({ method: "POST", url: `/api/execution/results/${first.resultId}/evaluate-rule` })).statusCode).toBe(201);
+
+    const batch = await app.inject({
+      method: "POST",
+      url: "/api/execution/evaluations/regression-run",
+      payload: { job_ids: [first.jobId, second.jobId], limit: 10 },
+    });
+
+    expect(batch.statusCode).toBe(200);
+    expect(batch.json()).toMatchObject({
+      mode: "regression_evaluation_run",
+      runner_enabled: false,
+      created_count: 1,
+      skipped_count: 1,
+      skipped_result_ids: [first.resultId],
+    });
+    expect(batch.json().evaluations).toHaveLength(1);
+    expect(batch.json().evaluations[0]).toMatchObject({
+      execution_result_id: second.resultId,
+      evaluator_type: "rule",
+      quality_score: 55,
+      evaluated_by: DEFAULT_USER_ID,
+    });
+
+    const rerun = await app.inject({
+      method: "POST",
+      url: "/api/execution/evaluations/regression-run",
+      payload: { job_ids: [first.jobId, second.jobId], limit: 10 },
+    });
+    expect(rerun.statusCode).toBe(200);
+    expect(rerun.json()).toMatchObject({ created_count: 0, skipped_count: 2 });
+    expect(rerun.json().evaluations).toEqual([]);
+  });
 });

@@ -28,11 +28,16 @@ import {
   OutboxEventSchema,
   OutboxEventsResponseSchema,
   ProcessOutboxEventResponseSchema,
+  RegressionEvaluationRunResponseSchema,
+  RegressionEvaluationRunSchema,
   RuleEvaluationBatchResponseSchema,
 } from "@cf/shared";
 import type { ExecutionBridgeService } from "../../../application/execution-bridge.service.js";
 import type { ExecutionJobService } from "../../../application/execution-job.service.js";
-import type { ExecutionResultEvaluationService } from "../../../application/execution-result-evaluation.service.js";
+import type {
+  ExecutionRegressionEvaluationRunner,
+  ExecutionResultEvaluationService,
+} from "../../../application/execution-result-evaluation.service.js";
 import type { ExecutionResultService } from "../../../application/execution-result.service.js";
 import type { ExecutionWritebackService } from "../../../application/execution-writeback.service.js";
 import type { ExecutionWorker } from "../../../application/execution-worker.js";
@@ -55,6 +60,7 @@ import {
   toExecutionWritebackDTO,
   toOutboxEventDTO,
   toLowQualityEvaluationsResponse,
+  toRegressionEvaluationRunResponse,
   toRuleEvaluationBatchResponse,
 } from "../../../application/mappers.js";
 
@@ -67,6 +73,7 @@ export interface ExecutionRoutesOptions {
   executionBridgeService: ExecutionBridgeService;
   executionResultService: ExecutionResultService;
   executionResultEvaluationService: ExecutionResultEvaluationService;
+  executionRegressionEvaluationRunner: ExecutionRegressionEvaluationRunner;
   executionWritebackService: ExecutionWritebackService;
 }
 
@@ -83,6 +90,7 @@ export const executionRoutes: FastifyPluginAsyncTypebox<ExecutionRoutesOptions> 
     executionBridgeService,
     executionResultService,
     executionResultEvaluationService,
+    executionRegressionEvaluationRunner,
     executionWritebackService,
   },
 ) => {
@@ -177,6 +185,26 @@ export const executionRoutes: FastifyPluginAsyncTypebox<ExecutionRoutesOptions> 
       toLowQualityEvaluationsResponse(
         await executionResultEvaluationService.listLowQuality(request.query.threshold, request.query.limit),
       ),
+  );
+
+  app.post(
+    "/api/execution/evaluations/regression-run",
+    {
+      schema: {
+        body: RegressionEvaluationRunSchema,
+        response: { 200: RegressionEvaluationRunResponseSchema },
+      },
+    },
+    async (request) => {
+      const result = await executionRegressionEvaluationRunner.runOnce(request.body);
+      return toRegressionEvaluationRunResponse({
+        runnerEnabled: executionRegressionEvaluationRunner.enabled,
+        intervalMs: executionRegressionEvaluationRunner.intervalMs,
+        limit: result.limit,
+        created: result.created,
+        skippedResultIds: result.skippedResultIds,
+      });
+    },
   );
 
   // 单条执行结果（404 不存在）

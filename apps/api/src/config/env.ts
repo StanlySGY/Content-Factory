@@ -46,6 +46,9 @@ export interface Env {
   executionStagingSmokeRuntimeMode: "mock_only" | "real_low_privilege";
   executionStagingSmokeMaxJobs: number;
   executionStagingSmokeCredentialRef: string | null;
+  executionRegressionEvaluationRunnerEnabled: boolean;
+  executionRegressionEvaluationRunnerIntervalMs: number;
+  executionRegressionEvaluationRunnerBatchSize: number;
   executionAgentProviderStagingEnabled: boolean;
   executionMcpRealRuntimeEnabled: boolean;
   executionMcpTransportMode: "streamable_http";
@@ -212,6 +215,17 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
       "EXECUTION_STAGING_SMOKE_MAX_JOBS",
     ),
     executionStagingSmokeCredentialRef: source.EXECUTION_STAGING_SMOKE_CREDENTIAL_REF ?? null,
+    executionRegressionEvaluationRunnerEnabled: bool(source.EXECUTION_REGRESSION_EVALUATION_RUNNER_ENABLED, false),
+    executionRegressionEvaluationRunnerIntervalMs: nonNegativeInt(
+      source.EXECUTION_REGRESSION_EVALUATION_RUNNER_INTERVAL_MS,
+      60000,
+      "EXECUTION_REGRESSION_EVALUATION_RUNNER_INTERVAL_MS",
+    ),
+    executionRegressionEvaluationRunnerBatchSize: nonNegativeInt(
+      source.EXECUTION_REGRESSION_EVALUATION_RUNNER_BATCH_SIZE,
+      50,
+      "EXECUTION_REGRESSION_EVALUATION_RUNNER_BATCH_SIZE",
+    ),
     executionAgentProviderStagingEnabled: bool(source.EXECUTION_AGENT_PROVIDER_STAGING_ENABLED, false),
     executionMcpRealRuntimeEnabled: bool(source.EXECUTION_MCP_REAL_RUNTIME_ENABLED, false),
     executionMcpTransportMode: mcpTransportMode(source.EXECUTION_MCP_TRANSPORT_MODE),

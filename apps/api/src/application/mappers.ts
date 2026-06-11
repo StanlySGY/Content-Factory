@@ -57,6 +57,7 @@ import type {
   PublishRecordDTO,
   PublisherChannelDTO,
   PublisherRealRuntimeReadinessResponse,
+  RegressionEvaluationRunResponse,
   ReviewRecordDTO,
   RuntimeAdapterDescriptorDTO,
   RuntimeAdapterDryRunResponse,
@@ -1142,6 +1143,25 @@ export function toRuleEvaluationBatchResponse(input: {
 }): RuleEvaluationBatchResponse {
   return {
     job_id: input.jobId,
+    created_count: input.created.length,
+    skipped_count: input.skippedResultIds.length,
+    evaluations: input.created.map(toExecutionResultEvaluationDTO),
+    skipped_result_ids: input.skippedResultIds,
+  };
+}
+
+export function toRegressionEvaluationRunResponse(input: {
+  runnerEnabled: boolean;
+  intervalMs: number;
+  limit: number;
+  created: ExecutionResultEvaluationRow[];
+  skippedResultIds: string[];
+}): RegressionEvaluationRunResponse {
+  return {
+    mode: "regression_evaluation_run",
+    runner_enabled: input.runnerEnabled,
+    interval_ms: input.intervalMs,
+    limit: input.limit,
     created_count: input.created.length,
     skipped_count: input.skippedResultIds.length,
     evaluations: input.created.map(toExecutionResultEvaluationDTO),

@@ -1,4 +1,4 @@
-import type { CreateExecutionResultEvaluationBody } from "@cf/shared";
+import type { CreateExecutionResultEvaluationBody, RegressionEvaluationRunBody } from "@cf/shared";
 import { ConflictError, NotFoundError, ValidationError } from "../domain/errors.js";
 import {
   buildRuleEvaluation,
@@ -12,12 +12,19 @@ import {
   type LowQualityEvaluationList,
 } from "../domain/execution/evaluation.js";
 import type { Db } from "../infrastructure/db/client.js";
-import type { ExecutionResultEvaluationRow } from "../infrastructure/db/schema.js";
+import type { ExecutionResultEvaluationRow, ExecutionResultRow } from "../infrastructure/db/schema.js";
 import * as evaluationRepo from "../infrastructure/repositories/execution-result-evaluation.repository.js";
 import * as resultRepo from "../infrastructure/repositories/execution-result.repository.js";
 import type { RequestContext } from "./task.service.js";
 
 const isUniqueViolation = (error: unknown): boolean => (error as { code?: string }).code === "23505";
+const DEFAULT_REGRESSION_EVALUATION_LIMIT = 50;
+
+export interface RegressionEvaluationBatch {
+  limit: number;
+  created: ExecutionResultEvaluationRow[];
+  skippedResultIds: string[];
+}
 
 export class ExecutionResultEvaluationService {
   constructor(private readonly db: Db) {}
@@ -88,6 +95,25 @@ export class ExecutionResultEvaluationService {
     return { jobId, created, skippedResultIds };
   }
 
+  async evaluateRegressionWithRules(
+    ctx: RequestContext,
+    input: RegressionEvaluationRunBody = {},
+  ): Promise<RegressionEvaluationBatch> {
+    const limit = input.limit ?? DEFAULT_REGRESSION_EVALUATION_LIMIT;
+    const candidates = await this.regressionCandidates(input.job_ids ?? [], limit);
+    const created: ExecutionResultEvaluationRow[] = [];
+    const skippedResultIds: string[] = [];
+    for (const result of candidates) {
+      const existing = await evaluationRepo.getEvaluationByResultAndType(this.db, result.id, "rule");
+      if (existing) {
+        skippedResultIds.push(result.id);
+        continue;
+      }
+      created.push(await this.evaluateResultWithRules(ctx, result.id));
+    }
+    return { limit, created, skippedResultIds };
+  }
+
   async summaryByJob(jobId: string): Promise<ExecutionResultEvaluationSummary> {
     return summarizeEvaluations(jobId, await evaluationRepo.listEvaluationsByJob(this.db, jobId));
   }
@@ -103,5 +129,50 @@ export class ExecutionResultEvaluationService {
   private requireActor(ctx: RequestContext): string {
     if (!ctx.actorId) throw new ValidationError("execution result evaluation requires an actor");
     return ctx.actorId;
+  }
+
+  private async regressionCandidates(jobIds: string[], limit: number) {
+    if (jobIds.length === 0) return resultRepo.listRecentResults(this.db, limit);
+    const seen = new Set<string>();
+    const out: ExecutionResultRow[] = [];
+    for (const jobId of jobIds) {
+      for (const result of await resultRepo.listResultsByJob(this.db, jobId)) {
+        if (seen.has(result.id)) continue;
+        seen.add(result.id);
+        out.push(result);
+        if (out.length >= limit) return out;
+      }
+    }
+    return out;
+  }
+}
+
+export class ExecutionRegressionEvaluationRunner {
+  private timer: NodeJS.Timeout | null = null;
+
+  constructor(
+    private readonly service: ExecutionResultEvaluationService,
+    private readonly ctx: RequestContext,
+    readonly enabled: boolean,
+    readonly intervalMs: number,
+    readonly batchSize: number,
+  ) {}
+
+  runOnce(input: RegressionEvaluationRunBody = {}): Promise<RegressionEvaluationBatch> {
+    return this.service.evaluateRegressionWithRules(this.ctx, { limit: input.limit ?? this.batchSize, job_ids: input.job_ids });
+  }
+
+  start(): void {
+    if (!this.enabled || this.timer) return;
+    this.timer = setInterval(() => {
+      void this.runOnce().catch(() => undefined);
+    }, this.intervalMs);
+    this.timer.unref?.();
+  }
+
+  stop(): void {
+    if (!this.timer) return;
+    clearInterval(this.timer);
+    this.timer = null;
   }
 }
