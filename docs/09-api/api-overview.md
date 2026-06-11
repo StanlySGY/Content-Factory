@@ -140,7 +140,7 @@
 | --- | --- | --- |
 | MCP Marketplace | `/api/mcp/marketplace/entries`、`/api/mcp/marketplace/installations`、安装/禁用/卸载、Web `/mcp/marketplace` 本地安装控制面 UI | 外部 marketplace 发现、SDK transport、SSE/stdio、热加载 |
 | Publisher Platform Backend | `/api/publisher/channels`、`/api/publish-records`、本地撤回/重发控制面、Publisher real-runtime readiness、Web `/publisher` 渠道创建与启用/停用/归档 UI | 真实发布审批流、素材管理、失败告警、多渠道编排 |
-| Multi-tenant RBAC Backend | `/api/rbac/organizations`、`/api/rbac/organizations/:id/members`、`/api/rbac/projects/:id/memberships`、成员管理、项目 membership、`check-access`、项目级 RBAC 端点跨项目拒绝回归矩阵、角色变更 `approval_ref` 合同、RBAC 成员和 membership 变更审计、Web `/rbac` 成员与项目授权管理 UI | auth/session、全局业务 API enforcement |
+| Multi-tenant RBAC Backend | `/api/rbac/organizations`、`/api/rbac/organizations/:id/members`、`/api/rbac/projects/:id/memberships`、成员管理、项目 membership、`check-access`、项目级 RBAC 端点跨项目拒绝回归矩阵、角色变更 `approval_ref` 合同、RBAC 成员和 membership 变更审计、Web `/rbac` 成员与项目授权管理 UI、`x-cf-actor-id` / `x-cf-project-id` header-based session context、全局项目业务 API `project.read/write` enforcement | 生产级 auth provider、session lifecycle hardening、组织与项目归属模型 |
 | Knowledge/RAG Backend | `/api/knowledge/sources`、entries、archive/restore、keyword search、task candidates、只读 candidate review UI | embedding、向量库、LLM rerank、context pack 自动刷新 |
 | Agent Evaluation Backend | `/api/execution/results/:id/evaluations`、rule evaluation、`/api/execution/evaluations/regression-run`、analytics、low-quality list、只读 dashboard UI | LLM judge、真实成本归因、模型对比、跨模型回归评测编排 |
 | Execution Observability | `/api/execution/jobs`、`/api/execution/jobs/:id/results`、`/api/execution/jobs/:id/result-summary`、`/api/execution/jobs/:id/events`、`/api/execution/results/:id/writebacks`、只读 result/outbox/writeback ledger UI | replay、写回操作台 |
@@ -169,7 +169,7 @@
 ## 7. 不在 MVP 的 API（占位说明）
 
 - 插件、Skill 的执行类端点不在 MVP（ADR-016）；MVP 仅可能提供其配置/只读展示端点。
-- 完整真实发布、MCP 外部市场发现、多租户全局 enforcement、RAG/评估高级自动化仍为独立产品路线；后端已有 MVP API 不等于真实生产启用或完整 UI 已完成。
+- 完整真实发布、MCP 外部市场发现、多租户生产认证与组织归属、RAG/评估高级自动化仍为独立产品路线；后端已有 MVP API 不等于真实生产启用或完整 UI 已完成。
 
 ## 8. 关联文档
 

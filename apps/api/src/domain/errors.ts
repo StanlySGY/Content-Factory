@@ -31,6 +31,12 @@ export class NotFoundError extends AppError {
   readonly code = "not_found";
 }
 
+/** 已认证但权限不足 → 403 */
+export class ForbiddenError extends AppError {
+  readonly httpStatus = 403;
+  readonly code = "forbidden";
+}
+
 /** 唯一约束冲突（活跃实例唯一 / 唯一键 / 乐观锁）→ 409 */
 export class ConflictError extends AppError {
   readonly httpStatus = 409;

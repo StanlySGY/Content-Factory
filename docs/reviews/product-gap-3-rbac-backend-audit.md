@@ -101,12 +101,12 @@ HTTP /api/rbac/*
 
 ---
 
-## 6. 非目标
+## 6. 原阶段非目标与后续增量
 
-- 不做前端 UI。
-- 不做全局业务 API RBAC enforcement。
-- 不替换当前默认 actor/project context。
-- 不新增 session/auth/token 体系。
+- 原阶段未覆盖前端 UI；后续已补齐 Web `/rbac` 成员与项目授权管理。
+- 原阶段未覆盖全局业务 API RBAC enforcement；后续已补齐 header-based session context 与全局项目业务 API `project.read/write` enforcement。
+- 原阶段未替换当前默认 actor/project context；后续已允许 `x-cf-actor-id` / `x-cf-project-id` 覆盖默认上下文，同时保留无 header 的默认种子兼容。
+- 仍未新增生产 session/auth/token 体系。
 - 不改 Sprint-4 Control Plane。
 - 不改 Workflow / Review / Agent / MCP / Execution 状态机。
 - 不把 RBAC 事件接入 audit hash chain，本阶段仅建控制面。
@@ -117,11 +117,11 @@ HTTP /api/rbac/*
 
 | 后续项 | 说明 |
 | --- | --- |
-| RBAC enforcement middleware | 对现有业务 API 按 route/action 接入 `project.read/write/admin` |
+| RBAC enforcement middleware | 已补齐：全局项目业务 API 按 method 接入 `project.read/write` |
 | RBAC audit hardening | organization/member/project membership 变更写入 audit |
-| Auth/session integration | 将 actorId 从真实登录态注入，而不是默认上下文 |
+| Auth/session integration | 已补齐 header-based session context；生产登录态 / IdP 和 session lifecycle 仍待接入 |
 | Organization project ownership | 建立组织与项目的归属/绑定模型 |
-| UI | 团队成员、项目授权和权限检查界面 |
+| UI | 已补齐 Web `/rbac` 成员与项目授权管理；权限检查界面仍可按产品需要扩展 |
 
 ---
 
@@ -138,4 +138,3 @@ HTTP /api/rbac/*
 - project membership 授权、权限检查、撤销
 - duplicate organization member / duplicate project grant 返回 `409`
 - revoked 后权限检查返回 denied
-

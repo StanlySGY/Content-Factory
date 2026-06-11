@@ -2,6 +2,8 @@ import type {
   AddOrganizationMemberBody,
   CreateOrganizationBody,
   GrantProjectMembershipBody,
+  ProjectMemberRole,
+  RbacPermission,
   RbacProjectAccessQuery,
   RbacProjectAccessResponse,
   UpdateOrganizationMemberBody,
@@ -11,7 +13,7 @@ import {
   AUDIT_SUBJECT_ORGANIZATION_MEMBER,
   AUDIT_SUBJECT_PROJECT_MEMBERSHIP,
 } from "@cf/shared";
-import { ConflictError, NotFoundError, ValidationError } from "../domain/errors.js";
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../domain/errors.js";
 import {
   assertOrganizationMemberActive,
   assertProjectMembershipCanRevoke,
@@ -243,11 +245,34 @@ export class RbacService {
     return runInProject(this.db, ctx.projectId, async (tx) => {
       if (projectId !== ctx.projectId || !(await repo.projectExists(tx, projectId)))
         throw new NotFoundError(`project ${projectId} not found`);
-      const membership = await repo.findActiveProjectMembershipByUser(tx, projectId, query.user_id);
-      if (!membership) return { allowed: false, role: null };
-      const role = membership.role as NonNullable<RbacProjectAccessResponse["role"]>;
+      const role = await this.resolveProjectRole(tx, projectId, query.user_id);
+      if (!role) return { allowed: false, role: null };
       return { allowed: projectRoleAllows(role, query.permission), role };
     });
+  }
+
+  async requireProjectAccess(ctx: RequestContext, permission: RbacPermission): Promise<void> {
+    validateRbacPermission(permission);
+    const actorId = this.requireActor(ctx);
+    await runInProject(this.db, ctx.projectId, async (tx) => {
+      const role = await this.resolveProjectRole(tx, ctx.projectId, actorId);
+      if (!role || !projectRoleAllows(role, permission)) {
+        throw new ForbiddenError(`project access requires ${permission}`, {
+          project_id: ctx.projectId,
+          actor_id: actorId,
+          permission,
+        });
+      }
+    });
+  }
+
+  private async resolveProjectRole(db: Db, projectId: string, userId: string): Promise<ProjectMemberRole | null> {
+    const projectOwnerId = await repo.getProjectOwnerId(db, projectId);
+    if (!projectOwnerId) throw new NotFoundError(`project ${projectId} not found`);
+    if (projectOwnerId === userId) return "owner";
+    const membership = await repo.findActiveProjectMembershipByUser(db, projectId, userId);
+    if (!membership) return null;
+    return membership.role as ProjectMemberRole;
   }
 
   private requireActor(ctx: RequestContext): string {

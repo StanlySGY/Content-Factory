@@ -60,6 +60,7 @@ import { WorkflowRunService } from "./application/workflow-run.service.js";
 import type { Env } from "./config/env.js";
 import { validateRuntimeSafetyPolicy, type RuntimeSafetyPolicy } from "./domain/execution/runtime-safety.js";
 import { createDb, createPool } from "./infrastructure/db/client.js";
+import { registerProjectAuthorizationHook } from "./interfaces/http/authorization.js";
 import { registerErrorHandler } from "./interfaces/http/errors.js";
 import { assetRoutes } from "./interfaces/http/routes/assets.js";
 import { contextPackRoutes } from "./interfaces/http/routes/context-packs.js";
@@ -311,6 +312,8 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
     await db.execute(sql`select 1`);
     return { status: "ok" };
   });
+
+  registerProjectAuthorizationHook(app, env, rbacService);
 
   await app.register(taskRoutes, { env, service });
   await app.register(workflowRoutes, { env, defService, runService });

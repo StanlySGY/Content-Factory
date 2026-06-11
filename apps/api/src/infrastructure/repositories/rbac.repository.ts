@@ -40,6 +40,11 @@ export async function projectExists(db: Db, id: string): Promise<boolean> {
   return Boolean(row);
 }
 
+export async function getProjectOwnerId(db: Db, id: string): Promise<string | null> {
+  const [row] = await db.select({ ownerId: projects.ownerId }).from(projects).where(eq(projects.id, id)).limit(1);
+  return row?.ownerId ?? null;
+}
+
 export async function createOrganization(db: Db, input: OrganizationWrite): Promise<OrganizationRow> {
   const [row] = await db.insert(organizations).values({
     name: input.name.trim(),

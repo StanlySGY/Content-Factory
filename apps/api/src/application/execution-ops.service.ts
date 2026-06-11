@@ -1033,15 +1033,17 @@ export class ExecutionOpsService {
           "RBAC member and project membership audit events",
           "RBAC project route cross-project denial regression matrix",
           "RBAC role mutation approval_ref policy",
+          "header-based session context for project APIs",
+          "global project API authorization enforcement",
         ],
         missingProductRequirements: [
-          "auth and session integration",
-          "global API authorization enforcement",
+          "production auth provider integration",
+          "session lifecycle hardening",
         ],
         safetyBoundaries: [
           "current UI only calls explicit RBAC control-plane mutation APIs",
-          "route readiness does not grant access or change membership",
-          "production enforcement remains a separate rollout gate",
+          "session context is header-based and does not authenticate credentials",
+          "authorization hook excludes health, ops, and RBAC control-plane routes",
         ],
       },
       {

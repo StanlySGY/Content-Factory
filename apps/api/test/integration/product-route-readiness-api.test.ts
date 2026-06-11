@@ -57,11 +57,15 @@ describe("product route readiness", () => {
     expect(rbacRoute.delivered_capabilities).toContain("RBAC member and project membership audit events");
     expect(rbacRoute.delivered_capabilities).toContain("RBAC project route cross-project denial regression matrix");
     expect(rbacRoute.delivered_capabilities).toContain("RBAC role mutation approval_ref policy");
+    expect(rbacRoute.delivered_capabilities).toContain("header-based session context for project APIs");
+    expect(rbacRoute.delivered_capabilities).toContain("global project API authorization enforcement");
     expect(rbacRoute.missing_product_requirements).not.toContain("role mutation UI with approval/audit policy");
     expect(rbacRoute.missing_product_requirements).not.toContain("approval and audit policy for role mutations");
     expect(rbacRoute.missing_product_requirements).not.toContain("cross-project access denial regression matrix");
     expect(rbacRoute.missing_product_requirements).not.toContain("approval policy for role mutations");
-    expect(rbacRoute.missing_product_requirements).toContain("global API authorization enforcement");
+    expect(rbacRoute.missing_product_requirements).not.toContain("auth and session integration");
+    expect(rbacRoute.missing_product_requirements).not.toContain("global API authorization enforcement");
+    expect(rbacRoute.missing_product_requirements).toContain("production auth provider integration");
     const agentEvaluationRoute = body.routes.find((route: { key: string }) => route.key === "agent_evaluation");
     expect(agentEvaluationRoute.delivered_capabilities).toContain("default-closed deterministic regression evaluation runner");
     expect(agentEvaluationRoute.missing_product_requirements).not.toContain("scheduled regression evaluation runner");
