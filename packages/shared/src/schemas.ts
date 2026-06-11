@@ -910,6 +910,14 @@ export const CreatePublishRecordSchema = Type.Object(
 );
 export type CreatePublishRecordBody = Static<typeof CreatePublishRecordSchema>;
 
+export const ResendPublishRecordSchema = Type.Object(
+  {
+    idempotency_key: Type.String({ minLength: 1, maxLength: 200 }),
+  },
+  { additionalProperties: false },
+);
+export type ResendPublishRecordBody = Static<typeof ResendPublishRecordSchema>;
+
 export const ListPublishRecordsQuerySchema = Type.Object(
   {
     task_id: Type.Optional(Uuid()),

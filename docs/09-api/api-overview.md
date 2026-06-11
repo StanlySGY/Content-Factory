@@ -127,6 +127,8 @@
 | `GET` | `/api/mcp/tools/:id/invocations` | 查询 Tool 调用日志 | 否 |
 | `POST` | `/api/publish-records` | 创建发布准备记录 | 是 |
 | `GET` | `/api/publish-records` | 查询发布记录 | 否 |
+| `POST` | `/api/publish-records/:id/withdraw` | 本地撤回发布记录（published → withdrawn） | 是 |
+| `POST` | `/api/publish-records/:id/resend` | 从 failed/withdrawn 记录克隆新的 pending 重发记录 | 是 |
 
 > Agent/MCP 为配置 + mock/日志壳层（ADR-016）；Web `/mcp/invocations` 只读消费 `GET /api/mcp/tools/:id/invocations`，不触发 mock invoke、health check、真实 transport、重放或写操作。发布准备须校验审核通过（roadmap §7.5），锚定 `asset_version_id`（db §5.21）。
 
@@ -137,7 +139,7 @@
 | 能力 | 已有 API 范围 | 仍未完成 |
 | --- | --- | --- |
 | MCP Marketplace | `/api/mcp/marketplace/entries`、`/api/mcp/marketplace/installations`、安装/禁用/卸载、Web `/mcp/marketplace` 本地安装控制面 UI | 外部 marketplace 发现、SDK transport、SSE/stdio、热加载 |
-| Publisher Platform Backend | `/api/publisher/channels`、`/api/publish-records`、Publisher real-runtime readiness、Web `/publisher` 渠道创建与启用/停用/归档 UI | 真实发布审批流、素材管理、撤回/重发、失败告警、多渠道编排 |
+| Publisher Platform Backend | `/api/publisher/channels`、`/api/publish-records`、本地撤回/重发控制面、Publisher real-runtime readiness、Web `/publisher` 渠道创建与启用/停用/归档 UI | 真实发布审批流、素材管理、失败告警、多渠道编排 |
 | Multi-tenant RBAC Backend | `/api/rbac/organizations`、`/api/rbac/organizations/:id/members`、`/api/rbac/projects/:id/memberships`、成员管理、项目 membership、`check-access`、项目级 RBAC 端点跨项目拒绝回归矩阵、角色变更 `approval_ref` 合同、RBAC 成员和 membership 变更审计、Web `/rbac` 成员与项目授权管理 UI | auth/session、全局业务 API enforcement |
 | Knowledge/RAG Backend | `/api/knowledge/sources`、entries、archive/restore、keyword search、task candidates、只读 candidate review UI | embedding、向量库、LLM rerank、context pack 自动刷新 |
 | Agent Evaluation Backend | `/api/execution/results/:id/evaluations`、rule evaluation、analytics、low-quality list、只读 dashboard UI | LLM judge、真实成本归因、模型对比、回归评测 |

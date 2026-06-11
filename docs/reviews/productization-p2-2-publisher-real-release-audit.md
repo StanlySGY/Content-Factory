@@ -117,12 +117,14 @@ BEFORE UPDATE OF asset_version_id
 
 ```text
 POST /api/publish-records
+POST /api/publish-records/:id/withdraw
+POST /api/publish-records/:id/resend
 GET  /api/publish-records/:id
 GET  /api/publish-records?task_id=&status=&channel=
 GET  /api/execution/ops/publisher-real-runtime-readiness
 ```
 
-API 只提供最小控制面，不接 Publisher UI，不替换既有 API。
+API 只提供最小控制面；withdraw/resend 为本地状态控制，不调用外部平台撤稿或重发接口。
 
 ---
 

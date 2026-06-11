@@ -6,7 +6,9 @@ import {
   useCreatePublisherChannel,
   useDisablePublisherChannel,
   usePublisherWorkbench,
+  useResendPublishRecord,
   useUpdatePublisherChannel,
+  useWithdrawPublishRecord,
 } from "./hooks.js";
 
 function statusTone(status: string) {
@@ -28,6 +30,15 @@ function errorSummary(errorData: PublishRecordDTO["error_data"]) {
   if (!errorData) return "-";
   const message = errorData["message"];
   return typeof message === "string" ? message : JSON.stringify(errorData);
+}
+
+function resendIdempotencyKey(record: PublishRecordDTO) {
+  const suffix = globalThis.crypto?.randomUUID?.() ?? String(Date.now());
+  return `resend-${record.idempotency_key.slice(0, 150)}-${suffix}`;
+}
+
+function withdrawLabel(record: PublishRecordDTO) {
+  return record.external_ref ?? record.idempotency_key;
 }
 
 function ChannelTable({
@@ -176,7 +187,17 @@ function ChannelConfigForm({
   );
 }
 
-function PublishRecordTable({ records }: { records: PublishRecordDTO[] }) {
+function PublishRecordTable({
+  records,
+  actionPending,
+  onWithdraw,
+  onResend,
+}: {
+  records: PublishRecordDTO[];
+  actionPending: boolean;
+  onWithdraw: (record: PublishRecordDTO) => void;
+  onResend: (record: PublishRecordDTO) => void;
+}) {
   if (records.length === 0) {
     return <EmptyState title="还没有发布记录" hint="发布记录会锚定不可变 asset_version。" />;
   }
@@ -190,6 +211,7 @@ function PublishRecordTable({ records }: { records: PublishRecordDTO[] }) {
           <th>Asset version</th>
           <th>External ref</th>
           <th>Error</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -204,6 +226,32 @@ function PublishRecordTable({ records }: { records: PublishRecordDTO[] }) {
             </td>
             <td>{empty(record.external_ref)}</td>
             <td>{errorSummary(record.error_data)}</td>
+            <td>
+              <div className="publisher-channel-actions">
+                {record.status === "published" && (
+                  <button
+                    type="button"
+                    className="btn danger"
+                    onClick={() => onWithdraw(record)}
+                    disabled={actionPending}
+                    aria-label={`撤回 ${withdrawLabel(record)}`}
+                  >
+                    撤回
+                  </button>
+                )}
+                {(record.status === "failed" || record.status === "withdrawn") && (
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => onResend(record)}
+                    disabled={actionPending}
+                    aria-label={`重发 ${record.idempotency_key}`}
+                  >
+                    重发
+                  </button>
+                )}
+              </div>
+            </td>
           </tr>
         ))}
       </tbody>
@@ -250,9 +298,14 @@ export function PublisherWorkbenchPage() {
   const updateChannel = useUpdatePublisherChannel();
   const disableChannel = useDisablePublisherChannel();
   const archiveChannel = useArchivePublisherChannel();
+  const withdrawRecord = useWithdrawPublishRecord();
+  const resendRecord = useResendPublishRecord();
   const channelActionPending =
     createChannel.isPending || updateChannel.isPending || disableChannel.isPending || archiveChannel.isPending;
-  const mutationError = createChannel.error || updateChannel.error || disableChannel.error || archiveChannel.error;
+  const recordActionPending = withdrawRecord.isPending || resendRecord.isPending;
+  const mutationError =
+    createChannel.error || updateChannel.error || disableChannel.error || archiveChannel.error ||
+    withdrawRecord.error || resendRecord.error;
 
   return (
     <div className="publisher-workbench">
@@ -264,7 +317,7 @@ export function PublisherWorkbenchPage() {
       </div>
 
       {isError && <ErrorBar message={`发布工作台加载失败：${(error as Error).message}`} />}
-      {mutationError && <ErrorBar message={`发布渠道操作失败：${(mutationError as Error).message}`} />}
+      {mutationError && <ErrorBar message={`发布工作台操作失败：${(mutationError as Error).message}`} />}
       {isLoading && <Skeleton rows={5} />}
 
       {data && (
@@ -308,7 +361,17 @@ export function PublisherWorkbenchPage() {
               <h2 className="section-title">Publish records</h2>
               <span>{data.records.length} total</span>
             </div>
-            <PublishRecordTable records={data.records} />
+            <PublishRecordTable
+              records={data.records}
+              actionPending={recordActionPending}
+              onWithdraw={(record) => withdrawRecord.mutate(record.id)}
+              onResend={(record) =>
+                resendRecord.mutate({
+                  id: record.id,
+                  body: { idempotency_key: resendIdempotencyKey(record) },
+                })
+              }
+            />
           </section>
         </>
       )}

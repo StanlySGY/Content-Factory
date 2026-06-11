@@ -48,6 +48,18 @@ export async function listPublishRecords(db: Db, filter: PublishRecordFilter = {
   return (conds.length ? base.where(and(...conds)) : base).orderBy(asc(publishRecords.createdAt));
 }
 
+export async function markWithdrawn(db: Db, id: string): Promise<PublishRecordRow | null> {
+  const [row] = await db
+    .update(publishRecords)
+    .set({
+      status: "withdrawn",
+      updatedAt: new Date(),
+    })
+    .where(and(eq(publishRecords.id, id), eq(publishRecords.status, "published")))
+    .returning();
+  return row ?? null;
+}
+
 export async function markPublishing(
   db: Db,
   id: string,

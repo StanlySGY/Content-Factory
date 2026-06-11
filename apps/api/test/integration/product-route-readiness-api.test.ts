@@ -46,7 +46,9 @@ describe("product route readiness", () => {
     }
     const publisherRoute = body.routes.find((route: { key: string }) => route.key === "publisher_platform");
     expect(publisherRoute.delivered_capabilities).toContain("channel configuration write UI");
+    expect(publisherRoute.delivered_capabilities).toContain("local publish record withdraw and resend controls");
     expect(publisherRoute.missing_product_requirements).not.toContain("channel configuration write UI");
+    expect(publisherRoute.missing_product_requirements).not.toContain("withdraw and resend operations");
     const mcpMarketplaceRoute = body.routes.find((route: { key: string }) => route.key === "mcp_marketplace");
     expect(mcpMarketplaceRoute.delivered_capabilities).toContain("marketplace install, disable, and uninstall UI");
     expect(mcpMarketplaceRoute.missing_product_requirements).toContain("hot-load install and disable execution");

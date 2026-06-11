@@ -162,5 +162,5 @@ apps/api/test/integration/product-gap-2-publisher-platform-api.test.ts
 | Publisher UI | 渠道管理、发布准备列表、发布记录详情 |
 | Channel Policy | 渠道级审批、风险确认、凭证引用策略 |
 | Asset Packaging | 按渠道生成素材包、校验尺寸/格式/正文规则 |
-| Withdraw / Retry Ops | 撤回、失败重试、人工确认 |
+| Withdraw / Retry Ops | 已有本地撤回/重发控制面；仍缺外部平台撤稿确认与人工审批 |
 | Multi-channel Orchestration | 跨渠道排期、批量发布、状态看板 |

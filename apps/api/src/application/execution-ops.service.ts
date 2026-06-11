@@ -957,6 +957,8 @@ export class ExecutionOpsService {
         evidenceEndpoints: [
           "/api/publisher/channels",
           "/api/publish-records",
+          "/api/publish-records/:id/withdraw",
+          "/api/publish-records/:id/resend",
           "/api/execution/ops/publisher-real-runtime-readiness",
           "/publisher",
         ],
@@ -966,10 +968,10 @@ export class ExecutionOpsService {
           "default-closed Publisher real runtime readiness",
           "Publisher workbench UI with channel lifecycle controls",
           "channel configuration write UI",
+          "local publish record withdraw and resend controls",
         ],
         missingProductRequirements: [
           "real external publishing approval workflow",
-          "withdraw and resend operations",
           "multi-channel orchestration",
         ],
         safetyBoundaries: [

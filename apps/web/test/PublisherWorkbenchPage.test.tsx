@@ -13,6 +13,8 @@ const apiMock = vi.hoisted(() => ({
   disablePublisherChannel: vi.fn(),
   archivePublisherChannel: vi.fn(),
   createPublishRecord: vi.fn(),
+  withdrawPublishRecord: vi.fn(),
+  resendPublishRecord: vi.fn(),
 }));
 
 vi.mock("../src/lib/api", () => ({
@@ -153,6 +155,33 @@ describe("PublisherWorkbenchPage", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "停用 WeChat Official Account" }));
     expect(apiMock.disablePublisherChannel).toHaveBeenCalledWith(activePublisherChannel.id);
+    expect(apiMock.createPublishRecord).not.toHaveBeenCalled();
+  });
+
+  it("withdraws and resends publish records from the workbench", async () => {
+    apiMock.listPublisherChannels.mockResolvedValue(publisherChannels);
+    apiMock.listPublishRecords.mockResolvedValue(publishRecords);
+    apiMock.withdrawPublishRecord.mockResolvedValue({
+      ...publishRecords[0]!,
+      status: "withdrawn",
+    });
+    apiMock.resendPublishRecord.mockResolvedValue({
+      ...publishRecords[1]!,
+      id: "00000000-0000-0000-0000-000000000303",
+      status: "pending",
+      idempotency_key: "resend-publish-newsletter-001",
+    });
+
+    renderRoute();
+
+    await screen.findByText("wx-msg-123");
+    await userEvent.click(screen.getByRole("button", { name: "撤回 wx-msg-123" }));
+    expect(apiMock.withdrawPublishRecord).toHaveBeenCalledWith(publishRecords[0]!.id);
+
+    await userEvent.click(screen.getByRole("button", { name: "重发 publish-newsletter-001" }));
+    expect(apiMock.resendPublishRecord).toHaveBeenCalledWith(publishRecords[1]!.id, {
+      idempotency_key: expect.stringMatching(/^resend-publish-newsletter-001-/),
+    });
     expect(apiMock.createPublishRecord).not.toHaveBeenCalled();
   });
 });

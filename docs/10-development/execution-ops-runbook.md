@@ -586,6 +586,19 @@ POST /api/publish-records
 }
 ```
 
+本地撤回 / 重发控制面（不会调用外部发布平台）：
+
+```text
+POST /api/publish-records/<publish_record_id>/withdraw
+
+POST /api/publish-records/<publish_record_id>/resend
+{
+  "idempotency_key": "publish-record-demo-resend-1"
+}
+```
+
+`withdraw` 只允许 `published -> withdrawn`；`resend` 只允许从 `failed` / `withdrawn` 记录克隆出新的 `pending` 记录，并继续锚定原 `asset_version_id`。
+
 创建并执行 publisher job：
 
 ```text
@@ -750,7 +763,7 @@ disabled -> archived
 archived -> terminal
 ```
 
-`POST /api/publish-records` 会校验 `channel` 对应当前项目的 `publisher_channels.key`，只有 `active` 渠道允许创建新的发布准备记录。迁移默认 seed `wechat_mp`，保持既有发布准备入口兼容。
+`POST /api/publish-records` 与 `POST /api/publish-records/:id/resend` 会校验 `channel` 对应当前项目的 `publisher_channels.key`，只有 `active` 渠道允许创建新的发布准备记录。迁移默认 seed `wechat_mp`，保持既有发布准备入口兼容。`POST /api/publish-records/:id/withdraw` 仅更新本地发布记录状态，不调用外部平台撤稿接口。
 
 验证：
 

@@ -5,6 +5,7 @@ import {
   ListPublishRecordsQuerySchema,
   PublishRecordResponseSchema,
   PublishRecordsResponseSchema,
+  ResendPublishRecordSchema,
 } from "@cf/shared";
 import type { PublishRecordService } from "../../../application/publish-record.service.js";
 import { toPublishRecordDTO } from "../../../application/mappers.js";
@@ -34,6 +35,28 @@ export const publishRecordRoutes: FastifyPluginAsyncTypebox<PublishRecordRoutesO
     "/api/publish-records",
     { schema: { querystring: ListPublishRecordsQuerySchema, response: { 200: PublishRecordsResponseSchema } } },
     async (request) => (await publishRecordService.list(request.query)).map(toPublishRecordDTO),
+  );
+
+  app.post(
+    "/api/publish-records/:id/withdraw",
+    { schema: { params: IdParamSchema, response: { 200: PublishRecordResponseSchema } } },
+    async (request) => toPublishRecordDTO(await publishRecordService.withdraw(request.params.id)),
+  );
+
+  app.post(
+    "/api/publish-records/:id/resend",
+    {
+      schema: {
+        params: IdParamSchema,
+        body: ResendPublishRecordSchema,
+        response: { 201: PublishRecordResponseSchema },
+      },
+    },
+    async (request, reply) => {
+      const record = await publishRecordService.resend(buildContext(env, request), request.params.id, request.body);
+      reply.code(201);
+      return toPublishRecordDTO(record);
+    },
   );
 
   app.get(

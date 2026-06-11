@@ -122,4 +122,111 @@ describe("Productization-P2.2 publish_records API", () => {
     expect((await api.inject({ method: "POST", url: "/api/publish-records", payload })).statusCode).toBe(201);
     expect((await api.inject({ method: "POST", url: "/api/publish-records", payload })).statusCode).toBe(409);
   });
+
+  it("withdraws published records while preserving the pinned asset version", async () => {
+    const api = await startApp();
+    const fixture = await createAssetVersionFixture();
+    const created = await api.inject({
+      method: "POST",
+      url: "/api/publish-records",
+      payload: {
+        content_task_id: fixture.task.id,
+        content_asset_id: fixture.asset.id,
+        asset_version_id: fixture.version.id,
+        channel: "wechat_mp",
+        idempotency_key: `publish-record-${randomUUID()}`,
+      },
+    });
+    await db!.update(publishRecords)
+      .set({ status: "published", externalRef: "wx-msg-123", publishedAt: new Date() })
+      .where(eq(publishRecords.id, created.json().id));
+
+    const withdrawn = await api.inject({
+      method: "POST",
+      url: `/api/publish-records/${created.json().id}/withdraw`,
+    });
+
+    expect(withdrawn.statusCode).toBe(200);
+    expect(withdrawn.json()).toMatchObject({
+      id: created.json().id,
+      status: "withdrawn",
+      asset_version_id: fixture.version.id,
+      external_ref: "wx-msg-123",
+    });
+
+    const secondWithdraw = await api.inject({
+      method: "POST",
+      url: `/api/publish-records/${created.json().id}/withdraw`,
+    });
+    expect(secondWithdraw.statusCode).toBe(409);
+  });
+
+  it("resends failed records as new pending records pinned to the same asset version", async () => {
+    const api = await startApp();
+    const fixture = await createAssetVersionFixture();
+    const created = await api.inject({
+      method: "POST",
+      url: "/api/publish-records",
+      payload: {
+        content_task_id: fixture.task.id,
+        content_asset_id: fixture.asset.id,
+        asset_version_id: fixture.version.id,
+        channel: "wechat_mp",
+        idempotency_key: `publish-record-${randomUUID()}`,
+        metadata: { title: "Retry me" },
+      },
+    });
+    await db!.update(publishRecords)
+      .set({ status: "failed", errorData: { message: "temporary publisher failure" } })
+      .where(eq(publishRecords.id, created.json().id));
+    const resendKey = `publish-record-resend-${randomUUID()}`;
+
+    const resent = await api.inject({
+      method: "POST",
+      url: `/api/publish-records/${created.json().id}/resend`,
+      payload: { idempotency_key: resendKey },
+    });
+
+    expect(resent.statusCode).toBe(201);
+    expect(resent.json()).toMatchObject({
+      content_task_id: fixture.task.id,
+      content_asset_id: fixture.asset.id,
+      asset_version_id: fixture.version.id,
+      channel: "wechat_mp",
+      status: "pending",
+      idempotency_key: resendKey,
+      metadata: {
+        title: "Retry me",
+        resent_from_publish_record_id: created.json().id,
+      },
+    });
+    expect(resent.json().id).not.toBe(created.json().id);
+
+    const original = await api.inject({ method: "GET", url: `/api/publish-records/${created.json().id}` });
+    expect(original.json().status).toBe("failed");
+  });
+
+  it("rejects resend for records that are still in progress", async () => {
+    const api = await startApp();
+    const fixture = await createAssetVersionFixture();
+    const created = await api.inject({
+      method: "POST",
+      url: "/api/publish-records",
+      payload: {
+        content_task_id: fixture.task.id,
+        content_asset_id: fixture.asset.id,
+        asset_version_id: fixture.version.id,
+        channel: "wechat_mp",
+        idempotency_key: `publish-record-${randomUUID()}`,
+      },
+    });
+
+    const resend = await api.inject({
+      method: "POST",
+      url: `/api/publish-records/${created.json().id}/resend`,
+      payload: { idempotency_key: `publish-record-resend-${randomUUID()}` },
+    });
+
+    expect(resend.statusCode).toBe(409);
+  });
 });

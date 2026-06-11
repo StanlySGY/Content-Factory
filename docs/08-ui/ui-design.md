@@ -802,7 +802,7 @@ channels
 
 - 发布记录展示锚定的具体资产版本（对应 DB `publish_records.asset_version_id`），保证已发布内容不随后续修订漂移。
 - 展示发布状态（pending / publishing / published / failed / withdrawn）、渠道侧引用、失败原因与审计事件。
-- 支持重试、撤回、重发，均为外部动作，需确认并写审计。
+- 支持本地撤回、重发控制面；真实外部撤稿、人工确认和审计审批仍属于后续产品化范围。
 
 ### 26.3 多渠道扩展
 

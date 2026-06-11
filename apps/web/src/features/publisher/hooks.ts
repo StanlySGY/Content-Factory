@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { CreatePublisherChannelBody, UpdatePublisherChannelBody } from "@cf/shared";
+import type { CreatePublisherChannelBody, ResendPublishRecordBody, UpdatePublisherChannelBody } from "@cf/shared";
 import { api } from "../../lib/api.js";
 
 const publisherWorkbenchKey = ["publisher", "workbench"];
@@ -47,6 +47,23 @@ export function useArchivePublisherChannel() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => api.archivePublisherChannel(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: publisherWorkbenchKey }),
+  });
+}
+
+export function useWithdrawPublishRecord() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.withdrawPublishRecord(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: publisherWorkbenchKey }),
+  });
+}
+
+export function useResendPublishRecord() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: ResendPublishRecordBody }) =>
+      api.resendPublishRecord(id, body),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: publisherWorkbenchKey }),
   });
 }

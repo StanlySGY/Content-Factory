@@ -29,8 +29,9 @@ const readiness: ProductRouteReadinessResponse = {
       delivered_capabilities: [
         "Publisher workbench UI with channel lifecycle controls",
         "channel configuration write UI",
+        "local publish record withdraw and resend controls",
       ],
-      missing_product_requirements: ["withdraw and resend operations"],
+      missing_product_requirements: ["real external publishing approval workflow"],
       safety_boundaries: ["readiness checks do not call external publisher endpoints"],
     },
     {
@@ -124,7 +125,8 @@ describe("ProductRouteReadinessPage", () => {
     expect(screen.getByText("Knowledge / RAG")).toBeInTheDocument();
     expect(screen.getByText("Agent Evaluation")).toBeInTheDocument();
     expect(screen.getByText("/api/execution/ops/product-route-readiness")).toBeInTheDocument();
-    expect(screen.getByText("withdraw and resend operations")).toBeInTheDocument();
+    expect(screen.getByText("local publish record withdraw and resend controls")).toBeInTheDocument();
+    expect(screen.queryByText("withdraw and resend operations")).not.toBeInTheDocument();
     expect(screen.getByText("LLM judge integration")).toBeInTheDocument();
   });
 });

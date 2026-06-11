@@ -63,6 +63,7 @@ import type {
   PublisherChannelDTO,
   PublisherRealRuntimeReadinessResponse,
   RequestRevisionBody,
+  ResendPublishRecordBody,
   ReviewRecordDTO,
   ReviewStatus,
   SecretInjectionPreflightReadinessResponse,
@@ -355,6 +356,10 @@ export const api = {
     request<PublisherChannelDTO>("POST", `/publisher/channels/${id}/archive`),
   listPublishRecords: (q: ListPublishRecordsQuery = {}) =>
     request<PublishRecordDTO[]>("GET", `/publish-records${toQuery(q)}`),
+  withdrawPublishRecord: (id: string) =>
+    request<PublishRecordDTO>("POST", `/publish-records/${id}/withdraw`),
+  resendPublishRecord: (id: string, body: ResendPublishRecordBody) =>
+    request<PublishRecordDTO>("POST", `/publish-records/${id}/resend`, body),
 
   // ── Final RC Ops ──
   getFinalRcReadiness: () =>
