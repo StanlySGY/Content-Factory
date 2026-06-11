@@ -67,6 +67,51 @@ export interface ExecutionEvaluationModelComparison {
   items: ExecutionEvaluationModelComparisonItem[];
 }
 
+export interface ExecutionEvaluationCostEstimate {
+  source: string;
+  amountCents: number;
+  currency: string;
+}
+
+export interface ExecutionEvaluationTokenUsage {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+}
+
+export interface ExecutionEvaluationQuotaDecision {
+  status: string;
+  distributed: boolean;
+  usedRequests: number;
+  usedCostCents: number;
+}
+
+export interface ExecutionEvaluationCostAttributionItem {
+  evaluationId: string;
+  executionResultId: string;
+  executionJobId: string;
+  evaluatorType: ExecutionResultEvaluatorType;
+  costScore: number;
+  attributionStatus: "attributed" | "unattributed";
+  costEstimate: ExecutionEvaluationCostEstimate | null;
+  tokenUsage: ExecutionEvaluationTokenUsage | null;
+  quotaDecision: ExecutionEvaluationQuotaDecision | null;
+}
+
+export interface ExecutionEvaluationCostAttribution {
+  mode: "evaluation_cost_attribution";
+  jobId: string | null;
+  evaluationCount: number;
+  attributedEvaluationCount: number;
+  unattributedEvaluationCount: number;
+  totalEstimatedCostCents: number;
+  costSourceCounts: Record<string, number>;
+  tokenUsageTotals: ExecutionEvaluationTokenUsage;
+  llmCallsPerformed: false;
+  writesPerformed: false;
+  items: ExecutionEvaluationCostAttributionItem[];
+}
+
 export interface LowQualityEvaluationItem {
   evaluationId: string;
   executionResultId: string;
@@ -211,6 +256,63 @@ export function compareEvaluationsByModel(
   };
 }
 
+export function attributeEvaluationCosts(
+  rows: Array<{
+    evaluationId: string;
+    executionResultId: string;
+    executionJobId: string;
+    evaluatorType: string;
+    costScore: number;
+    responseSnapshot: Record<string, unknown>;
+  }>,
+  options: { jobId?: string; limit?: number } = {},
+): ExecutionEvaluationCostAttribution {
+  const items = rows.slice(0, options.limit ?? rows.length).map((row) => {
+    const metadata = responseMetadata(row.responseSnapshot);
+    const costEstimate = parseCostEstimate(metadata?.costEstimate);
+    const attributionStatus: ExecutionEvaluationCostAttributionItem["attributionStatus"] =
+      costEstimate ? "attributed" : "unattributed";
+    return {
+      evaluationId: row.evaluationId,
+      executionResultId: row.executionResultId,
+      executionJobId: row.executionJobId,
+      evaluatorType: row.evaluatorType as ExecutionResultEvaluatorType,
+      costScore: row.costScore,
+      attributionStatus,
+      costEstimate,
+      tokenUsage: parseTokenUsage(metadata?.tokenUsage),
+      quotaDecision: parseQuotaDecision(metadata?.quotaDecision),
+    };
+  });
+  const tokenUsageTotals = items.reduce<ExecutionEvaluationTokenUsage>(
+    (totals, item) => ({
+      promptTokens: totals.promptTokens + (item.tokenUsage?.promptTokens ?? 0),
+      completionTokens: totals.completionTokens + (item.tokenUsage?.completionTokens ?? 0),
+      totalTokens: totals.totalTokens + (item.tokenUsage?.totalTokens ?? 0),
+    }),
+    { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+  );
+  const costSourceCounts: Record<string, number> = {};
+  for (const item of items) {
+    if (!item.costEstimate) continue;
+    costSourceCounts[item.costEstimate.source] = (costSourceCounts[item.costEstimate.source] ?? 0) + 1;
+  }
+  const attributedEvaluationCount = items.filter((item) => item.attributionStatus === "attributed").length;
+  return {
+    mode: "evaluation_cost_attribution",
+    jobId: options.jobId ?? null,
+    evaluationCount: items.length,
+    attributedEvaluationCount,
+    unattributedEvaluationCount: items.length - attributedEvaluationCount,
+    totalEstimatedCostCents: items.reduce((sum, item) => sum + (item.costEstimate?.amountCents ?? 0), 0),
+    costSourceCounts,
+    tokenUsageTotals,
+    llmCallsPerformed: false,
+    writesPerformed: false,
+    items,
+  };
+}
+
 export function listLowQualityEvaluations(
   rows: Array<{
     id: string;
@@ -264,6 +366,58 @@ function extractModel(tags: string[]): string | null {
   const tag = tags.find((item) => item.startsWith(MODEL_TAG_PREFIX));
   const model = tag?.slice(MODEL_TAG_PREFIX.length).trim();
   return model ? model : null;
+}
+
+function responseMetadata(responseSnapshot: Record<string, unknown>): Record<string, unknown> | null {
+  const metadata = responseSnapshot.metadata;
+  return isRecord(metadata) ? metadata : null;
+}
+
+function parseCostEstimate(value: unknown): ExecutionEvaluationCostEstimate | null {
+  if (!isRecord(value)) return null;
+  const source = value.source;
+  const amountCents = value.amountCents;
+  const currency = value.currency;
+  if (typeof source !== "string" || !isNonNegativeInteger(amountCents) || typeof currency !== "string") return null;
+  return { source, amountCents, currency };
+}
+
+function parseTokenUsage(value: unknown): ExecutionEvaluationTokenUsage | null {
+  if (!isRecord(value)) return null;
+  const promptTokens = value.promptTokens;
+  const completionTokens = value.completionTokens;
+  const totalTokens = value.totalTokens;
+  if (
+    !isNonNegativeInteger(promptTokens) ||
+    !isNonNegativeInteger(completionTokens) ||
+    !isNonNegativeInteger(totalTokens)
+  )
+    return null;
+  return { promptTokens, completionTokens, totalTokens };
+}
+
+function parseQuotaDecision(value: unknown): ExecutionEvaluationQuotaDecision | null {
+  if (!isRecord(value)) return null;
+  const status = value.status;
+  const distributed = value.distributed;
+  const usedRequests = value.usedRequests;
+  const usedCostCents = value.usedCostCents;
+  if (
+    typeof status !== "string" ||
+    typeof distributed !== "boolean" ||
+    !isNonNegativeInteger(usedRequests) ||
+    !isNonNegativeInteger(usedCostCents)
+  )
+    return null;
+  return { status, distributed, usedRequests, usedCostCents };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isNonNegativeInteger(value: unknown): value is number {
+  return Number.isInteger(value) && (value as number) >= 0;
 }
 
 function summarizeModelGroup(

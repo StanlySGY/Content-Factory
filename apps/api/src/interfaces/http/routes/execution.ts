@@ -19,6 +19,8 @@ import {
   ExecutionWritebackTransactionPrototypeSchema,
   ExecutionWritebackSchema,
   ExecutionWritebacksResponseSchema,
+  EvaluationCostAttributionQuerySchema,
+  EvaluationCostAttributionResponseSchema,
   EvaluationModelComparisonQuerySchema,
   EvaluationModelComparisonResponseSchema,
   IdParamSchema,
@@ -50,6 +52,7 @@ import { isOutboxProcessed } from "../../../domain/execution/outbox.js";
 import {
   toExecutionJobDTO,
   toExecutionEvaluationAnalyticsDTO,
+  toEvaluationCostAttributionResponse,
   toEvaluationModelComparisonResponse,
   toExecutionResultEvaluationDTO,
   toExecutionResultEvaluationSummaryDTO,
@@ -187,6 +190,20 @@ export const executionRoutes: FastifyPluginAsyncTypebox<ExecutionRoutesOptions> 
     async (request) =>
       toEvaluationModelComparisonResponse(
         await executionResultEvaluationService.modelComparison(request.query),
+      ),
+  );
+
+  app.get(
+    "/api/execution/evaluations/cost-attribution",
+    {
+      schema: {
+        querystring: EvaluationCostAttributionQuerySchema,
+        response: { 200: EvaluationCostAttributionResponseSchema },
+      },
+    },
+    async (request) =>
+      toEvaluationCostAttributionResponse(
+        await executionResultEvaluationService.costAttribution(request.query),
       ),
   );
 

@@ -99,6 +99,6 @@ TDD 记录：
 | 后续项 | 说明 |
 | --- | --- |
 | LLM judge | 接入真实 judge provider、prompt/version、审计和预算 gate |
-| Real cost attribution | 将 provider token / cost ledger 校准到 evaluation cost score |
+| Billing-grade cost attribution | 在 provider metadata 校准基础上接入真实 rate card / billing source、误差审计和成本窗口 |
 | Cross-model regression orchestration | 为同一任务族跨模型调度、评估和对比 |
 | UI visibility | 在 evaluation dashboard 展示模型对比表和趋势 |

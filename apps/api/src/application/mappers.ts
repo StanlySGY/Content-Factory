@@ -31,6 +31,7 @@ import type {
   ExecutionWritebackTransactionPrototypeReadinessResponse,
   ExecutionMonitoringReadinessResponse,
   ExecutionEvaluationAnalyticsDTO,
+  EvaluationCostAttributionResponse,
   EvaluationModelComparisonResponse,
   ExecutionResultEvaluationDTO,
   ExecutionResultEvaluationSummaryDTO,
@@ -115,6 +116,7 @@ import type {
 import type { ExecutionResultSummary } from "../domain/execution/result.js";
 import type {
   ExecutionEvaluationAnalytics,
+  ExecutionEvaluationCostAttribution,
   ExecutionEvaluationModelComparison,
   ExecutionResultEvaluationSummary,
   LowQualityEvaluationList,
@@ -1219,6 +1221,57 @@ export function toEvaluationModelComparisonResponse(
       average_latency_score: item.averageLatencyScore,
       composite_score: item.compositeScore,
       latest_evaluated_at: item.latestEvaluatedAt.toISOString(),
+    })),
+  };
+}
+
+export function toEvaluationCostAttributionResponse(
+  input: ExecutionEvaluationCostAttribution,
+): EvaluationCostAttributionResponse {
+  return {
+    mode: input.mode,
+    job_id: input.jobId,
+    evaluation_count: input.evaluationCount,
+    attributed_evaluation_count: input.attributedEvaluationCount,
+    unattributed_evaluation_count: input.unattributedEvaluationCount,
+    total_estimated_cost_cents: input.totalEstimatedCostCents,
+    cost_source_counts: input.costSourceCounts,
+    token_usage_totals: {
+      prompt_tokens: input.tokenUsageTotals.promptTokens,
+      completion_tokens: input.tokenUsageTotals.completionTokens,
+      total_tokens: input.tokenUsageTotals.totalTokens,
+    },
+    llm_calls_performed: input.llmCallsPerformed,
+    writes_performed: input.writesPerformed,
+    items: input.items.map((item) => ({
+      evaluation_id: item.evaluationId,
+      execution_result_id: item.executionResultId,
+      execution_job_id: item.executionJobId,
+      evaluator_type: item.evaluatorType,
+      cost_score: item.costScore,
+      attribution_status: item.attributionStatus,
+      cost_estimate: item.costEstimate
+        ? {
+          source: item.costEstimate.source,
+          amount_cents: item.costEstimate.amountCents,
+          currency: item.costEstimate.currency,
+        }
+        : null,
+      token_usage: item.tokenUsage
+        ? {
+          prompt_tokens: item.tokenUsage.promptTokens,
+          completion_tokens: item.tokenUsage.completionTokens,
+          total_tokens: item.tokenUsage.totalTokens,
+        }
+        : null,
+      quota_decision: item.quotaDecision
+        ? {
+          status: item.quotaDecision.status,
+          distributed: item.quotaDecision.distributed,
+          used_requests: item.quotaDecision.usedRequests,
+          used_cost_cents: item.quotaDecision.usedCostCents,
+        }
+        : null,
     })),
   };
 }

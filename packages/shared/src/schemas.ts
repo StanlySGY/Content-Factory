@@ -1344,6 +1344,76 @@ export const EvaluationModelComparisonResponseSchema = Type.Object(
 );
 export type EvaluationModelComparisonResponse = Static<typeof EvaluationModelComparisonResponseSchema>;
 
+export const EvaluationCostAttributionQuerySchema = Type.Object(
+  {
+    job_id: Type.Optional(Uuid()),
+    limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
+  },
+  { additionalProperties: false },
+);
+export type EvaluationCostAttributionQuery = Static<typeof EvaluationCostAttributionQuerySchema>;
+
+export const EvaluationCostEstimateSchema = Type.Object(
+  {
+    source: Type.String(),
+    amount_cents: Type.Integer(),
+    currency: Type.String(),
+  },
+  { additionalProperties: false },
+);
+
+export const EvaluationTokenUsageSchema = Type.Object(
+  {
+    prompt_tokens: Type.Integer(),
+    completion_tokens: Type.Integer(),
+    total_tokens: Type.Integer(),
+  },
+  { additionalProperties: false },
+);
+
+export const EvaluationQuotaDecisionSchema = Type.Object(
+  {
+    status: Type.String(),
+    distributed: Type.Boolean(),
+    used_requests: Type.Integer(),
+    used_cost_cents: Type.Integer(),
+  },
+  { additionalProperties: false },
+);
+
+export const EvaluationCostAttributionItemSchema = Type.Object(
+  {
+    evaluation_id: Uuid(),
+    execution_result_id: Uuid(),
+    execution_job_id: Uuid(),
+    evaluator_type: ExecutionResultEvaluatorTypeSchema,
+    cost_score: Type.Integer(),
+    attribution_status: StringEnum(["attributed", "unattributed"] as const),
+    cost_estimate: Nullable(EvaluationCostEstimateSchema),
+    token_usage: Nullable(EvaluationTokenUsageSchema),
+    quota_decision: Nullable(EvaluationQuotaDecisionSchema),
+  },
+  { additionalProperties: false },
+);
+
+export const EvaluationCostAttributionResponseSchema = Type.Object(
+  {
+    mode: Type.Literal("evaluation_cost_attribution"),
+    job_id: Nullable(Uuid()),
+    evaluation_count: Type.Integer(),
+    attributed_evaluation_count: Type.Integer(),
+    unattributed_evaluation_count: Type.Integer(),
+    total_estimated_cost_cents: Type.Integer(),
+    cost_source_counts: Type.Record(Type.String(), Type.Integer()),
+    token_usage_totals: EvaluationTokenUsageSchema,
+    llm_calls_performed: Type.Boolean(),
+    writes_performed: Type.Boolean(),
+    items: Type.Array(EvaluationCostAttributionItemSchema),
+  },
+  { additionalProperties: false },
+);
+export type EvaluationCostAttributionResponse = Static<typeof EvaluationCostAttributionResponseSchema>;
+
 export const LowQualityEvaluationItemSchema = Type.Object(
   {
     evaluation_id: Uuid(),

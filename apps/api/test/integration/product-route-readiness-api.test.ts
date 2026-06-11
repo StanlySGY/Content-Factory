@@ -69,8 +69,10 @@ describe("product route readiness", () => {
     const agentEvaluationRoute = body.routes.find((route: { key: string }) => route.key === "agent_evaluation");
     expect(agentEvaluationRoute.delivered_capabilities).toContain("default-closed deterministic regression evaluation runner");
     expect(agentEvaluationRoute.delivered_capabilities).toContain("tag-based model comparison workflow");
+    expect(agentEvaluationRoute.delivered_capabilities).toContain("provider metadata cost attribution calibration");
     expect(agentEvaluationRoute.missing_product_requirements).not.toContain("scheduled regression evaluation runner");
     expect(agentEvaluationRoute.missing_product_requirements).not.toContain("model comparison workflows");
+    expect(agentEvaluationRoute.missing_product_requirements).not.toContain("real cost attribution calibration");
     expect(agentEvaluationRoute.missing_product_requirements).toContain("LLM judge integration");
     const knowledgeRoute = body.routes.find((route: { key: string }) => route.key === "knowledge_rag");
     expect(knowledgeRoute.delivered_capabilities).toContain("deterministic local embedding pipeline");

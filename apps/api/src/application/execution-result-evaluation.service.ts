@@ -1,10 +1,12 @@
 import type {
   CreateExecutionResultEvaluationBody,
+  EvaluationCostAttributionQuery,
   EvaluationModelComparisonQuery,
   RegressionEvaluationRunBody,
 } from "@cf/shared";
 import { ConflictError, NotFoundError, ValidationError } from "../domain/errors.js";
 import {
+  attributeEvaluationCosts,
   buildRuleEvaluation,
   compareEvaluationsByModel,
   listLowQualityEvaluations,
@@ -12,6 +14,7 @@ import {
   summarizeEvaluationAnalytics,
   summarizeEvaluations,
   type ExecutionEvaluationAnalytics,
+  type ExecutionEvaluationCostAttribution,
   type ExecutionEvaluationModelComparison,
   validateExecutionResultEvaluation,
   type ExecutionResultEvaluationSummary,
@@ -25,6 +28,7 @@ import type { RequestContext } from "./task.service.js";
 
 const isUniqueViolation = (error: unknown): boolean => (error as { code?: string }).code === "23505";
 const DEFAULT_REGRESSION_EVALUATION_LIMIT = 50;
+const DEFAULT_COST_ATTRIBUTION_LIMIT = 100;
 
 export interface RegressionEvaluationBatch {
   limit: number;
@@ -133,6 +137,25 @@ export class ExecutionResultEvaluationService {
       modelPrefix: query.model_prefix,
       limit: query.limit,
     });
+  }
+
+  async costAttribution(query: EvaluationCostAttributionQuery = {}): Promise<ExecutionEvaluationCostAttribution> {
+    const limit = query.limit ?? DEFAULT_COST_ATTRIBUTION_LIMIT;
+    const rows = await evaluationRepo.listEvaluationsWithResults(this.db, {
+      jobId: query.job_id,
+      limit,
+    });
+    return attributeEvaluationCosts(
+      rows.map(({ evaluation, result }) => ({
+        evaluationId: evaluation.id,
+        executionResultId: evaluation.executionResultId,
+        executionJobId: evaluation.executionJobId,
+        evaluatorType: evaluation.evaluatorType,
+        costScore: evaluation.costScore,
+        responseSnapshot: result.responseSnapshot,
+      })),
+      { jobId: query.job_id, limit },
+    );
   }
 
   async listLowQuality(threshold = 60, limit = 20): Promise<LowQualityEvaluationList> {

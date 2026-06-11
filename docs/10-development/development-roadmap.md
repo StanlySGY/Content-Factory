@@ -488,7 +488,7 @@ MVP 后再进入：
 - 微信公众号真实发布集成。
 - 知识库检索与 RAG：后端 MVP 已补齐 knowledge source / entry / source archive/restore / entry archive/restore / inventory read API / keyword search / task candidates、context pack materialization、本地 deterministic embedding pipeline、embedding readiness endpoint、本地 vector retrieval endpoint 和 append-only context pack auto-refresh policy；Web 已补齐 knowledge inventory 与 candidate review 只读 UI；尚未接生产级 vector index 和 LLM rerank。
 - 多团队权限和审计：RBAC 后端 MVP 已具备，Web 已支持成员与项目授权管理，角色变更要求 `approval_ref`，成员和 membership 变更已写入审计链，项目级 RBAC 端点已有跨项目拒绝回归矩阵；后端已接入 header-based session context 和全局项目业务 API enforcement，后续仍需生产 auth provider、session lifecycle hardening 和组织项目归属模型。
-- Agent 效果评估和成本分析：后端 MVP 已补齐 execution result 评价账本、人工评分、确定性 rule evaluator runner、默认关闭 deterministic regression evaluation runner、job 级 summary、只读 evaluation analytics 和 tag-based 模型对比 API；Web 已补齐只读 evaluation dashboard；尚未接 LLM judge、真实成本归因和跨模型回归评测编排。
+- Agent 效果评估和成本分析：后端 MVP 已补齐 execution result 评价账本、人工评分、确定性 rule evaluator runner、默认关闭 deterministic regression evaluation runner、job 级 summary、只读 evaluation analytics、tag-based 模型对比 API 和 provider metadata 成本归因校准 API；Web 已补齐只读 evaluation dashboard；尚未接 LLM judge、billing-grade 成本结算和跨模型回归评测编排。
 
 ## 11. Sprint-5 Execution Layer 现状（Phase 1.x 冻结）
 
@@ -552,9 +552,11 @@ MVP 后再进入：
 
 > **Evaluation Analytics Backend MVP 已补齐**：Product Gap 7 新增只读 evaluation analytics 和 low-quality evaluation 查询端点，用于查看评分均值、低分数量、evaluator 分布和低分明细。它不调用 LLM、不做 dashboard UI、不改 `execution_results` / `execution_jobs` / `execution_result_evaluations` 历史记录。证据见 `docs/reviews/product-gap-7-evaluation-analytics-backend-audit.md`。
 
-> **Deterministic Regression Evaluation Runner 已补齐**：新增 `POST /api/execution/evaluations/regression-run` 与默认关闭的 `EXECUTION_REGRESSION_EVALUATION_RUNNER_*` 配置，可对近期或指定 job 的未评价 execution results 追加 `rule` 评价。它不调用 LLM、不改 `execution_results` / `execution_jobs`、不替代 LLM judge、真实成本归因或跨模型回归评测编排。
+> **Deterministic Regression Evaluation Runner 已补齐**：新增 `POST /api/execution/evaluations/regression-run` 与默认关闭的 `EXECUTION_REGRESSION_EVALUATION_RUNNER_*` 配置，可对近期或指定 job 的未评价 execution results 追加 `rule` 评价。它不调用 LLM、不改 `execution_results` / `execution_jobs`、不替代 LLM judge、成本归因或跨模型回归评测编排。
 
-> **Evaluation Model Comparison Backend MVP 已补齐**：Product Gap 16 新增 `GET /api/execution/evaluations/model-comparison`，基于已有 evaluation tags 中的 `model:<id>` 维度只读聚合模型质量 / 成本 / 延迟均值与 composite score。它不调用 LLM、不触发评估、不修改 execution jobs/results/evaluations、不替代 LLM judge、真实成本归因或跨模型回归评测编排。证据见 `docs/reviews/product-gap-16-evaluation-model-comparison-audit.md`。
+> **Evaluation Model Comparison Backend MVP 已补齐**：Product Gap 16 新增 `GET /api/execution/evaluations/model-comparison`，基于已有 evaluation tags 中的 `model:<id>` 维度只读聚合模型质量 / 成本 / 延迟均值与 composite score。它不调用 LLM、不触发评估、不修改 execution jobs/results/evaluations、不替代 LLM judge、成本归因或跨模型回归评测编排。证据见 `docs/reviews/product-gap-16-evaluation-model-comparison-audit.md`。
+
+> **Evaluation Cost Attribution Backend MVP 已补齐**：Product Gap 17 新增 `GET /api/execution/evaluations/cost-attribution`，基于已有 `execution_results.response_snapshot.metadata.costEstimate`、`tokenUsage` 和 `quotaDecision` 为 evaluation 返回只读成本归因校准。它不调用 LLM、不重新计算真实账单、不修改 execution jobs/results/evaluations、不替代 billing-grade 成本结算。证据见 `docs/reviews/product-gap-17-evaluation-cost-attribution-audit.md`。
 
 > **不再继续 P2.x**：后续剩余工作进入独立产品路线，例如 Publisher Platform、MCP Marketplace、多租户 RBAC、Knowledge/RAG、Agent Evaluation。
 

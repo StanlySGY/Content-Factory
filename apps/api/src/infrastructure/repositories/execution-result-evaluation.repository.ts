@@ -1,8 +1,10 @@
 import { and, asc, eq } from "drizzle-orm";
 import type { Db } from "../db/client.js";
 import {
+  executionResults,
   executionResultEvaluations,
   type ExecutionResultEvaluationRow,
+  type ExecutionResultRow,
 } from "../db/schema.js";
 
 export interface ExecutionResultEvaluationWrite {
@@ -15,6 +17,11 @@ export interface ExecutionResultEvaluationWrite {
   notes?: string | null;
   tags: string[];
   evaluated_by: string;
+}
+
+export interface ExecutionResultEvaluationWithResultRow {
+  evaluation: ExecutionResultEvaluationRow;
+  result: ExecutionResultRow;
 }
 
 export async function createEvaluation(
@@ -78,4 +85,31 @@ export async function listAllEvaluations(db: Db): Promise<ExecutionResultEvaluat
     .select()
     .from(executionResultEvaluations)
     .orderBy(asc(executionResultEvaluations.createdAt));
+}
+
+export async function listEvaluationsWithResults(
+  db: Db,
+  input: { jobId?: string; limit: number },
+): Promise<ExecutionResultEvaluationWithResultRow[]> {
+  if (input.jobId) {
+    return db
+      .select({
+        evaluation: executionResultEvaluations,
+        result: executionResults,
+      })
+      .from(executionResultEvaluations)
+      .innerJoin(executionResults, eq(executionResults.id, executionResultEvaluations.executionResultId))
+      .where(eq(executionResultEvaluations.executionJobId, input.jobId))
+      .orderBy(asc(executionResultEvaluations.createdAt))
+      .limit(input.limit);
+  }
+  return db
+    .select({
+      evaluation: executionResultEvaluations,
+      result: executionResults,
+    })
+    .from(executionResultEvaluations)
+    .innerJoin(executionResults, eq(executionResults.id, executionResultEvaluations.executionResultId))
+    .orderBy(asc(executionResultEvaluations.createdAt))
+    .limit(input.limit);
 }
