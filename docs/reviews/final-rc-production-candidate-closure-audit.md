@@ -119,5 +119,4 @@ Final RC 后，剩余工作应进入独立路线，不再塞进 P2.x：
 | MCP Marketplace | 安装、热加载、SDK transport、tool invocation ledger 回写 |
 | Multi-tenant RBAC | 团队、成员、角色、项目级/资源级权限 |
 | Knowledge / RAG | 知识库、向量检索、引用追踪 |
-| Agent Evaluation | 质量评分、成本分析、模型对比、回归评测 |
-
+| Agent Evaluation | LLM judge、真实成本归因、模型对比、跨模型回归评测编排 |

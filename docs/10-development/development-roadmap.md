@@ -488,7 +488,7 @@ MVP 后再进入：
 - 微信公众号真实发布集成。
 - 知识库检索与 RAG：后端 MVP 已补齐 knowledge source / entry / source archive/restore / entry archive/restore / inventory read API / keyword search / task candidates 和 context pack materialization；Web 已补齐 knowledge inventory 与 candidate review 只读 UI；尚未接 embedding、向量库、LLM rerank 和 context pack 自动刷新。
 - 多团队权限和审计：RBAC 后端 MVP 已具备，Web 已支持成员与项目授权管理，角色变更要求 `approval_ref`，成员和 membership 变更已写入审计链，项目级 RBAC 端点已有跨项目拒绝回归矩阵；后续仍需全局 enforcement 与 auth/session 接入。
-- Agent 效果评估和成本分析：后端 MVP 已补齐 execution result 评价账本、人工评分、确定性 rule evaluator runner、job 级 summary 和只读 evaluation analytics；尚未接 LLM judge、真实成本归因、dashboard 和 UI。
+- Agent 效果评估和成本分析：后端 MVP 已补齐 execution result 评价账本、人工评分、确定性 rule evaluator runner、默认关闭 deterministic regression evaluation runner、job 级 summary 和只读 evaluation analytics；Web 已补齐只读 evaluation dashboard；尚未接 LLM judge、真实成本归因、模型对比和跨模型回归评测编排。
 
 ## 11. Sprint-5 Execution Layer 现状（Phase 1.x 冻结）
 
@@ -545,6 +545,8 @@ MVP 后再进入：
 > **Rule Evaluation Runner Backend MVP 已补齐**：Product Gap 6 新增手动触发的确定性规则评估入口，可为单个 execution result 或某 job 下未评价 results 追加 `rule` 评价。它不调用 LLM、不做后台自动评测、不改 `execution_results` / `execution_jobs`、不做 UI。证据见 `docs/reviews/product-gap-6-rule-evaluation-runner-audit.md`。
 
 > **Evaluation Analytics Backend MVP 已补齐**：Product Gap 7 新增只读 evaluation analytics 和 low-quality evaluation 查询端点，用于查看评分均值、低分数量、evaluator 分布和低分明细。它不调用 LLM、不做 dashboard UI、不改 `execution_results` / `execution_jobs` / `execution_result_evaluations` 历史记录。证据见 `docs/reviews/product-gap-7-evaluation-analytics-backend-audit.md`。
+
+> **Deterministic Regression Evaluation Runner 已补齐**：新增 `POST /api/execution/evaluations/regression-run` 与默认关闭的 `EXECUTION_REGRESSION_EVALUATION_RUNNER_*` 配置，可对近期或指定 job 的未评价 execution results 追加 `rule` 评价。它不调用 LLM、不改 `execution_results` / `execution_jobs`、不替代 LLM judge / 模型对比 / 跨模型回归评测编排。
 
 > **不再继续 P2.x**：后续剩余工作进入独立产品路线，例如 Publisher Platform、MCP Marketplace、多租户 RBAC、Knowledge/RAG、Agent Evaluation。
 

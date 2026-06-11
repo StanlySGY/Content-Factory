@@ -142,7 +142,7 @@
 | Publisher Platform Backend | `/api/publisher/channels`、`/api/publish-records`、本地撤回/重发控制面、Publisher real-runtime readiness、Web `/publisher` 渠道创建与启用/停用/归档 UI | 真实发布审批流、素材管理、失败告警、多渠道编排 |
 | Multi-tenant RBAC Backend | `/api/rbac/organizations`、`/api/rbac/organizations/:id/members`、`/api/rbac/projects/:id/memberships`、成员管理、项目 membership、`check-access`、项目级 RBAC 端点跨项目拒绝回归矩阵、角色变更 `approval_ref` 合同、RBAC 成员和 membership 变更审计、Web `/rbac` 成员与项目授权管理 UI | auth/session、全局业务 API enforcement |
 | Knowledge/RAG Backend | `/api/knowledge/sources`、entries、archive/restore、keyword search、task candidates、只读 candidate review UI | embedding、向量库、LLM rerank、context pack 自动刷新 |
-| Agent Evaluation Backend | `/api/execution/results/:id/evaluations`、rule evaluation、analytics、low-quality list、只读 dashboard UI | LLM judge、真实成本归因、模型对比、回归评测 |
+| Agent Evaluation Backend | `/api/execution/results/:id/evaluations`、rule evaluation、`/api/execution/evaluations/regression-run`、analytics、low-quality list、只读 dashboard UI | LLM judge、真实成本归因、模型对比、跨模型回归评测编排 |
 | Execution Observability | `/api/execution/jobs`、`/api/execution/jobs/:id/results`、`/api/execution/jobs/:id/result-summary`、`/api/execution/jobs/:id/events`、`/api/execution/results/:id/writebacks`、只读 result/outbox/writeback ledger UI | replay、写回操作台 |
 
 ## 5. 调用追溯端点（支撑可追溯硬指标）
