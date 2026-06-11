@@ -2,8 +2,10 @@ import { and, desc, eq, ilike, or, sql, type SQL } from "drizzle-orm";
 import type { Db } from "../db/client.js";
 import {
   contentTasks,
+  knowledgeEntryEmbeddings,
   knowledgeEntries,
   knowledgeSources,
+  type KnowledgeEntryEmbeddingRow,
   type KnowledgeEntryRow,
   type KnowledgeSourceRow,
 } from "../db/schema.js";
@@ -27,6 +29,20 @@ export interface KnowledgeEntryWrite {
   tags: string[];
   metadata?: JsonRecord;
   created_by: string;
+}
+
+export interface KnowledgeEntryEmbeddingWrite {
+  project_id: string;
+  knowledge_entry_id: string;
+  provider: string;
+  dimensions: number;
+  vector: number[];
+  text_hash: string;
+}
+
+export interface KnowledgeEmbeddingCoverage {
+  activeEntriesTotal: number;
+  embeddedActiveEntries: number;
 }
 
 export interface KnowledgeSourceFilter {
@@ -140,6 +156,52 @@ export async function createEntry(db: Db, input: KnowledgeEntryWrite): Promise<K
     createdBy: input.created_by,
   }).returning();
   return row!;
+}
+
+export async function createEntryEmbedding(
+  db: Db,
+  input: KnowledgeEntryEmbeddingWrite,
+): Promise<KnowledgeEntryEmbeddingRow> {
+  const [row] = await db.insert(knowledgeEntryEmbeddings).values({
+    projectId: input.project_id,
+    knowledgeEntryId: input.knowledge_entry_id,
+    provider: input.provider,
+    dimensions: input.dimensions,
+    vector: input.vector,
+    textHash: input.text_hash,
+  }).returning();
+  return row!;
+}
+
+export async function getEmbeddingCoverage(
+  db: Db,
+  projectId: string,
+  provider: string,
+): Promise<KnowledgeEmbeddingCoverage> {
+  const [row] = await db
+    .select({
+      activeEntriesTotal: sql<number>`count(${knowledgeEntries.id})::int`,
+      embeddedActiveEntries: sql<number>`count(${knowledgeEntryEmbeddings.id})::int`,
+    })
+    .from(knowledgeEntries)
+    .innerJoin(knowledgeSources, eq(knowledgeSources.id, knowledgeEntries.sourceId))
+    .leftJoin(
+      knowledgeEntryEmbeddings,
+      and(
+        eq(knowledgeEntryEmbeddings.knowledgeEntryId, knowledgeEntries.id),
+        eq(knowledgeEntryEmbeddings.provider, provider),
+        eq(knowledgeEntryEmbeddings.status, "active"),
+      ),
+    )
+    .where(and(
+      eq(knowledgeEntries.projectId, projectId),
+      eq(knowledgeEntries.status, "active"),
+      eq(knowledgeSources.status, "active"),
+    ));
+  return {
+    activeEntriesTotal: Number(row?.activeEntriesTotal ?? 0),
+    embeddedActiveEntries: Number(row?.embeddedActiveEntries ?? 0),
+  };
 }
 
 export async function searchEntries(

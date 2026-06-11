@@ -69,6 +69,11 @@ describe("product route readiness", () => {
     const agentEvaluationRoute = body.routes.find((route: { key: string }) => route.key === "agent_evaluation");
     expect(agentEvaluationRoute.delivered_capabilities).toContain("default-closed deterministic regression evaluation runner");
     expect(agentEvaluationRoute.missing_product_requirements).not.toContain("scheduled regression evaluation runner");
+    const knowledgeRoute = body.routes.find((route: { key: string }) => route.key === "knowledge_rag");
+    expect(knowledgeRoute.delivered_capabilities).toContain("deterministic local embedding pipeline");
+    expect(knowledgeRoute.delivered_capabilities).toContain("knowledge embedding readiness endpoint");
+    expect(knowledgeRoute.missing_product_requirements).not.toContain("embedding pipeline");
+    expect(knowledgeRoute.missing_product_requirements).toContain("vector index integration");
     expect(JSON.stringify(body)).not.toContain("sk-");
     expect(JSON.stringify(body)).not.toContain("Bearer");
   });

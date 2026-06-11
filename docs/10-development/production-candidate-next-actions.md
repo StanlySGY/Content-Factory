@@ -46,8 +46,8 @@ Content Factory 当前处于 **Final RC / production candidate** 收口阶段：
 | Readiness drilldown | 已完成 | `/ops/readiness` 下钻展示 production activation、P1 readiness、MCP runtime、Publisher runtime、writeback executor registration 的只读端点结果、缺失要求和下一阶段要求 |
 | Production Ops 监控页 | 已完成 | Web 新增 `/ops/monitoring`，只读展示 `monitoring-readiness`、alert rules、`staging-smoke-readiness` 与 smoke run endpoint；不接真实 Grafana / PagerDuty，不触发 smoke run |
 | Publisher Platform 控制台 UI | 已完成 | Web `/publisher` 支持 publisher channel 创建、启用/停用/归档，以及 publish record 本地撤回/重发控制面；发布记录保留 endpoint_ref、状态和 asset_version 锚定信息；不触发真实发布、不新增外部平台调用 |
-| Knowledge Inventory UI | 已完成 | Web 新增 `/knowledge` 只读知识库管理入口，展示 knowledge sources、source 详情和 source entries，保留 active / archived 可见性；不接 embedding、向量库、LLM rerank，不自动刷新 context pack |
-| Knowledge Candidate Review UI | 已完成 | Web 新增 `/knowledge/candidates` 只读任务知识候选入口，展示 task knowledge candidates、命中原因与已有 context packs 关联；不接 embedding、向量库、LLM rerank，不自动刷新或物化 context pack |
+| Knowledge Inventory UI | 已完成 | Web 新增 `/knowledge` 只读知识库管理入口，展示 knowledge sources、source 详情和 source entries，保留 active / archived 可见性；不接真实 vector index、LLM rerank，不自动刷新 context pack |
+| Knowledge Candidate Review UI | 已完成 | Web 新增 `/knowledge/candidates` 只读任务知识候选入口，展示 task knowledge candidates、命中原因与已有 context packs 关联；不接真实 vector index、LLM rerank，不自动刷新或物化 context pack |
 | MCP Management UI | 已完成 | Web 新增 `/mcp` 只读 MCP 管理入口，展示 MCP server/tool inventory 与 real-runtime readiness；不启用热加载、不执行 tool invocation、不打开真实外部 transport |
 | RBAC Management UI | 已完成 | Web `/rbac` 支持 organization member 添加、角色更新、停用，以及默认项目 membership 授权/撤销；角色变更要求 `approval_ref`；成员和 membership 变更写入审计链；项目级 RBAC 端点已有跨项目拒绝回归矩阵；后端已接入 header-based session context 与全局项目业务 API enforcement，但仍不提供生产登录态 / IdP |
 | Agent Evaluation Dashboard UI | 已完成 | Web 新增 `/evaluations` 只读评估看板，展示 evaluation analytics、low-quality results 与 result evaluation ledger；后端已有默认关闭的 deterministic regression evaluation runner；Web 不触发 `regression-run` / `evaluate-rule`，不接 LLM judge、不做模型对比 |
@@ -76,7 +76,7 @@ Content Factory 当前处于 **Final RC / production candidate** 收口阶段：
 | 路线 | 范围 | 当前缺口 |
 | --- | --- | --- |
 | MCP Marketplace | 外部发现、SDK transport、SSE/stdio、热加载、tool invocation ledger 回写 | 当前已有 backend MVP、本地安装控制面 UI 与只读 invocation ledger UI |
-| Knowledge / RAG | embedding、向量库、LLM rerank、context pack 自动刷新 | 当前已有关键词、后端管理 API、knowledge inventory UI 与 candidate review UI |
+| Knowledge / RAG | 真实 vector index、LLM rerank、context pack 自动刷新 | 当前已有关键词、后端管理 API、本地 deterministic embedding pipeline、embedding readiness endpoint、knowledge inventory UI 与 candidate review UI |
 | Agent Evaluation | LLM judge、真实成本归因、模型对比、跨模型回归评测编排 | 当前已有人工/规则评价、默认关闭 deterministic regression evaluation runner、analytics API 与只读 dashboard |
 | Skill / Plugin | Skill 路由、质量门禁自动化、插件隔离、供应链验证、UI | 当前不是 MVP 验收项 |
 

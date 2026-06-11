@@ -79,22 +79,23 @@ MCP 与 Publisher 真实入口还需分别开启：
 9. 打开 Web `/publisher`，确认 publisher channels 可创建、启用/停用/归档，publish records 只读展示，且未触发真实发布。
 10. 打开 Web `/knowledge`，确认 knowledge sources、source detail 与 source entries 只读展示，且未触发 context pack 自动刷新。
 11. 打开 Web `/knowledge/candidates`，确认 task knowledge candidates、命中原因与已有 context pack 关联只读展示，且未触发 context pack 自动刷新或物化。
-12. 打开 Web `/mcp`，确认 MCP server/tool inventory 与 real-runtime readiness 只读展示，且未触发 tool invocation 或真实外部 transport。
-13. 打开 Web `/mcp/invocations`，确认 MCP tool invocation ledger 按 tool 只读展示 status、caller、risk、duration 与输入/输出摘要，且未触发 mock invoke、health check、真实 transport、replay 或写操作。
-14. 打开 Web `/execution/results`，确认 execution result ledger 按 job 只读展示 attempts、latest status、error_type、duration、request/response snapshot 与 result summary，且未触发 tick、retry、evaluate-rule、writeback、replay 或写操作。
-15. 打开 Web `/execution/outbox`，确认 execution outbox event ledger 按 job 只读展示 event_type、processed/error、retry_count、claim 状态与 payload 摘要，且未触发 process-batch、process event、relay、retry、tick、writeback、replay 或写操作。
-16. 打开 Web `/execution/writebacks`，确认 execution writeback ledger 按 job/result 只读展示 status、subject、idempotency_key、plan、error 与时间戳，且未触发 guard、transaction-plan、dry-run、apply-guard、transaction-prototype、retry、replay 或写操作。
-17. 打开 Web `/ops/provider-quota`，确认 provider quota/cost preflight 只读展示 quota policy、distributed quota、cost metrics、token usage、billing disabled 与 runtime/network gate，且未消费 quota、未执行 provider 请求、未触发 staging smoke 或写操作。
-18. 打开 Web `/ops/agent-provider-config`，确认 agent real provider config preflight 只读展示 provider kind、model、endpoint_ref、credential ref readiness、secret material boundary、timeout/quota/cost profile 与 real adapter blocked reason，且未解析 secret、未发网络探测、未执行真实 provider 请求或写操作。
-19. 打开 Web `/ops/agent-provider-transport`，确认 agent real provider transport disabled harness 只读展示 request shape、disabled transport、fail-closed error、network/secret boundary 与 redacted request，且未执行 transport、未发网络请求、未读取 secret material、未写 execution 表。
-20. 打开 Web `/ops/agent-registration-guard`，确认 agent real adapter registration guard 只读展示 registration readiness、disabled fixture、descriptor status、config/readiness gates、missing requirements 与 fail-closed error，且未注册真实 adapter、未启动 worker、未执行 provider 请求或写 execution 表。
-21. 打开 Web `/ops/secret-resolver`，确认 secret resolver readiness 只读展示 resolver kind、available、allowed ref schemes、supported purposes、env/network/process boundary 与 runtime/adapter mode，且未读取或返回 secret material、未写 execution/outbox 表。
-22. 打开 Web `/ops/provider-http-boundary`，确认 provider HTTP boundary 只读展示 fake HTTP client、network/real HTTP disabled、HTTP mapping、secret material boundary、allowed adapter modes、runtime/adapter mode 与 blocked reason，且未执行真实网络请求、未注入 secret material、未写 execution/outbox 表。
-23. 打开 Web `/ops/secret-injection`，确认 secret injection preflight 只读展示 resolver、secret store/injection readiness、allowed ref schemes、supported purposes、persistence boundary、audit metadata 与 runtime gate，且未读取 secret material、未注入 header、未执行 transport 或写操作。
-24. 打开 Web `/rbac`，确认 organization members 可添加、更新角色、停用，默认项目 memberships 可授权/撤销，相关变更写入 audit_events；后端 header-based session context 与全局项目业务 API enforcement 已接入，但仍未接生产登录态 / IdP。
-25. 打开 Web `/evaluations`，确认 evaluation analytics、low-quality results 与 result evaluations 只读展示，且未触发 create evaluation、`evaluate-rule` 或 `regression-run`。
-26. 打开 Web `/mcp/marketplace`，确认 marketplace entries、project installations 与 server binding 可见，且安装、禁用、卸载只修改本地 installation 控制面记录，不触发 hot-load、真实 transport 或 tool invocation。
-27. 若进入真实启用，按 `production-candidate-next-actions.md` 选择单一路线逐项开启 gate，不混开 Agent / MCP / Publisher / writeback。
+12. 调用 `GET /api/knowledge/embedding-readiness`，确认本地 embedding snapshot 覆盖 active knowledge entries，`external_calls_performed=false` 且 `vector_index_integrated=false`。
+13. 打开 Web `/mcp`，确认 MCP server/tool inventory 与 real-runtime readiness 只读展示，且未触发 tool invocation 或真实外部 transport。
+14. 打开 Web `/mcp/invocations`，确认 MCP tool invocation ledger 按 tool 只读展示 status、caller、risk、duration 与输入/输出摘要，且未触发 mock invoke、health check、真实 transport、replay 或写操作。
+15. 打开 Web `/execution/results`，确认 execution result ledger 按 job 只读展示 attempts、latest status、error_type、duration、request/response snapshot 与 result summary，且未触发 tick、retry、evaluate-rule、writeback、replay 或写操作。
+16. 打开 Web `/execution/outbox`，确认 execution outbox event ledger 按 job 只读展示 event_type、processed/error、retry_count、claim 状态与 payload 摘要，且未触发 process-batch、process event、relay、retry、tick、writeback、replay 或写操作。
+17. 打开 Web `/execution/writebacks`，确认 execution writeback ledger 按 job/result 只读展示 status、subject、idempotency_key、plan、error 与时间戳，且未触发 guard、transaction-plan、dry-run、apply-guard、transaction-prototype、retry、replay 或写操作。
+18. 打开 Web `/ops/provider-quota`，确认 provider quota/cost preflight 只读展示 quota policy、distributed quota、cost metrics、token usage、billing disabled 与 runtime/network gate，且未消费 quota、未执行 provider 请求、未触发 staging smoke 或写操作。
+19. 打开 Web `/ops/agent-provider-config`，确认 agent real provider config preflight 只读展示 provider kind、model、endpoint_ref、credential ref readiness、secret material boundary、timeout/quota/cost profile 与 real adapter blocked reason，且未解析 secret、未发网络探测、未执行真实 provider 请求或写操作。
+20. 打开 Web `/ops/agent-provider-transport`，确认 agent real provider transport disabled harness 只读展示 request shape、disabled transport、fail-closed error、network/secret boundary 与 redacted request，且未执行 transport、未发网络请求、未读取 secret material、未写 execution 表。
+21. 打开 Web `/ops/agent-registration-guard`，确认 agent real adapter registration guard 只读展示 registration readiness、disabled fixture、descriptor status、config/readiness gates、missing requirements 与 fail-closed error，且未注册真实 adapter、未启动 worker、未执行 provider 请求或写 execution 表。
+22. 打开 Web `/ops/secret-resolver`，确认 secret resolver readiness 只读展示 resolver kind、available、allowed ref schemes、supported purposes、env/network/process boundary 与 runtime/adapter mode，且未读取或返回 secret material、未写 execution/outbox 表。
+23. 打开 Web `/ops/provider-http-boundary`，确认 provider HTTP boundary 只读展示 fake HTTP client、network/real HTTP disabled、HTTP mapping、secret material boundary、allowed adapter modes、runtime/adapter mode 与 blocked reason，且未执行真实网络请求、未注入 secret material、未写 execution/outbox 表。
+24. 打开 Web `/ops/secret-injection`，确认 secret injection preflight 只读展示 resolver、secret store/injection readiness、allowed ref schemes、supported purposes、persistence boundary、audit metadata 与 runtime gate，且未读取 secret material、未注入 header、未执行 transport 或写操作。
+25. 打开 Web `/rbac`，确认 organization members 可添加、更新角色、停用，默认项目 memberships 可授权/撤销，相关变更写入 audit_events；后端 header-based session context 与全局项目业务 API enforcement 已接入，但仍未接生产登录态 / IdP。
+26. 打开 Web `/evaluations`，确认 evaluation analytics、low-quality results 与 result evaluations 只读展示，且未触发 create evaluation、`evaluate-rule` 或 `regression-run`。
+27. 打开 Web `/mcp/marketplace`，确认 marketplace entries、project installations 与 server binding 可见，且安装、禁用、卸载只修改本地 installation 控制面记录，不触发 hot-load、真实 transport 或 tool invocation。
+28. 若进入真实启用，按 `production-candidate-next-actions.md` 选择单一路线逐项开启 gate，不混开 Agent / MCP / Publisher / writeback。
 
 ## 5. 生产候选验证
 
@@ -110,8 +111,9 @@ MCP 与 Publisher 真实入口还需分别开启：
 | monitoring | 指标出口和告警规则已接入真实监控系统；Web `/ops/monitoring` 与 `monitoring-readiness` 一致 |
 | staging smoke | 使用低权限真实 key、低额度限制跑通，并保留 result ledger；Web `/ops/monitoring` 默认不触发 smoke run |
 | publisher workbench | Web `/publisher` 支持渠道创建、启用/停用/归档并只读展示发布记录，publish records 锚定 `asset_version_id`，不触发真实发布 |
-| knowledge inventory | Web `/knowledge` 只读展示 knowledge sources、source detail 与 source entries，active / archived 均可见，不触发 embedding、rerank 或 context pack 自动刷新 |
-| knowledge candidates | Web `/knowledge/candidates` 只读展示 task knowledge candidates、命中原因与已有 context pack 关联，不触发 embedding、rerank、context pack 自动刷新或物化 |
+| knowledge inventory | Web `/knowledge` 只读展示 knowledge sources、source detail 与 source entries，active / archived 均可见，不触发 rerank 或 context pack 自动刷新 |
+| knowledge candidates | Web `/knowledge/candidates` 只读展示 task knowledge candidates、命中原因与已有 context pack 关联，不触发 rerank、context pack 自动刷新或物化 |
+| knowledge embedding readiness | `GET /api/knowledge/embedding-readiness` 返回 active entry embedding 覆盖率；本地 provider 为 `local_hash_v1`，不调用外部模型，尚未集成真实 vector index |
 | mcp management | Web `/mcp` 只读展示 MCP servers、selected server tools 与 real-runtime readiness，不触发 health-check、mock invoke、安装/卸载或真实 transport |
 | mcp invocation ledger | Web `/mcp/invocations` 只读展示 MCP tool invocation status、caller、risk、duration 与输入/输出摘要，不触发 mock invoke、health-check、真实 transport、replay 或写操作 |
 | execution result ledger | Web `/execution/results` 只读展示 execution job results、attempt snapshots 与 result summary，不触发 tick/retry/evaluate-rule/writeback/replay 或写操作 |

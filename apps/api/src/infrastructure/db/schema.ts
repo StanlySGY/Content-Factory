@@ -8,6 +8,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
@@ -436,6 +437,28 @@ export const knowledgeEntries = pgTable(
   ],
 );
 
+export const knowledgeEntryEmbeddings = pgTable(
+  "knowledge_entry_embeddings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id").notNull(),
+    knowledgeEntryId: uuid("knowledge_entry_id").notNull(),
+    provider: varchar("provider", { length: 80 }).notNull(),
+    dimensions: integer("dimensions").notNull(),
+    vector: jsonb("vector").$type<number[]>().notNull(),
+    textHash: varchar("text_hash", { length: 64 }).notNull(),
+    status: varchar("status", { length: 32 }).notNull().default("active"),
+    generatedAt: timestamp("generated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("idx_knowledge_entry_embeddings_entry_provider_unique").on(t.knowledgeEntryId, t.provider),
+    index("idx_knowledge_entry_embeddings_project_provider").on(t.projectId, t.provider, t.status),
+    index("idx_knowledge_entry_embeddings_entry").on(t.knowledgeEntryId),
+  ],
+);
+
 // Sprint-5 执行层（独立异步骨架；execution_jobs 可变生命周期，无 project_id/无 FK）
 export const executionJobs = pgTable("execution_jobs", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -564,6 +587,7 @@ export type OrganizationMemberRow = typeof organizationMembers.$inferSelect;
 export type ProjectMembershipRow = typeof projectMemberships.$inferSelect;
 export type KnowledgeSourceRow = typeof knowledgeSources.$inferSelect;
 export type KnowledgeEntryRow = typeof knowledgeEntries.$inferSelect;
+export type KnowledgeEntryEmbeddingRow = typeof knowledgeEntryEmbeddings.$inferSelect;
 export type ExecutionJobRow = typeof executionJobs.$inferSelect;
 export type OutboxEventRow = typeof outboxEvents.$inferSelect;
 export type ExecutionResultRow = typeof executionResults.$inferSelect;

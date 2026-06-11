@@ -3,6 +3,7 @@ import {
   CreateKnowledgeEntrySchema,
   CreateKnowledgeSourceSchema,
   IdParamSchema,
+  KnowledgeEmbeddingReadinessResponseSchema,
   KnowledgeEntriesResponseSchema,
   KnowledgeEntryResponseSchema,
   KnowledgeSearchQuerySchema,
@@ -100,6 +101,26 @@ export const knowledgeRoutes: FastifyPluginAsyncTypebox<KnowledgeRoutesOptions> 
     { schema: { params: IdParamSchema, response: { 200: KnowledgeEntryResponseSchema } } },
     async (request) =>
       toKnowledgeEntryDTO(await knowledgeService.restoreEntry(buildContext(env, request), request.params.id)),
+  );
+
+  app.get(
+    "/api/knowledge/embedding-readiness",
+    { schema: { response: { 200: KnowledgeEmbeddingReadinessResponseSchema } } },
+    async (request) => {
+      const readiness = await knowledgeService.getEmbeddingReadiness(buildContext(env, request));
+      return {
+        mode: readiness.mode,
+        ready: readiness.ready,
+        status: readiness.status,
+        provider: readiness.provider,
+        dimensions: readiness.dimensions,
+        active_entries_total: readiness.activeEntriesTotal,
+        embedded_active_entries: readiness.embeddedActiveEntries,
+        missing_embeddings: readiness.missingEmbeddings,
+        external_calls_performed: readiness.externalCallsPerformed,
+        vector_index_integrated: readiness.vectorIndexIntegrated,
+      };
+    },
   );
 
   app.get(

@@ -1055,6 +1055,7 @@ export class ExecutionOpsService {
         evidenceEndpoints: [
           "/api/knowledge/sources",
           "/api/knowledge/sources/:id/entries",
+          "/api/knowledge/embedding-readiness",
           "/api/tasks/:id/knowledge-candidates",
           "/api/tasks/:id/knowledge-context-pack",
           "/knowledge",
@@ -1065,14 +1066,17 @@ export class ExecutionOpsService {
           "keyword task candidate search",
           "manual context pack materialization",
           "readonly inventory and candidate review UIs",
+          "deterministic local embedding pipeline",
+          "knowledge embedding readiness endpoint",
         ],
         missingProductRequirements: [
-          "embedding pipeline",
           "vector index integration",
           "LLM rerank path",
           "automatic context pack refresh policy",
         ],
         safetyBoundaries: [
+          "local embeddings do not call external model providers",
+          "embedding snapshots are not a production vector index",
           "current search is keyword based and does not call LLMs",
           "context pack materialization is explicit, not automatic",
           "archived sources and entries are excluded from candidates",

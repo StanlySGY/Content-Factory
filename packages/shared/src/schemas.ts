@@ -1160,6 +1160,23 @@ export const TaskKnowledgeCandidatesResponseSchema = Type.Object(
 );
 export type TaskKnowledgeCandidatesResponse = Static<typeof TaskKnowledgeCandidatesResponseSchema>;
 
+export const KnowledgeEmbeddingReadinessResponseSchema = Type.Object(
+  {
+    mode: Type.Literal("knowledge_embedding_readiness"),
+    ready: Type.Boolean(),
+    status: Type.Union([Type.Literal("ready"), Type.Literal("blocked")]),
+    provider: Type.String(),
+    dimensions: Type.Integer({ minimum: 1 }),
+    active_entries_total: Type.Integer({ minimum: 0 }),
+    embedded_active_entries: Type.Integer({ minimum: 0 }),
+    missing_embeddings: Type.Integer({ minimum: 0 }),
+    external_calls_performed: Type.Boolean(),
+    vector_index_integrated: Type.Boolean(),
+  },
+  { additionalProperties: false },
+);
+export type KnowledgeEmbeddingReadinessResponse = Static<typeof KnowledgeEmbeddingReadinessResponseSchema>;
+
 export const KnowledgeSourceResponseSchema = KnowledgeSourceSchema;
 export const KnowledgeSourcesResponseSchema = Type.Array(KnowledgeSourceSchema);
 export const KnowledgeEntryResponseSchema = KnowledgeEntrySchema;

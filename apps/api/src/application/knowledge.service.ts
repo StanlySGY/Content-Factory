@@ -7,6 +7,11 @@ import type {
 } from "@cf/shared";
 import { NotFoundError, ValidationError } from "../domain/errors.js";
 import {
+  buildLocalKnowledgeEmbedding,
+  LOCAL_KNOWLEDGE_EMBEDDING_DIMENSIONS,
+  LOCAL_KNOWLEDGE_EMBEDDING_PROVIDER,
+} from "../domain/knowledge/embedding.js";
+import {
   assertKnowledgeSourceActive,
   normalizeKnowledgeLimit,
   normalizeKnowledgeQuery,
@@ -26,6 +31,19 @@ export interface KnowledgeSearchResult {
 
 export interface TaskKnowledgeCandidatesResult extends KnowledgeSearchResult {
   taskId: string;
+}
+
+export interface KnowledgeEmbeddingReadiness {
+  mode: "knowledge_embedding_readiness";
+  ready: boolean;
+  status: "ready" | "blocked";
+  provider: string;
+  dimensions: number;
+  activeEntriesTotal: number;
+  embeddedActiveEntries: number;
+  missingEmbeddings: number;
+  externalCallsPerformed: false;
+  vectorIndexIntegrated: false;
 }
 
 export class KnowledgeService {
@@ -57,7 +75,7 @@ export class KnowledgeService {
       const source = await repo.getSource(tx, ctx.projectId, sourceId);
       if (!source) throw new NotFoundError(`knowledge_source ${sourceId} not found`);
       assertKnowledgeSourceActive(source.status);
-      return repo.createEntry(tx, {
+      const entry = await repo.createEntry(tx, {
         project_id: ctx.projectId,
         source_id: sourceId,
         title: input.title,
@@ -66,6 +84,20 @@ export class KnowledgeService {
         metadata: input.metadata ?? {},
         created_by: actorId,
       });
+      const embedding = buildLocalKnowledgeEmbedding({
+        title: entry.title,
+        body: entry.body,
+        tags: entry.tags,
+      });
+      await repo.createEntryEmbedding(tx, {
+        project_id: ctx.projectId,
+        knowledge_entry_id: entry.id,
+        provider: embedding.provider,
+        dimensions: embedding.dimensions,
+        vector: embedding.vector,
+        text_hash: embedding.textHash,
+      });
+      return entry;
     });
   }
 
@@ -157,6 +189,26 @@ export class KnowledgeService {
       const rows = await repo.searchEntries(tx, ctx.projectId, normalizedQuery, limit);
       return { taskId, query: normalizedQuery, items: rows.map(withKeywordReason) };
     });
+  }
+
+  async getEmbeddingReadiness(ctx: RequestContext): Promise<KnowledgeEmbeddingReadiness> {
+    const coverage = await runInProject(this.db, ctx.projectId, (tx) =>
+      repo.getEmbeddingCoverage(tx, ctx.projectId, LOCAL_KNOWLEDGE_EMBEDDING_PROVIDER),
+    );
+    const missingEmbeddings = coverage.activeEntriesTotal - coverage.embeddedActiveEntries;
+    const ready = missingEmbeddings === 0;
+    return {
+      mode: "knowledge_embedding_readiness",
+      ready,
+      status: ready ? "ready" : "blocked",
+      provider: LOCAL_KNOWLEDGE_EMBEDDING_PROVIDER,
+      dimensions: LOCAL_KNOWLEDGE_EMBEDDING_DIMENSIONS,
+      activeEntriesTotal: coverage.activeEntriesTotal,
+      embeddedActiveEntries: coverage.embeddedActiveEntries,
+      missingEmbeddings,
+      externalCallsPerformed: false,
+      vectorIndexIntegrated: false,
+    };
   }
 
   private requireActor(ctx: RequestContext): string {
