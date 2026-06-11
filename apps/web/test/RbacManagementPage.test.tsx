@@ -164,6 +164,7 @@ describe("RbacManagementPage", () => {
     renderRoute();
 
     await screen.findByText("Content Ops");
+    await userEvent.type(screen.getByLabelText("Approval ref"), "approval://local/ui-test");
     await userEvent.type(screen.getByLabelText("User ID"), "00000000-0000-0000-0000-000000000003");
     await userEvent.selectOptions(screen.getByLabelText("Organization role"), "member");
     await userEvent.click(screen.getByRole("button", { name: "添加成员" }));
@@ -171,6 +172,7 @@ describe("RbacManagementPage", () => {
     expect(apiMock.addRbacOrganizationMember).toHaveBeenCalledWith(selectedOrganization.id, {
       user_id: "00000000-0000-0000-0000-000000000003",
       role: "member",
+      approval_ref: "approval://local/ui-test",
     });
 
     await userEvent.selectOptions(screen.getByLabelText(`Role for ${activeOrganizationMember.id}`), "admin");
@@ -178,6 +180,7 @@ describe("RbacManagementPage", () => {
 
     expect(apiMock.updateRbacOrganizationMember).toHaveBeenCalledWith(activeOrganizationMember.id, {
       role: "admin",
+      approval_ref: "approval://local/ui-test",
     });
     expect(apiMock.deactivateRbacOrganizationMember).toHaveBeenCalledWith(activeOrganizationMember.id);
 
@@ -188,6 +191,7 @@ describe("RbacManagementPage", () => {
     expect(apiMock.grantRbacProjectMembership).toHaveBeenCalledWith(DEFAULT_PROJECT_ID, {
       organization_member_id: activeOrganizationMember.id,
       role: "editor",
+      approval_ref: "approval://local/ui-test",
     });
 
     await userEvent.click(screen.getByRole("button", { name: `撤销 ${activeProjectMembership.id}` }));

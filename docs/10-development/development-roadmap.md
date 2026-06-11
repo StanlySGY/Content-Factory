@@ -487,7 +487,7 @@ MVP 后再进入：
 - Skill 质量门禁自动化。
 - 微信公众号真实发布集成。
 - 知识库检索与 RAG：后端 MVP 已补齐 knowledge source / entry / source archive/restore / entry archive/restore / inventory read API / keyword search / task candidates 和 context pack materialization；Web 已补齐 knowledge inventory 与 candidate review 只读 UI；尚未接 embedding、向量库、LLM rerank 和 context pack 自动刷新。
-- 多团队权限和审计：RBAC 后端 MVP 已具备，Web 已支持成员与项目授权管理，成员和 membership 变更已写入审计链，项目级 RBAC 端点已有跨项目拒绝回归矩阵；后续仍需全局 enforcement、auth/session 接入与角色变更审批策略。
+- 多团队权限和审计：RBAC 后端 MVP 已具备，Web 已支持成员与项目授权管理，角色变更要求 `approval_ref`，成员和 membership 变更已写入审计链，项目级 RBAC 端点已有跨项目拒绝回归矩阵；后续仍需全局 enforcement 与 auth/session 接入。
 - Agent 效果评估和成本分析：后端 MVP 已补齐 execution result 评价账本、人工评分、确定性 rule evaluator runner、job 级 summary 和只读 evaluation analytics；尚未接 LLM judge、真实成本归因、dashboard 和 UI。
 
 ## 11. Sprint-5 Execution Layer 现状（Phase 1.x 冻结）

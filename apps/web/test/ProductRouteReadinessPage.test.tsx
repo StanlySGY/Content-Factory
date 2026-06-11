@@ -65,8 +65,9 @@ const readiness: ProductRouteReadinessResponse = {
         "RBAC member and project membership mutation UI",
         "RBAC member and project membership audit events",
         "RBAC project route cross-project denial regression matrix",
+        "RBAC role mutation approval_ref policy",
       ],
-      missing_product_requirements: ["auth and session integration", "approval policy for role mutations"],
+      missing_product_requirements: ["auth and session integration", "global API authorization enforcement"],
       safety_boundaries: ["current UI only calls explicit RBAC control-plane mutation APIs"],
     },
     {

@@ -34,7 +34,7 @@ Content Factory 当前处于 **Final RC / production candidate** 收口阶段：
 | 路线 | 范围 | 验收重点 |
 | --- | --- | --- |
 | Publisher Platform | 真实发布 UI/审批流、素材管理、撤回/重发、失败告警、多渠道编排 | 不产生半发布状态；发布记录锚定 asset_version |
-| Multi-tenant RBAC | auth/session、全局 API enforcement、角色变更审批策略 | 跨项目访问被拒，权限变更可审计 |
+| Multi-tenant RBAC | auth/session、全局 API enforcement | 跨项目访问被拒，权限变更可审计 |
 | Production Ops | 监控面板、告警规则、runbook 演练、部署开关审计 | 故障可定位、可回滚、可复盘 |
 | Agent Production | 真实 provider staging、错误映射、成本校准、限额策略 | 真实调用可追溯，不泄露 secret material |
 
@@ -49,7 +49,7 @@ Content Factory 当前处于 **Final RC / production candidate** 收口阶段：
 | Knowledge Inventory UI | 已完成 | Web 新增 `/knowledge` 只读知识库管理入口，展示 knowledge sources、source 详情和 source entries，保留 active / archived 可见性；不接 embedding、向量库、LLM rerank，不自动刷新 context pack |
 | Knowledge Candidate Review UI | 已完成 | Web 新增 `/knowledge/candidates` 只读任务知识候选入口，展示 task knowledge candidates、命中原因与已有 context packs 关联；不接 embedding、向量库、LLM rerank，不自动刷新或物化 context pack |
 | MCP Management UI | 已完成 | Web 新增 `/mcp` 只读 MCP 管理入口，展示 MCP server/tool inventory 与 real-runtime readiness；不启用热加载、不执行 tool invocation、不打开真实外部 transport |
-| RBAC Management UI | 已完成 | Web `/rbac` 支持 organization member 添加、角色更新、停用，以及默认项目 membership 授权/撤销；成员和 membership 变更写入审计链；项目级 RBAC 端点已有跨项目拒绝回归矩阵；不接 auth/session、不做全局业务 API enforcement、不替代角色变更审批策略 |
+| RBAC Management UI | 已完成 | Web `/rbac` 支持 organization member 添加、角色更新、停用，以及默认项目 membership 授权/撤销；角色变更要求 `approval_ref`；成员和 membership 变更写入审计链；项目级 RBAC 端点已有跨项目拒绝回归矩阵；不接 auth/session、不做全局业务 API enforcement |
 | Agent Evaluation Dashboard UI | 已完成 | Web 新增 `/evaluations` 只读评估看板，展示 evaluation analytics、low-quality results 与 result evaluation ledger；不接 LLM judge、不做模型对比、不触发自动回归评测或 rule runner |
 | MCP Marketplace Management UI | 已完成 | Web `/mcp/marketplace` 支持本地 marketplace entry 安装、installation 禁用与卸载，并展示 project installations 与 server binding；不做外部发现、不触发 hot-load、真实 transport 或 tool invocation |
 | Tool Invocation Ledger UI | 已完成 | Web 新增 `/mcp/invocations` 只读 MCP tool invocation 账本入口，按工具展示 invocation status、risk、duration、caller 与输入/输出摘要；不触发 mock invoke、真实 transport、重放或任何写操作 |

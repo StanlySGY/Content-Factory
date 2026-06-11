@@ -187,11 +187,13 @@ function MemberTable({
   onUpdateRole,
   onDeactivate,
   actionPending,
+  roleMutationDisabled,
 }: {
   members: OrganizationMemberDTO[];
   onUpdateRole: (memberId: string, role: OrganizationMemberRole) => void;
   onDeactivate: (memberId: string) => void;
   actionPending: boolean;
+  roleMutationDisabled: boolean;
 }) {
   if (members.length === 0) {
     return <EmptyState title="还没有组织成员" hint="选中组织下尚未登记 member。" />;
@@ -219,7 +221,7 @@ function MemberTable({
               <select
                 aria-label={`Role for ${member.id}`}
                 className="rbac-inline-select"
-                disabled={actionPending || member.status !== "active"}
+                disabled={roleMutationDisabled || member.status !== "active"}
                 value={member.role}
                 onChange={(event) => onUpdateRole(member.id, event.target.value as OrganizationMemberRole)}
               >
@@ -383,6 +385,7 @@ function ProjectMembershipTable({
 }
 
 export function RbacManagementPage() {
+  const [approvalRef, setApprovalRef] = useState("");
   const [selectedOrganizationId, setSelectedOrganizationId] = useState<string>();
   const organizationsQuery = useRbacOrganizations();
   const membershipsQuery = useRbacProjectMemberships(DEFAULT_PROJECT_ID);
@@ -403,6 +406,8 @@ export function RbacManagementPage() {
     revokeMembership.isPending;
   const mutationError =
     addMember.error || updateMember.error || deactivateMember.error || grantMembership.error || revokeMembership.error;
+  const roleApprovalRef = approvalRef.trim();
+  const roleMutationDisabled = actionPending || roleApprovalRef.length === 0;
 
   useEffect(() => {
     if (organizations.length === 0) {
@@ -425,6 +430,15 @@ export function RbacManagementPage() {
         <div>
           <h1>RBAC 管理</h1>
           <p>组织、成员角色与默认项目授权管理</p>
+        </div>
+        <div className="field">
+          <label htmlFor="rbac-approval-ref">Approval ref</label>
+          <input
+            id="rbac-approval-ref"
+            value={approvalRef}
+            onChange={(event) => setApprovalRef(event.target.value)}
+            placeholder="approval://local/rbac-change"
+          />
         </div>
       </div>
 
@@ -471,11 +485,11 @@ export function RbacManagementPage() {
                   </div>
                   {activeOrganizationId && (
                     <MemberForm
-                      pending={actionPending}
+                      pending={roleMutationDisabled}
                       onAdd={({ userId, role }) =>
                         addMember.mutate({
                           organizationId: activeOrganizationId,
-                          body: { user_id: userId.trim(), role },
+                          body: { user_id: userId.trim(), role, approval_ref: roleApprovalRef },
                         })
                       }
                     />
@@ -485,8 +499,9 @@ export function RbacManagementPage() {
                     members={membersQuery.data}
                     onDeactivate={(memberId) => deactivateMember.mutate(memberId)}
                     onUpdateRole={(memberId, role) =>
-                      updateMember.mutate({ id: memberId, body: { role } })
+                      updateMember.mutate({ id: memberId, body: { role, approval_ref: roleApprovalRef } })
                     }
+                    roleMutationDisabled={roleMutationDisabled}
                   />
                 </>
               )}
@@ -500,11 +515,11 @@ export function RbacManagementPage() {
               </div>
               <ProjectMembershipForm
                 members={membersQuery.data ?? []}
-                pending={actionPending}
+                pending={roleMutationDisabled}
                 onGrant={({ organizationMemberId, role }) =>
                   grantMembership.mutate({
                     projectId: DEFAULT_PROJECT_ID,
-                    body: { organization_member_id: organizationMemberId, role },
+                    body: { organization_member_id: organizationMemberId, role, approval_ref: roleApprovalRef },
                   })
                 }
               />

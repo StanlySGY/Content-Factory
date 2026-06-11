@@ -35,6 +35,12 @@ import type { RequestContext } from "./task.service.js";
 const isUniqueViolation = (error: unknown): boolean => (error as { code?: string }).code === "23505";
 const isForeignKeyViolation = (error: unknown): boolean => (error as { code?: string }).code === "23503";
 
+function requireRoleMutationApproval(approvalRef: string | undefined): string {
+  const ref = approvalRef?.trim();
+  if (!ref) throw new ValidationError("rbac role mutation requires approval_ref");
+  return ref;
+}
+
 export class RbacService {
   constructor(private readonly db: Db) {}
 
@@ -70,6 +76,7 @@ export class RbacService {
   ): Promise<OrganizationMemberRow> {
     validateOrganizationMemberRole(input.role);
     const actorId = this.requireActor(ctx);
+    const approvalRef = requireRoleMutationApproval(input.approval_ref);
     const org = await repo.getOrganization(this.db, organizationId);
     if (!org) throw new NotFoundError(`organization ${organizationId} not found`);
     if (!(await repo.userExists(this.db, input.user_id))) throw new NotFoundError(`user ${input.user_id} not found`);
@@ -88,7 +95,7 @@ export class RbacService {
           subjectId: member.id,
           action: AUDIT_ACTIONS.organizationMemberAdded,
           after: this.organizationMemberAudit(member),
-          metadata: { organization_id: organizationId },
+          metadata: { organization_id: organizationId, approval_ref: approvalRef },
         });
         return member;
       });
@@ -107,6 +114,7 @@ export class RbacService {
     if (input.role !== undefined) validateOrganizationMemberRole(input.role);
     if (input.status !== undefined) validateOrganizationMemberStatus(input.status);
     const actorId = this.requireActor(ctx);
+    const approvalRef = input.role !== undefined ? requireRoleMutationApproval(input.approval_ref) : undefined;
     return runInProject(this.db, ctx.projectId, async (tx) => {
       const current = await repo.getOrganizationMember(tx, id);
       if (!current) throw new NotFoundError(`organization member ${id} not found`);
@@ -120,7 +128,10 @@ export class RbacService {
         action: AUDIT_ACTIONS.organizationMemberUpdated,
         before: this.organizationMemberAudit(current),
         after: this.organizationMemberAudit(updated),
-        metadata: { organization_id: updated.organizationId },
+        metadata: {
+          organization_id: updated.organizationId,
+          ...(approvalRef ? { approval_ref: approvalRef } : {}),
+        },
       });
       return updated;
     });
@@ -160,6 +171,7 @@ export class RbacService {
   ): Promise<ProjectMembershipRow> {
     validateProjectMemberRole(input.role);
     const actorId = this.requireActor(ctx);
+    const approvalRef = requireRoleMutationApproval(input.approval_ref);
     return runInProject(this.db, ctx.projectId, async (tx) => {
       if (projectId !== ctx.projectId || !(await repo.projectExists(tx, projectId)))
         throw new NotFoundError(`project ${projectId} not found`);
@@ -180,7 +192,7 @@ export class RbacService {
           subjectId: membership.id,
           action: AUDIT_ACTIONS.projectMembershipGranted,
           after: this.projectMembershipAudit(membership),
-          metadata: { organization_member_id: input.organization_member_id },
+          metadata: { organization_member_id: input.organization_member_id, approval_ref: approvalRef },
         });
         return membership;
       } catch (error) {

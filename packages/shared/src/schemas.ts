@@ -986,6 +986,7 @@ export const AddOrganizationMemberSchema = Type.Object(
   {
     user_id: Uuid(),
     role: OrganizationMemberRoleSchema,
+    approval_ref: Type.String({ minLength: 1, maxLength: 240 }),
   },
   { additionalProperties: false },
 );
@@ -995,6 +996,7 @@ export const UpdateOrganizationMemberSchema = Type.Object(
   {
     role: Type.Optional(OrganizationMemberRoleSchema),
     status: Type.Optional(OrganizationMemberStatusSchema),
+    approval_ref: Type.Optional(Type.String({ minLength: 1, maxLength: 240 })),
   },
   { additionalProperties: false, minProperties: 1 },
 );
@@ -1004,6 +1006,7 @@ export const GrantProjectMembershipSchema = Type.Object(
   {
     organization_member_id: Uuid(),
     role: ProjectMemberRoleSchema,
+    approval_ref: Type.String({ minLength: 1, maxLength: 240 }),
   },
   { additionalProperties: false },
 );

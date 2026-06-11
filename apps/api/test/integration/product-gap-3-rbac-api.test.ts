@@ -6,9 +6,10 @@ import { afterEach, describe, expect, it } from "vitest";
 import { buildApp, type BuiltApp } from "../../src/app.js";
 import { DEFAULT_PROJECT_ID, DEFAULT_USER_ID, loadEnv } from "../../src/config/env.js";
 import { createDb, createPool, runInProject, type Db } from "../../src/infrastructure/db/client.js";
-import { auditEvents, projectMemberships, projects, users } from "../../src/infrastructure/db/schema.js";
+import { auditEvents, organizationMembers, projectMemberships, projects, users } from "../../src/infrastructure/db/schema.js";
 
 const OTHER_PROJECT_ID = "00000000-0000-0000-0000-000000000099";
+const APPROVAL_REF = "approval://local/rbac-test";
 
 let built: BuiltApp | null = null;
 let app: FastifyInstance | null = null;
@@ -70,14 +71,14 @@ describe("Product Gap 3 Multi-tenant RBAC Backend MVP", () => {
     const member = await api.inject({
       method: "POST",
       url: `/api/rbac/organizations/${org.json().id}/members`,
-      payload: { user_id: user.id, role: "member" },
+      payload: { user_id: user.id, role: "member", approval_ref: APPROVAL_REF },
     });
     expect(member.statusCode).toBe(201);
 
     const membership = await api.inject({
       method: "POST",
       url: `/api/rbac/projects/${DEFAULT_PROJECT_ID}/memberships`,
-      payload: { organization_member_id: member.json().id, role: "editor" },
+      payload: { organization_member_id: member.json().id, role: "editor", approval_ref: APPROVAL_REF },
     });
     expect(membership.statusCode).toBe(201);
 
@@ -157,7 +158,7 @@ describe("Product Gap 3 Multi-tenant RBAC Backend MVP", () => {
     const added = await api.inject({
       method: "POST",
       url: `/api/rbac/organizations/${org.json().id}/members`,
-      payload: { user_id: user.id, role: "member" },
+      payload: { user_id: user.id, role: "member", approval_ref: APPROVAL_REF },
     });
     expect(added.statusCode).toBe(201);
     expect(added.json()).toMatchObject({ user_id: user.id, role: "member", status: "active" });
@@ -165,14 +166,14 @@ describe("Product Gap 3 Multi-tenant RBAC Backend MVP", () => {
     const duplicate = await api.inject({
       method: "POST",
       url: `/api/rbac/organizations/${org.json().id}/members`,
-      payload: { user_id: user.id, role: "viewer" },
+      payload: { user_id: user.id, role: "viewer", approval_ref: APPROVAL_REF },
     });
     expect(duplicate.statusCode).toBe(409);
 
     const updated = await api.inject({
       method: "PATCH",
       url: `/api/rbac/organization-members/${added.json().id}`,
-      payload: { role: "admin" },
+      payload: { role: "admin", approval_ref: APPROVAL_REF },
     });
     expect(updated.statusCode).toBe(200);
     expect(updated.json().role).toBe("admin");
@@ -191,6 +192,48 @@ describe("Product Gap 3 Multi-tenant RBAC Backend MVP", () => {
     ]);
   });
 
+  it("requires approval_ref for RBAC role assignments and role changes", async () => {
+    const api = await startApp();
+    const user = await createUser("Role Approval RBAC");
+    const org = await api.inject({
+      method: "POST",
+      url: "/api/rbac/organizations",
+      payload: { name: `Org ${randomUUID()}` },
+    });
+    expect(org.statusCode).toBe(201);
+
+    const addDenied = await api.inject({
+      method: "POST",
+      url: `/api/rbac/organizations/${org.json().id}/members`,
+      payload: { user_id: user.id, role: "member" },
+    });
+    expect(addDenied.statusCode).toBe(400);
+    expect(addDenied.json().error.message).toContain("approval_ref");
+
+    const [member] = await db!.insert(organizationMembers).values({
+      organizationId: org.json().id,
+      userId: user.id,
+      role: "member",
+      invitedBy: DEFAULT_USER_ID,
+    }).returning();
+
+    const updateDenied = await api.inject({
+      method: "PATCH",
+      url: `/api/rbac/organization-members/${member!.id}`,
+      payload: { role: "admin" },
+    });
+    expect(updateDenied.statusCode).toBe(400);
+    expect(updateDenied.json().error.message).toContain("approval_ref");
+
+    const grantDenied = await api.inject({
+      method: "POST",
+      url: `/api/rbac/projects/${DEFAULT_PROJECT_ID}/memberships`,
+      payload: { organization_member_id: member!.id, role: "editor" },
+    });
+    expect(grantDenied.statusCode).toBe(400);
+    expect(grantDenied.json().error.message).toContain("approval_ref");
+  });
+
   it("grants, checks and revokes project memberships", async () => {
     const api = await startApp();
     const user = await createUser();
@@ -203,14 +246,14 @@ describe("Product Gap 3 Multi-tenant RBAC Backend MVP", () => {
     const member = await api.inject({
       method: "POST",
       url: `/api/rbac/organizations/${org.json().id}/members`,
-      payload: { user_id: user.id, role: "viewer" },
+      payload: { user_id: user.id, role: "viewer", approval_ref: APPROVAL_REF },
     });
     expect(member.statusCode).toBe(201);
 
     const granted = await api.inject({
       method: "POST",
       url: `/api/rbac/projects/${DEFAULT_PROJECT_ID}/memberships`,
-      payload: { organization_member_id: member.json().id, role: "editor" },
+      payload: { organization_member_id: member.json().id, role: "editor", approval_ref: APPROVAL_REF },
     });
     expect(granted.statusCode).toBe(201);
     expect(granted.json()).toMatchObject({
@@ -230,7 +273,7 @@ describe("Product Gap 3 Multi-tenant RBAC Backend MVP", () => {
     const duplicateGrant = await api.inject({
       method: "POST",
       url: `/api/rbac/projects/${DEFAULT_PROJECT_ID}/memberships`,
-      payload: { organization_member_id: member.json().id, role: "viewer" },
+      payload: { organization_member_id: member.json().id, role: "viewer", approval_ref: APPROVAL_REF },
     });
     expect(duplicateGrant.statusCode).toBe(409);
 
@@ -267,7 +310,7 @@ describe("Product Gap 3 Multi-tenant RBAC Backend MVP", () => {
     const member = await api.inject({
       method: "POST",
       url: `/api/rbac/organizations/${org.json().id}/members`,
-      payload: { user_id: user.id, role: "member" },
+      payload: { user_id: user.id, role: "member", approval_ref: APPROVAL_REF },
     });
     expect(member.statusCode).toBe(201);
 
@@ -287,7 +330,7 @@ describe("Product Gap 3 Multi-tenant RBAC Backend MVP", () => {
     const grantDenied = await api.inject({
       method: "POST",
       url: `/api/rbac/projects/${otherProjectId}/memberships`,
-      payload: { organization_member_id: member.json().id, role: "editor" },
+      payload: { organization_member_id: member.json().id, role: "editor", approval_ref: APPROVAL_REF },
     });
     expect(grantDenied.statusCode).toBe(404);
 

@@ -124,7 +124,7 @@ MCP 与 Publisher 真实入口还需分别开启：
 | agent adapter registration guard | Web `/ops/agent-registration-guard` 只读展示 registration readiness、disabled fixture、descriptor status、config/readiness gates、missing requirements 与 fail-closed error，不注册真实 adapter、不启动 worker、不执行 provider 请求或写 execution 表 |
 | secret resolver readiness | Web `/ops/secret-resolver` 只读展示 resolver kind、available、allowed ref schemes、supported purposes、env/network/process boundary 与 runtime/adapter mode，不读取或返回 secret material、不写 execution/outbox 表 |
 | provider HTTP boundary | Web `/ops/provider-http-boundary` 只读展示 fake HTTP client、network/real HTTP disabled、abort/timeout/request-id/status-code mapping、secret material boundary、allowed adapter modes、runtime/adapter mode 与 blocked reason，不执行真实网络请求、不注入 secret material、不写 execution/outbox 表 |
-| rbac management | Web `/rbac` 支持 organization member 添加/角色更新/停用与默认项目 membership 授权/撤销，相关变更写入 audit_events，项目级 RBAC 端点已有跨项目拒绝回归矩阵；不接 auth/session、不替代全局业务 API enforcement 或角色变更审批策略 |
+| rbac management | Web `/rbac` 支持 organization member 添加/角色更新/停用与默认项目 membership 授权/撤销，角色变更要求 `approval_ref`，相关变更写入 audit_events，项目级 RBAC 端点已有跨项目拒绝回归矩阵；不接 auth/session、不替代全局业务 API enforcement |
 | evaluation dashboard | Web `/evaluations` 只读展示 analytics、low-quality results 与 result evaluations，不触发 create/evaluate-rule/batch rule evaluation |
 | mcp marketplace | Web `/mcp/marketplace` 支持本地 marketplace entry 安装、installation 禁用与卸载，并展示 project installations 与 server binding；不触发外部发现、hot-load、真实 transport 或 tool invocation |
 | rollback | 已演练 env 级关闭 runtime、network、writeback executor |
