@@ -90,7 +90,7 @@ Content Factory 当前处于 **Final RC / production candidate** 收口阶段：
 | API 契约漂移 | 已更新 | `api-overview.md` 区分后端已补齐 MVP API 与仍未完成的产品化/UI/真实启用 |
 | 部署指南 | 已新增 | `11-deployment/deployment-guide.md` 记录最小拓扑、runtime gate、发布验证与回滚边界 |
 | 前端导航占位 | 已更新 | 已交付入口从后续占位移入真实导航；剩余未接入产品路线在本文“下一步建议”中维护 |
-| Sprint-2 审查文档 | 已识别，待提交 | 7 份历史审查/计划文档属于审计证据，应随本次收口提交一并纳入版本控制 |
+| Sprint-2 审查文档 | 已提交 | 历史审查/计划文档已作为审计证据纳入版本控制，`docs/reviews` 当前由 Git 跟踪 |
 
 ## 6. 禁止事项
 
