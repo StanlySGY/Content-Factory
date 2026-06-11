@@ -1,12 +1,18 @@
-import type { CreateExecutionResultEvaluationBody, RegressionEvaluationRunBody } from "@cf/shared";
+import type {
+  CreateExecutionResultEvaluationBody,
+  EvaluationModelComparisonQuery,
+  RegressionEvaluationRunBody,
+} from "@cf/shared";
 import { ConflictError, NotFoundError, ValidationError } from "../domain/errors.js";
 import {
   buildRuleEvaluation,
+  compareEvaluationsByModel,
   listLowQualityEvaluations,
   normalizeEvaluationTags,
   summarizeEvaluationAnalytics,
   summarizeEvaluations,
   type ExecutionEvaluationAnalytics,
+  type ExecutionEvaluationModelComparison,
   validateExecutionResultEvaluation,
   type ExecutionResultEvaluationSummary,
   type LowQualityEvaluationList,
@@ -120,6 +126,13 @@ export class ExecutionResultEvaluationService {
 
   async analytics(): Promise<ExecutionEvaluationAnalytics> {
     return summarizeEvaluationAnalytics(await evaluationRepo.listAllEvaluations(this.db));
+  }
+
+  async modelComparison(query: EvaluationModelComparisonQuery = {}): Promise<ExecutionEvaluationModelComparison> {
+    return compareEvaluationsByModel(await evaluationRepo.listAllEvaluations(this.db), {
+      modelPrefix: query.model_prefix,
+      limit: query.limit,
+    });
   }
 
   async listLowQuality(threshold = 60, limit = 20): Promise<LowQualityEvaluationList> {

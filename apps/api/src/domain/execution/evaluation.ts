@@ -44,6 +44,29 @@ export interface ExecutionEvaluationAnalytics {
   latestEvaluatedAt: Date | null;
 }
 
+export interface ExecutionEvaluationModelComparisonItem {
+  model: string;
+  evaluationCount: number;
+  resultCount: number;
+  jobCount: number;
+  averageQualityScore: number;
+  averageCostScore: number;
+  averageLatencyScore: number;
+  compositeScore: number;
+  latestEvaluatedAt: Date;
+}
+
+export interface ExecutionEvaluationModelComparison {
+  mode: "evaluation_model_comparison";
+  modelTagPrefix: typeof MODEL_TAG_PREFIX;
+  modelPrefix: string | null;
+  comparedModelCount: number;
+  unclassifiedEvaluationCount: number;
+  llmCallsPerformed: false;
+  writesPerformed: false;
+  items: ExecutionEvaluationModelComparisonItem[];
+}
+
 export interface LowQualityEvaluationItem {
   evaluationId: string;
   executionResultId: string;
@@ -63,6 +86,8 @@ export interface LowQualityEvaluationList {
   limit: number;
   items: LowQualityEvaluationItem[];
 }
+
+const MODEL_TAG_PREFIX = "model:";
 
 export function validateExecutionResultEvaluation(input: ExecutionResultEvaluationInput): void {
   if (!EXECUTION_RESULT_EVALUATOR_TYPES.includes(input.evaluator_type as ExecutionResultEvaluatorType))
@@ -138,6 +163,54 @@ export function summarizeEvaluationAnalytics(
   };
 }
 
+export function compareEvaluationsByModel(
+  rows: Array<{
+    executionResultId: string;
+    executionJobId: string;
+    qualityScore: number;
+    costScore: number;
+    latencyScore: number;
+    tags: string[];
+    createdAt: Date;
+  }>,
+  options: { modelPrefix?: string; limit?: number } = {},
+): ExecutionEvaluationModelComparison {
+  const modelPrefix = normalizeModelPrefix(options.modelPrefix);
+  const groups = new Map<string, typeof rows>();
+  let unclassifiedEvaluationCount = 0;
+
+  for (const row of rows) {
+    const model = extractModel(row.tags);
+    if (!model) {
+      if (!modelPrefix) unclassifiedEvaluationCount += 1;
+      continue;
+    }
+    if (modelPrefix && !model.startsWith(modelPrefix)) continue;
+    const group = groups.get(model) ?? [];
+    group.push(row);
+    groups.set(model, group);
+  }
+
+  const items = [...groups.entries()]
+    .map(([model, group]) => summarizeModelGroup(model, group))
+    .sort((left, right) =>
+      right.compositeScore - left.compositeScore ||
+      right.averageQualityScore - left.averageQualityScore ||
+      left.model.localeCompare(right.model),
+    );
+
+  return {
+    mode: "evaluation_model_comparison",
+    modelTagPrefix: MODEL_TAG_PREFIX,
+    modelPrefix,
+    comparedModelCount: items.length,
+    unclassifiedEvaluationCount,
+    llmCallsPerformed: false,
+    writesPerformed: false,
+    items: items.slice(0, options.limit ?? 20),
+  };
+}
+
 export function listLowQualityEvaluations(
   rows: Array<{
     id: string;
@@ -180,6 +253,44 @@ export function listLowQualityEvaluations(
 
 export function normalizeEvaluationTags(tags: string[] | undefined): string[] {
   return [...new Set((tags ?? []).map((tag) => tag.trim()).filter(Boolean))];
+}
+
+function normalizeModelPrefix(modelPrefix: string | undefined): string | null {
+  const normalized = modelPrefix?.trim();
+  return normalized ? normalized : null;
+}
+
+function extractModel(tags: string[]): string | null {
+  const tag = tags.find((item) => item.startsWith(MODEL_TAG_PREFIX));
+  const model = tag?.slice(MODEL_TAG_PREFIX.length).trim();
+  return model ? model : null;
+}
+
+function summarizeModelGroup(
+  model: string,
+  rows: Array<{
+    executionResultId: string;
+    executionJobId: string;
+    qualityScore: number;
+    costScore: number;
+    latencyScore: number;
+    createdAt: Date;
+  }>,
+): ExecutionEvaluationModelComparisonItem {
+  const resultIds = new Set(rows.map((row) => row.executionResultId));
+  const jobIds = new Set(rows.map((row) => row.executionJobId));
+  const latest = rows.reduce((current, row) => row.createdAt > current.createdAt ? row : current, rows[0]!);
+  return {
+    model,
+    evaluationCount: rows.length,
+    resultCount: resultIds.size,
+    jobCount: jobIds.size,
+    averageQualityScore: average(rows.map((row) => row.qualityScore)),
+    averageCostScore: average(rows.map((row) => row.costScore)),
+    averageLatencyScore: average(rows.map((row) => row.latencyScore)),
+    compositeScore: average(rows.map((row) => (row.qualityScore + row.costScore + row.latencyScore) / 3)),
+    latestEvaluatedAt: latest.createdAt,
+  };
 }
 
 export function summarizeEvaluations(

@@ -93,7 +93,7 @@ MCP 与 Publisher 真实入口还需分别开启：
 23. 打开 Web `/ops/provider-http-boundary`，确认 provider HTTP boundary 只读展示 fake HTTP client、network/real HTTP disabled、HTTP mapping、secret material boundary、allowed adapter modes、runtime/adapter mode 与 blocked reason，且未执行真实网络请求、未注入 secret material、未写 execution/outbox 表。
 24. 打开 Web `/ops/secret-injection`，确认 secret injection preflight 只读展示 resolver、secret store/injection readiness、allowed ref schemes、supported purposes、persistence boundary、audit metadata 与 runtime gate，且未读取 secret material、未注入 header、未执行 transport 或写操作。
 25. 打开 Web `/rbac`，确认 organization members 可添加、更新角色、停用，默认项目 memberships 可授权/撤销，相关变更写入 audit_events；后端 header-based session context 与全局项目业务 API enforcement 已接入，但仍未接生产登录态 / IdP。
-26. 打开 Web `/evaluations`，确认 evaluation analytics、low-quality results 与 result evaluations 只读展示，且未触发 create evaluation、`evaluate-rule` 或 `regression-run`。
+26. 打开 Web `/evaluations`，确认 evaluation analytics、low-quality results 与 result evaluations 只读展示；调用 `GET /api/execution/evaluations/model-comparison` 可按 `model:<id>` tag 聚合模型分数，且未触发 create evaluation、`evaluate-rule`、`regression-run` 或 LLM judge。
 27. 打开 Web `/mcp/marketplace`，确认 marketplace entries、project installations 与 server binding 可见，且安装、禁用、卸载只修改本地 installation 控制面记录，不触发 hot-load、真实 transport 或 tool invocation。
 28. 若进入真实启用，按 `production-candidate-next-actions.md` 选择单一路线逐项开启 gate，不混开 Agent / MCP / Publisher / writeback。
 
@@ -119,6 +119,7 @@ MCP 与 Publisher 真实入口还需分别开启：
 | mcp management | Web `/mcp` 只读展示 MCP servers、selected server tools 与 real-runtime readiness，不触发 health-check、mock invoke、安装/卸载或真实 transport |
 | mcp invocation ledger | Web `/mcp/invocations` 只读展示 MCP tool invocation status、caller、risk、duration 与输入/输出摘要，不触发 mock invoke、health-check、真实 transport、replay 或写操作 |
 | execution result ledger | Web `/execution/results` 只读展示 execution job results、attempt snapshots 与 result summary，不触发 tick/retry/evaluate-rule/writeback/replay 或写操作 |
+| evaluation model comparison | `GET /api/execution/evaluations/model-comparison` 只读聚合已有 evaluation tags 中的 `model:<id>` 维度，返回 quality/cost/latency/composite 对比；不触发评估、不调用 LLM、不写 execution 表 |
 | execution outbox ledger | Web `/execution/outbox` 只读展示 outbox events、processed/error、retry_count、claim 状态与 payload 摘要，不触发 process-batch/process event/relay/retry/tick/writeback/replay 或写操作 |
 | execution writeback ledger | Web `/execution/writebacks` 只读展示 execution writebacks 的 status、subject、idempotency_key、plan、error 与时间戳，不触发 guard/transaction-plan/dry-run/apply-guard/transaction-prototype/retry/replay 或写操作 |
 | provider quota/cost preflight | Web `/ops/provider-quota` 只读展示 quota policy、distributed quota、cost metrics、token usage、billing disabled 与 runtime/network gate，不消费 quota、不执行 provider 请求、不触发 staging smoke 或写操作 |

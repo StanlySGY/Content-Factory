@@ -31,6 +31,7 @@ import type {
   ExecutionWritebackTransactionPrototypeReadinessResponse,
   ExecutionMonitoringReadinessResponse,
   ExecutionEvaluationAnalyticsDTO,
+  EvaluationModelComparisonResponse,
   ExecutionResultEvaluationDTO,
   ExecutionResultEvaluationSummaryDTO,
   ExecutionResultSummaryDTO,
@@ -114,6 +115,7 @@ import type {
 import type { ExecutionResultSummary } from "../domain/execution/result.js";
 import type {
   ExecutionEvaluationAnalytics,
+  ExecutionEvaluationModelComparison,
   ExecutionResultEvaluationSummary,
   LowQualityEvaluationList,
 } from "../domain/execution/evaluation.js";
@@ -1193,6 +1195,31 @@ export function toExecutionEvaluationAnalyticsDTO(
     low_quality_count: analytics.lowQualityCount,
     evaluator_type_counts: analytics.evaluatorTypeCounts,
     latest_evaluated_at: iso(analytics.latestEvaluatedAt),
+  };
+}
+
+export function toEvaluationModelComparisonResponse(
+  input: ExecutionEvaluationModelComparison,
+): EvaluationModelComparisonResponse {
+  return {
+    mode: input.mode,
+    model_tag_prefix: input.modelTagPrefix,
+    model_prefix: input.modelPrefix,
+    compared_model_count: input.comparedModelCount,
+    unclassified_evaluation_count: input.unclassifiedEvaluationCount,
+    llm_calls_performed: input.llmCallsPerformed,
+    writes_performed: input.writesPerformed,
+    items: input.items.map((item) => ({
+      model: item.model,
+      evaluation_count: item.evaluationCount,
+      result_count: item.resultCount,
+      job_count: item.jobCount,
+      average_quality_score: item.averageQualityScore,
+      average_cost_score: item.averageCostScore,
+      average_latency_score: item.averageLatencyScore,
+      composite_score: item.compositeScore,
+      latest_evaluated_at: item.latestEvaluatedAt.toISOString(),
+    })),
   };
 }
 

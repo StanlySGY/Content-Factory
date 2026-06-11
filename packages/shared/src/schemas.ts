@@ -1305,6 +1305,45 @@ export const ExecutionEvaluationAnalyticsSchema = Type.Object(
 );
 export type ExecutionEvaluationAnalyticsDTO = Static<typeof ExecutionEvaluationAnalyticsSchema>;
 
+export const EvaluationModelComparisonQuerySchema = Type.Object(
+  {
+    model_prefix: Type.Optional(Type.String({ minLength: 1, maxLength: 120 })),
+    limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
+  },
+  { additionalProperties: false },
+);
+export type EvaluationModelComparisonQuery = Static<typeof EvaluationModelComparisonQuerySchema>;
+
+export const EvaluationModelComparisonItemSchema = Type.Object(
+  {
+    model: Type.String(),
+    evaluation_count: Type.Integer(),
+    result_count: Type.Integer(),
+    job_count: Type.Integer(),
+    average_quality_score: Type.Number(),
+    average_cost_score: Type.Number(),
+    average_latency_score: Type.Number(),
+    composite_score: Type.Number(),
+    latest_evaluated_at: Type.String({ format: "date-time" }),
+  },
+  { additionalProperties: false },
+);
+
+export const EvaluationModelComparisonResponseSchema = Type.Object(
+  {
+    mode: Type.Literal("evaluation_model_comparison"),
+    model_tag_prefix: Type.Literal("model:"),
+    model_prefix: Nullable(Type.String()),
+    compared_model_count: Type.Integer(),
+    unclassified_evaluation_count: Type.Integer(),
+    llm_calls_performed: Type.Boolean(),
+    writes_performed: Type.Boolean(),
+    items: Type.Array(EvaluationModelComparisonItemSchema),
+  },
+  { additionalProperties: false },
+);
+export type EvaluationModelComparisonResponse = Static<typeof EvaluationModelComparisonResponseSchema>;
+
 export const LowQualityEvaluationItemSchema = Type.Object(
   {
     evaluation_id: Uuid(),
