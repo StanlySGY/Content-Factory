@@ -6,6 +6,11 @@ import type {
   RbacProjectAccessResponse,
   UpdateOrganizationMemberBody,
 } from "@cf/shared";
+import {
+  AUDIT_ACTIONS,
+  AUDIT_SUBJECT_ORGANIZATION_MEMBER,
+  AUDIT_SUBJECT_PROJECT_MEMBERSHIP,
+} from "@cf/shared";
 import { ConflictError, NotFoundError, ValidationError } from "../domain/errors.js";
 import {
   assertOrganizationMemberActive,
@@ -24,6 +29,7 @@ import type {
   ProjectMembershipRow,
 } from "../infrastructure/db/schema.js";
 import * as repo from "../infrastructure/repositories/rbac.repository.js";
+import { recordAudit } from "./audit.service.js";
 import type { RequestContext } from "./task.service.js";
 
 const isUniqueViolation = (error: unknown): boolean => (error as { code?: string }).code === "23505";
@@ -68,11 +74,23 @@ export class RbacService {
     if (!org) throw new NotFoundError(`organization ${organizationId} not found`);
     if (!(await repo.userExists(this.db, input.user_id))) throw new NotFoundError(`user ${input.user_id} not found`);
     try {
-      return await repo.createOrganizationMember(this.db, {
-        organization_id: organizationId,
-        user_id: input.user_id,
-        role: input.role,
-        invited_by: actorId,
+      return await runInProject(this.db, ctx.projectId, async (tx) => {
+        const member = await repo.createOrganizationMember(tx, {
+          organization_id: organizationId,
+          user_id: input.user_id,
+          role: input.role,
+          invited_by: actorId,
+        });
+        await recordAudit(tx, {
+          projectId: ctx.projectId,
+          actorId,
+          subjectType: AUDIT_SUBJECT_ORGANIZATION_MEMBER,
+          subjectId: member.id,
+          action: AUDIT_ACTIONS.organizationMemberAdded,
+          after: this.organizationMemberAudit(member),
+          metadata: { organization_id: organizationId },
+        });
+        return member;
       });
     } catch (error) {
       if (isUniqueViolation(error)) throw new ConflictError("organization member already exists");
@@ -82,20 +100,51 @@ export class RbacService {
   }
 
   async updateOrganizationMember(
+    ctx: RequestContext,
     id: string,
     input: UpdateOrganizationMemberBody,
   ): Promise<OrganizationMemberRow> {
     if (input.role !== undefined) validateOrganizationMemberRole(input.role);
     if (input.status !== undefined) validateOrganizationMemberStatus(input.status);
-    const current = await repo.getOrganizationMember(this.db, id);
-    if (!current) throw new NotFoundError(`organization member ${id} not found`);
-    const updated = await repo.updateOrganizationMember(this.db, id, input);
-    if (!updated) throw new NotFoundError(`organization member ${id} not found`);
-    return updated;
+    const actorId = this.requireActor(ctx);
+    return runInProject(this.db, ctx.projectId, async (tx) => {
+      const current = await repo.getOrganizationMember(tx, id);
+      if (!current) throw new NotFoundError(`organization member ${id} not found`);
+      const updated = await repo.updateOrganizationMember(tx, id, input);
+      if (!updated) throw new NotFoundError(`organization member ${id} not found`);
+      await recordAudit(tx, {
+        projectId: ctx.projectId,
+        actorId,
+        subjectType: AUDIT_SUBJECT_ORGANIZATION_MEMBER,
+        subjectId: id,
+        action: AUDIT_ACTIONS.organizationMemberUpdated,
+        before: this.organizationMemberAudit(current),
+        after: this.organizationMemberAudit(updated),
+        metadata: { organization_id: updated.organizationId },
+      });
+      return updated;
+    });
   }
 
-  deactivateOrganizationMember(id: string): Promise<OrganizationMemberRow> {
-    return this.updateOrganizationMember(id, { status: "inactive" });
+  deactivateOrganizationMember(ctx: RequestContext, id: string): Promise<OrganizationMemberRow> {
+    const actorId = this.requireActor(ctx);
+    return runInProject(this.db, ctx.projectId, async (tx) => {
+      const current = await repo.getOrganizationMember(tx, id);
+      if (!current) throw new NotFoundError(`organization member ${id} not found`);
+      const updated = await repo.updateOrganizationMember(tx, id, { status: "inactive" });
+      if (!updated) throw new NotFoundError(`organization member ${id} not found`);
+      await recordAudit(tx, {
+        projectId: ctx.projectId,
+        actorId,
+        subjectType: AUDIT_SUBJECT_ORGANIZATION_MEMBER,
+        subjectId: id,
+        action: AUDIT_ACTIONS.organizationMemberDeactivated,
+        before: this.organizationMemberAudit(current),
+        after: this.organizationMemberAudit(updated),
+        metadata: { organization_id: updated.organizationId },
+      });
+      return updated;
+    });
   }
 
   async listOrganizationMembers(organizationId: string): Promise<OrganizationMemberRow[]> {
@@ -118,12 +167,22 @@ export class RbacService {
       if (!member) throw new NotFoundError(`organization member ${input.organization_member_id} not found`);
       assertOrganizationMemberActive(member.status);
       try {
-        return await repo.createProjectMembership(tx, {
+        const membership = await repo.createProjectMembership(tx, {
           project_id: projectId,
           organization_member_id: input.organization_member_id,
           role: input.role,
           granted_by: actorId,
         });
+        await recordAudit(tx, {
+          projectId: ctx.projectId,
+          actorId,
+          subjectType: AUDIT_SUBJECT_PROJECT_MEMBERSHIP,
+          subjectId: membership.id,
+          action: AUDIT_ACTIONS.projectMembershipGranted,
+          after: this.projectMembershipAudit(membership),
+          metadata: { organization_member_id: input.organization_member_id },
+        });
+        return membership;
       } catch (error) {
         if (isUniqueViolation(error)) throw new ConflictError("project membership already exists");
         if (isForeignKeyViolation(error)) throw new NotFoundError("project membership reference not found");
@@ -140,13 +199,27 @@ export class RbacService {
     });
   }
 
-  async revokeProjectMembership(id: string): Promise<ProjectMembershipRow> {
-    const current = await repo.getProjectMembership(this.db, id);
-    if (!current) throw new NotFoundError(`project membership ${id} not found`);
-    assertProjectMembershipCanRevoke(current.status);
-    const revoked = await repo.revokeProjectMembership(this.db, id);
-    if (!revoked) throw new ConflictError("project membership is already revoked");
-    return revoked;
+  async revokeProjectMembership(ctx: RequestContext, id: string): Promise<ProjectMembershipRow> {
+    const actorId = this.requireActor(ctx);
+    return runInProject(this.db, ctx.projectId, async (tx) => {
+      const current = await repo.getProjectMembership(tx, id);
+      if (!current || current.projectId !== ctx.projectId)
+        throw new NotFoundError(`project membership ${id} not found`);
+      assertProjectMembershipCanRevoke(current.status);
+      const revoked = await repo.revokeProjectMembership(tx, id);
+      if (!revoked) throw new ConflictError("project membership is already revoked");
+      await recordAudit(tx, {
+        projectId: ctx.projectId,
+        actorId,
+        subjectType: AUDIT_SUBJECT_PROJECT_MEMBERSHIP,
+        subjectId: id,
+        action: AUDIT_ACTIONS.projectMembershipRevoked,
+        before: this.projectMembershipAudit(current),
+        after: this.projectMembershipAudit(revoked),
+        metadata: { organization_member_id: revoked.organizationMemberId },
+      });
+      return revoked;
+    });
   }
 
   async checkProjectAccess(
@@ -168,5 +241,23 @@ export class RbacService {
   private requireActor(ctx: RequestContext): string {
     if (!ctx.actorId) throw new ValidationError("rbac operation requires an actor");
     return ctx.actorId;
+  }
+
+  private organizationMemberAudit(member: OrganizationMemberRow): Record<string, unknown> {
+    return {
+      organization_id: member.organizationId,
+      user_id: member.userId,
+      role: member.role,
+      status: member.status,
+    };
+  }
+
+  private projectMembershipAudit(membership: ProjectMembershipRow): Record<string, unknown> {
+    return {
+      project_id: membership.projectId,
+      organization_member_id: membership.organizationMemberId,
+      role: membership.role,
+      status: membership.status,
+    };
   }
 }

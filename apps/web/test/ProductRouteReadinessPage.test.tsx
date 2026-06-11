@@ -63,8 +63,9 @@ const readiness: ProductRouteReadinessResponse = {
       delivered_capabilities: [
         "RBAC management UI with member and project membership controls",
         "RBAC member and project membership mutation UI",
+        "RBAC member and project membership audit events",
       ],
-      missing_product_requirements: ["auth and session integration", "approval and audit policy for role mutations"],
+      missing_product_requirements: ["auth and session integration", "approval policy for role mutations"],
       safety_boundaries: ["current UI only calls explicit RBAC control-plane mutation APIs"],
     },
     {

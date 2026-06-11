@@ -91,14 +91,18 @@ export const rbacRoutes: FastifyPluginAsyncTypebox<RbacRoutesOptions> = async (
       },
     },
     async (request) =>
-      toOrganizationMemberDTO(await rbacService.updateOrganizationMember(request.params.id, request.body)),
+      toOrganizationMemberDTO(
+        await rbacService.updateOrganizationMember(buildContext(env, request), request.params.id, request.body),
+      ),
   );
 
   app.post(
     "/api/rbac/organization-members/:id/deactivate",
     { schema: { params: IdParamSchema, response: { 200: OrganizationMemberResponseSchema } } },
     async (request) =>
-      toOrganizationMemberDTO(await rbacService.deactivateOrganizationMember(request.params.id)),
+      toOrganizationMemberDTO(
+        await rbacService.deactivateOrganizationMember(buildContext(env, request), request.params.id),
+      ),
   );
 
   app.get(
@@ -133,7 +137,7 @@ export const rbacRoutes: FastifyPluginAsyncTypebox<RbacRoutesOptions> = async (
     "/api/rbac/project-memberships/:id/revoke",
     { schema: { params: IdParamSchema, response: { 200: ProjectMembershipResponseSchema } } },
     async (request) =>
-      toProjectMembershipDTO(await rbacService.revokeProjectMembership(request.params.id)),
+      toProjectMembershipDTO(await rbacService.revokeProjectMembership(buildContext(env, request), request.params.id)),
   );
 
   app.get(

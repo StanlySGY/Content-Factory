@@ -1,11 +1,12 @@
 import { randomUUID } from "node:crypto";
 import type { FastifyInstance } from "fastify";
 import type pg from "pg";
+import { and, eq } from "drizzle-orm";
 import { afterEach, describe, expect, it } from "vitest";
 import { buildApp, type BuiltApp } from "../../src/app.js";
 import { DEFAULT_PROJECT_ID, DEFAULT_USER_ID, loadEnv } from "../../src/config/env.js";
-import { createDb, createPool, type Db } from "../../src/infrastructure/db/client.js";
-import { users } from "../../src/infrastructure/db/schema.js";
+import { createDb, createPool, runInProject, type Db } from "../../src/infrastructure/db/client.js";
+import { auditEvents, users } from "../../src/infrastructure/db/schema.js";
 
 let built: BuiltApp | null = null;
 let app: FastifyInstance | null = null;
@@ -36,6 +37,16 @@ async function createUser(name = "Member") {
     status: "active",
   }).returning();
   return user!;
+}
+
+async function auditActionsFor(subjectType: string, subjectId: string) {
+  return runInProject(db!, DEFAULT_PROJECT_ID, async (tx) =>
+    (await tx
+      .select()
+      .from(auditEvents)
+      .where(and(eq(auditEvents.subjectType, subjectType), eq(auditEvents.subjectId, subjectId)))
+      .orderBy(auditEvents.sequenceNo)).map((event) => event.action),
+  );
 }
 
 describe("Product Gap 3 Multi-tenant RBAC Backend MVP", () => {
@@ -165,6 +176,12 @@ describe("Product Gap 3 Multi-tenant RBAC Backend MVP", () => {
     });
     expect(deactivated.statusCode).toBe(200);
     expect(deactivated.json().status).toBe("inactive");
+
+    await expect(auditActionsFor("organization_member", added.json().id)).resolves.toEqual([
+      "organization_member.added",
+      "organization_member.updated",
+      "organization_member.deactivated",
+    ]);
   });
 
   it("grants, checks and revokes project memberships", async () => {
@@ -216,6 +233,11 @@ describe("Product Gap 3 Multi-tenant RBAC Backend MVP", () => {
     });
     expect(revoked.statusCode).toBe(200);
     expect(revoked.json().status).toBe("revoked");
+
+    await expect(auditActionsFor("project_membership", granted.json().id)).resolves.toEqual([
+      "project_membership.granted",
+      "project_membership.revoked",
+    ]);
 
     const denied = await api.inject({
       method: "GET",

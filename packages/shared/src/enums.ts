@@ -33,6 +33,8 @@ export const AUDIT_SUBJECT_AGENT_SESSION = "agent_session" as const;
 export const AUDIT_SUBJECT_MCP_SERVER = "mcp_server" as const;
 export const AUDIT_SUBJECT_MCP_TOOL = "mcp_tool" as const;
 export const AUDIT_SUBJECT_TOOL_INVOCATION = "tool_invocation" as const;
+export const AUDIT_SUBJECT_ORGANIZATION_MEMBER = "organization_member" as const;
+export const AUDIT_SUBJECT_PROJECT_MEMBERSHIP = "project_membership" as const;
 
 /** 审计动作（S1 + S2 工作流引擎 + S3 评审；仅追加，不改既有值） */
 export const AUDIT_ACTIONS = {
@@ -64,6 +66,12 @@ export const AUDIT_ACTIONS = {
   mcpToolCreated: "mcp_tool.created",
   mcpToolUpdated: "mcp_tool.updated",
   toolInvocationCreated: "tool_invocation.created",
+  // ── RBAC 管理面 ──
+  organizationMemberAdded: "organization_member.added",
+  organizationMemberUpdated: "organization_member.updated",
+  organizationMemberDeactivated: "organization_member.deactivated",
+  projectMembershipGranted: "project_membership.granted",
+  projectMembershipRevoked: "project_membership.revoked",
 } as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];
 

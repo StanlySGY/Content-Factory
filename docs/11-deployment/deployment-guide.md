@@ -91,7 +91,7 @@ MCP 与 Publisher 真实入口还需分别开启：
 21. 打开 Web `/ops/secret-resolver`，确认 secret resolver readiness 只读展示 resolver kind、available、allowed ref schemes、supported purposes、env/network/process boundary 与 runtime/adapter mode，且未读取或返回 secret material、未写 execution/outbox 表。
 22. 打开 Web `/ops/provider-http-boundary`，确认 provider HTTP boundary 只读展示 fake HTTP client、network/real HTTP disabled、HTTP mapping、secret material boundary、allowed adapter modes、runtime/adapter mode 与 blocked reason，且未执行真实网络请求、未注入 secret material、未写 execution/outbox 表。
 23. 打开 Web `/ops/secret-injection`，确认 secret injection preflight 只读展示 resolver、secret store/injection readiness、allowed ref schemes、supported purposes、persistence boundary、audit metadata 与 runtime gate，且未读取 secret material、未注入 header、未执行 transport 或写操作。
-24. 打开 Web `/rbac`，确认 organization members 可添加、更新角色、停用，默认项目 memberships 可授权/撤销，且未接入 auth/session 或全局业务 API enforcement。
+24. 打开 Web `/rbac`，确认 organization members 可添加、更新角色、停用，默认项目 memberships 可授权/撤销，相关变更写入 audit_events，且未接入 auth/session 或全局业务 API enforcement。
 25. 打开 Web `/evaluations`，确认 evaluation analytics、low-quality results 与 result evaluations 只读展示，且未触发 create evaluation 或 rule runner。
 26. 打开 Web `/mcp/marketplace`，确认 marketplace entries、project installations 与 server binding 可见，且安装、禁用、卸载只修改本地 installation 控制面记录，不触发 hot-load、真实 transport 或 tool invocation。
 27. 若进入真实启用，按 `production-candidate-next-actions.md` 选择单一路线逐项开启 gate，不混开 Agent / MCP / Publisher / writeback。
@@ -124,7 +124,7 @@ MCP 与 Publisher 真实入口还需分别开启：
 | agent adapter registration guard | Web `/ops/agent-registration-guard` 只读展示 registration readiness、disabled fixture、descriptor status、config/readiness gates、missing requirements 与 fail-closed error，不注册真实 adapter、不启动 worker、不执行 provider 请求或写 execution 表 |
 | secret resolver readiness | Web `/ops/secret-resolver` 只读展示 resolver kind、available、allowed ref schemes、supported purposes、env/network/process boundary 与 runtime/adapter mode，不读取或返回 secret material、不写 execution/outbox 表 |
 | provider HTTP boundary | Web `/ops/provider-http-boundary` 只读展示 fake HTTP client、network/real HTTP disabled、abort/timeout/request-id/status-code mapping、secret material boundary、allowed adapter modes、runtime/adapter mode 与 blocked reason，不执行真实网络请求、不注入 secret material、不写 execution/outbox 表 |
-| rbac management | Web `/rbac` 支持 organization member 添加/角色更新/停用与默认项目 membership 授权/撤销；不接 auth/session、不替代全局业务 API enforcement 或角色变更审批/审计策略 |
+| rbac management | Web `/rbac` 支持 organization member 添加/角色更新/停用与默认项目 membership 授权/撤销，相关变更写入 audit_events；不接 auth/session、不替代全局业务 API enforcement 或角色变更审批策略 |
 | evaluation dashboard | Web `/evaluations` 只读展示 analytics、low-quality results 与 result evaluations，不触发 create/evaluate-rule/batch rule evaluation |
 | mcp marketplace | Web `/mcp/marketplace` 支持本地 marketplace entry 安装、installation 禁用与卸载，并展示 project installations 与 server binding；不触发外部发现、hot-load、真实 transport 或 tool invocation |
 | rollback | 已演练 env 级关闭 runtime、network、writeback executor |
