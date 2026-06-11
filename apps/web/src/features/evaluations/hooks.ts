@@ -1,8 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
+import type { EvaluationModelComparisonQuery } from "@cf/shared";
 import { api, type ListLowQualityEvaluationsQuery } from "../../lib/api.js";
 
 export const DEFAULT_LOW_QUALITY_QUERY: Required<ListLowQualityEvaluationsQuery> = {
   threshold: 60,
+  limit: 10,
+};
+
+export const DEFAULT_MODEL_COMPARISON_QUERY: Required<Pick<EvaluationModelComparisonQuery, "limit">> = {
   limit: 10,
 };
 
@@ -14,14 +19,16 @@ export function useEvaluationDashboard() {
       "dashboard",
       DEFAULT_LOW_QUALITY_QUERY.threshold,
       DEFAULT_LOW_QUALITY_QUERY.limit,
+      DEFAULT_MODEL_COMPARISON_QUERY.limit,
     ],
     queryFn: async () => {
-      const [analytics, lowQuality] = await Promise.all([
+      const [analytics, lowQuality, modelComparison] = await Promise.all([
         api.getExecutionEvaluationAnalytics(),
         api.listLowQualityEvaluations(DEFAULT_LOW_QUALITY_QUERY),
+        api.getEvaluationModelComparison(DEFAULT_MODEL_COMPARISON_QUERY),
       ]);
 
-      return { analytics, lowQuality };
+      return { analytics, lowQuality, modelComparison };
     },
   });
 }

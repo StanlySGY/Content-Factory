@@ -21,6 +21,8 @@ import type {
   CreateTaskBody,
   CreateWorkflowBody,
   EditorStateDTO,
+  EvaluationModelComparisonQuery,
+  EvaluationModelComparisonResponse,
   ExecutionMonitoringReadinessResponse,
   ExecutionEvaluationAnalyticsDTO,
   ExecutionJobDTO,
@@ -255,6 +257,11 @@ export const api = {
   // ── Agent Evaluation Dashboard（只读看板）──
   getExecutionEvaluationAnalytics: () =>
     request<ExecutionEvaluationAnalyticsDTO>("GET", "/execution/evaluations/analytics"),
+  getEvaluationModelComparison: (q: EvaluationModelComparisonQuery = {}) =>
+    request<EvaluationModelComparisonResponse>(
+      "GET",
+      `/execution/evaluations/model-comparison${toQuery(q)}`,
+    ),
   listLowQualityEvaluations: (q: ListLowQualityEvaluationsQuery = {}) =>
     request<LowQualityEvaluationsResponse>(
       "GET",

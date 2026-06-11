@@ -1310,13 +1310,16 @@ button {
   grid-template-columns: 88px 1fr;
 }
 .evaluation-low-quality-table,
-.evaluation-ledger-table {
+.evaluation-ledger-table,
+.evaluation-model-comparison-table {
   table-layout: fixed;
 }
 .evaluation-low-quality-table th,
 .evaluation-low-quality-table td,
 .evaluation-ledger-table th,
-.evaluation-ledger-table td {
+.evaluation-ledger-table td,
+.evaluation-model-comparison-table th,
+.evaluation-model-comparison-table td {
   word-break: break-word;
 }
 .evaluation-tags {

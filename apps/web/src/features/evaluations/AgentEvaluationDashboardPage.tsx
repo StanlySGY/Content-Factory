@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type {
+  EvaluationModelComparisonResponse,
   ExecutionEvaluationAnalyticsDTO,
   ExecutionResultEvaluationDTO,
   LowQualityEvaluationsResponse,
@@ -15,6 +16,7 @@ type LowQualityItem = LowQualityEvaluationsResponse["items"][number];
 type EvaluationDashboardData = {
   analytics: ExecutionEvaluationAnalyticsDTO;
   lowQuality: LowQualityEvaluationsResponse;
+  modelComparison: EvaluationModelComparisonResponse;
 };
 
 function statusTone(score: number) {
@@ -102,6 +104,64 @@ function DistributionCard({ analytics }: { analytics: ExecutionEvaluationAnalyti
         </div>
       ) : (
         <EmptyState title="还没有评估分布" hint="创建 evaluation 后会显示 evaluator 类型分布。" />
+      )}
+    </section>
+  );
+}
+
+function ModelComparisonCard({
+  modelComparison,
+}: {
+  modelComparison: EvaluationModelComparisonResponse;
+}) {
+  return (
+    <section className="card evaluation-comparison-card">
+      <div className="evaluation-card-head">
+        <div>
+          <h2>Model comparison</h2>
+          <span>{modelComparison.compared_model_count} compared models</span>
+        </div>
+        <span className="evaluation-muted">
+          {modelComparison.unclassified_evaluation_count} unclassified evaluations
+        </span>
+      </div>
+      {modelComparison.items.length > 0 ? (
+        <table className="table evaluation-table evaluation-model-comparison-table">
+          <thead>
+            <tr>
+              <th>Model</th>
+              <th>Composite</th>
+              <th>Scores</th>
+              <th>Coverage</th>
+              <th>Latest</th>
+            </tr>
+          </thead>
+          <tbody>
+            {modelComparison.items.map((item) => (
+              <tr key={item.model}>
+                <td>
+                  <strong>{item.model}</strong>
+                  <span>{item.evaluation_count} evaluations</span>
+                </td>
+                <td>
+                  <ScoreBadge score={Math.round(item.composite_score)} />
+                  <span>{formatNumber(item.composite_score)}</span>
+                </td>
+                <td>
+                  Q {formatNumber(item.average_quality_score)} / C{" "}
+                  {formatNumber(item.average_cost_score)} / L{" "}
+                  {formatNumber(item.average_latency_score)}
+                </td>
+                <td>
+                  {item.result_count} results / {item.job_count} jobs
+                </td>
+                <td>{renderDate(item.latest_evaluated_at)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <EmptyState title="暂无模型对比" hint="带有 model:<id> tag 的 evaluation 会出现在这里。" />
       )}
     </section>
   );
@@ -281,6 +341,7 @@ function LoadedEvaluationDashboard({ data }: { data: EvaluationDashboardData }) 
     <>
       <Summary analytics={data.analytics} />
       <DistributionCard analytics={data.analytics} />
+      <ModelComparisonCard modelComparison={data.modelComparison} />
 
       <div className="evaluation-grid">
         <section>

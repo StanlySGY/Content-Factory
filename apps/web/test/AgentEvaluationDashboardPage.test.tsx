@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import type {
+  EvaluationModelComparisonResponse,
   ExecutionEvaluationAnalyticsDTO,
   ExecutionResultEvaluationDTO,
   LowQualityEvaluationsResponse,
@@ -11,6 +12,7 @@ import { App } from "../src/app/App";
 
 const apiMock = vi.hoisted(() => ({
   getExecutionEvaluationAnalytics: vi.fn(),
+  getEvaluationModelComparison: vi.fn(),
   listLowQualityEvaluations: vi.fn(),
   listExecutionResultEvaluations: vi.fn(),
   createExecutionResultEvaluation: vi.fn(),
@@ -24,6 +26,40 @@ vi.mock("../src/lib/api", () => ({
 
 const lowQualityResultId = "00000000-0000-0000-0000-000000001201";
 const lowQualityJobId = "00000000-0000-0000-0000-000000001101";
+
+const modelComparison: EvaluationModelComparisonResponse = {
+  mode: "evaluation_model_comparison",
+  model_tag_prefix: "model:",
+  model_prefix: null,
+  compared_model_count: 2,
+  unclassified_evaluation_count: 1,
+  llm_calls_performed: false,
+  writes_performed: false,
+  items: [
+    {
+      model: "gpt-4.1-mini",
+      evaluation_count: 3,
+      result_count: 2,
+      job_count: 2,
+      average_quality_score: 82,
+      average_cost_score: 91,
+      average_latency_score: 77,
+      composite_score: 83.6,
+      latest_evaluated_at: "2026-06-10T00:07:00.000Z",
+    },
+    {
+      model: "gemini-1.5-pro",
+      evaluation_count: 2,
+      result_count: 2,
+      job_count: 1,
+      average_quality_score: 76,
+      average_cost_score: 88,
+      average_latency_score: 80,
+      composite_score: 80.8,
+      latest_evaluated_at: "2026-06-10T00:06:00.000Z",
+    },
+  ],
+};
 
 const analytics: ExecutionEvaluationAnalyticsDTO = {
   evaluation_count: 4,
@@ -100,6 +136,7 @@ function renderRoute() {
 describe("AgentEvaluationDashboardPage", () => {
   it("renders readonly evaluation analytics, low-quality results and result evaluations", async () => {
     apiMock.getExecutionEvaluationAnalytics.mockResolvedValue(analytics);
+    apiMock.getEvaluationModelComparison.mockResolvedValue(modelComparison);
     apiMock.listLowQualityEvaluations.mockResolvedValue(lowQuality);
     apiMock.listExecutionResultEvaluations.mockResolvedValue(resultEvaluations);
 
@@ -109,8 +146,17 @@ describe("AgentEvaluationDashboardPage", () => {
     expect(await screen.findByRole("heading", { name: "评估看板" })).toBeInTheDocument();
     expect(await screen.findByText("72.5")).toBeInTheDocument();
     expect(apiMock.getExecutionEvaluationAnalytics).toHaveBeenCalledTimes(1);
+    expect(apiMock.getEvaluationModelComparison).toHaveBeenCalledWith({ limit: 10 });
     expect(apiMock.listLowQualityEvaluations).toHaveBeenCalledWith({ threshold: 60, limit: 10 });
     expect(apiMock.listExecutionResultEvaluations).toHaveBeenCalledWith(lowQualityResultId);
+
+    expect(screen.getByRole("heading", { name: "Model comparison" })).toBeInTheDocument();
+    expect(screen.getByText("2 compared models")).toBeInTheDocument();
+    expect(screen.getByText("1 unclassified evaluations")).toBeInTheDocument();
+    expect(screen.getByText("gpt-4.1-mini")).toBeInTheDocument();
+    expect(screen.getByText("gemini-1.5-pro")).toBeInTheDocument();
+    expect(screen.getByText("83.6")).toBeInTheDocument();
+    expect(screen.getByText("80.8")).toBeInTheDocument();
 
     expect(screen.getByText("Failed response drift and missing citations.")).toBeInTheDocument();
     expect(screen.getByText(lowQualityResultId)).toBeInTheDocument();
