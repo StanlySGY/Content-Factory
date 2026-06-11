@@ -1100,6 +1100,7 @@ export class ExecutionOpsService {
           "/api/execution/evaluations/cost-attribution",
           "/api/execution/evaluations/regression-run",
           "/evaluations",
+          "/api/execution/results/:id/evaluate-llm",
         ],
         deliveredCapabilities: [
           "human and deterministic rule evaluation ledger",
@@ -1107,16 +1108,19 @@ export class ExecutionOpsService {
           "evaluation analytics and low-quality queries",
           "tag-based model comparison workflow",
           "provider metadata cost attribution calibration",
+          "real-runtime LLM judge evaluation workflow",
           "default-closed deterministic regression evaluation runner",
           "readonly evaluation dashboard UI",
         ],
         missingProductRequirements: [
-          "LLM judge integration",
+          "billing-grade cost settlement",
+          "cross-model regression orchestration",
         ],
         safetyBoundaries: [
           "rule evaluation does not call external LLMs",
           "model comparison is read-only and derived from existing evaluation tags",
           "cost attribution is read-only and derived from persisted provider runtime metadata",
+          "LLM judge calls run through execution job result ledger, secret injection, and provider quota gates",
           "regression runner is rule-only and default disabled",
           "evaluations append records without mutating execution_results",
           "dashboard is readonly and does not trigger evaluations",

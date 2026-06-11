@@ -1,7 +1,7 @@
 # Final RC / Production Candidate Closure（审计）
 
 > 范围：在 Productization-P2.2 之后，对 P1/P2 已完成能力做最终生产候选收口。
-> 结论：不再新增 `Phase 2.x`。Final RC 只做只读 readiness 聚合、文档收口和验证门禁；不触发真实 LLM / MCP / Publisher 网络调用，不写 Workflow / Review / Agent / MCP 状态机。
+> 结论：不再新增 `Phase 2.x`。Final RC readiness 只做只读聚合、文档收口和验证门禁；不会自行触发真实 LLM / MCP / Publisher 网络调用，不写 Workflow / Review / Agent / MCP 状态机。
 
 ---
 
@@ -92,6 +92,7 @@ external_call_performed=false
 | MCP Streamable HTTP runtime | 已完成最小真实入口，默认关闭 |
 | Publisher HTTP release runtime | 已完成最小真实入口，默认关闭 |
 | Agent evaluation provider metadata cost attribution | 已完成只读校准 API |
+| Agent evaluation real-runtime LLM judge API | 已完成显式写入口，走 execution job/result ledger、secret injection 与 provider quota gate |
 | Final RC readiness aggregate | 已完成 |
 
 ---
@@ -106,7 +107,7 @@ external_call_performed=false
 - 不接 Grafana / PagerDuty / Alertmanager。
 - 不做多租户 RBAC。
 - 不做 RAG / 向量检索。
-- 不做 Agent 多轮 memory / LLM judge / billing-grade 成本结算 / 高级评测编排。
+- 不做 Agent 多轮 memory / billing-grade 成本结算 / 高级评测编排。
 
 ---
 
@@ -120,4 +121,4 @@ Final RC 后，剩余工作应进入独立路线，不再塞进 P2.x：
 | MCP Marketplace | 安装、热加载、SDK transport、tool invocation ledger 回写 |
 | Multi-tenant RBAC | 团队、成员、角色、项目级/资源级权限 |
 | Knowledge / RAG | 知识库、向量检索、引用追踪 |
-| Agent Evaluation | LLM judge、billing-grade 成本结算、跨模型回归评测编排 |
+| Agent Evaluation | billing-grade 成本结算、跨模型回归评测编排 |

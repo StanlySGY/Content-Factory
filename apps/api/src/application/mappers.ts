@@ -43,6 +43,7 @@ import type {
   KnowledgeSourceDTO,
   KnowledgeVectorSearchItemDTO,
   LowQualityEvaluationsResponse,
+  LlmJudgeEvaluationResponse,
   McpMarketplaceEntryDTO,
   McpMarketplaceInstallationDTO,
   McpServerDTO,
@@ -121,6 +122,7 @@ import type {
   ExecutionResultEvaluationSummary,
   LowQualityEvaluationList,
 } from "../domain/execution/evaluation.js";
+import type { LlmJudgeEvaluationRun } from "./execution-result-evaluation.service.js";
 import type {
   ExecutionWritebackApplyGuard,
   ExecutionWritebackApplyGuardReadiness,
@@ -1181,6 +1183,17 @@ export function toRegressionEvaluationRunResponse(input: {
     skipped_count: input.skippedResultIds.length,
     evaluations: input.created.map(toExecutionResultEvaluationDTO),
     skipped_result_ids: input.skippedResultIds,
+  };
+}
+
+export function toLlmJudgeEvaluationResponse(input: LlmJudgeEvaluationRun): LlmJudgeEvaluationResponse {
+  return {
+    mode: "llm_judge_evaluation",
+    judge_job_id: input.judgeJobId,
+    judge_result_id: input.judgeResultId,
+    llm_calls_performed: input.llmCallsPerformed,
+    writes_performed: input.writesPerformed,
+    evaluation: toExecutionResultEvaluationDTO(input.evaluation),
   };
 }
 

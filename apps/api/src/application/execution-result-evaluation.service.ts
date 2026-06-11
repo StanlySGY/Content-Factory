@@ -1,12 +1,15 @@
+import { randomUUID } from "node:crypto";
 import type {
   CreateExecutionResultEvaluationBody,
   EvaluationCostAttributionQuery,
   EvaluationModelComparisonQuery,
+  LlmJudgeEvaluationBody,
   RegressionEvaluationRunBody,
 } from "@cf/shared";
 import { ConflictError, NotFoundError, ValidationError } from "../domain/errors.js";
 import {
   attributeEvaluationCosts,
+  buildLlmJudgeEvaluation,
   buildRuleEvaluation,
   compareEvaluationsByModel,
   listLowQualityEvaluations,
@@ -24,6 +27,8 @@ import type { Db } from "../infrastructure/db/client.js";
 import type { ExecutionResultEvaluationRow, ExecutionResultRow } from "../infrastructure/db/schema.js";
 import * as evaluationRepo from "../infrastructure/repositories/execution-result-evaluation.repository.js";
 import * as resultRepo from "../infrastructure/repositories/execution-result.repository.js";
+import type { ExecutionJobService } from "./execution-job.service.js";
+import type { ExecutionWorker } from "./execution-worker.js";
 import type { RequestContext } from "./task.service.js";
 
 const isUniqueViolation = (error: unknown): boolean => (error as { code?: string }).code === "23505";
@@ -34,6 +39,14 @@ export interface RegressionEvaluationBatch {
   limit: number;
   created: ExecutionResultEvaluationRow[];
   skippedResultIds: string[];
+}
+
+export interface LlmJudgeEvaluationRun {
+  judgeJobId: string;
+  judgeResultId: string;
+  evaluation: ExecutionResultEvaluationRow;
+  llmCallsPerformed: true;
+  writesPerformed: true;
 }
 
 export class ExecutionResultEvaluationService {
@@ -84,6 +97,52 @@ export class ExecutionResultEvaluationService {
       durationMs: result.durationMs,
     });
     return this.createEvaluation(ctx, resultId, input);
+  }
+
+  async evaluateResultWithLlmJudge(
+    ctx: RequestContext,
+    resultId: string,
+    input: LlmJudgeEvaluationBody,
+    deps: { executionJobService: ExecutionJobService; executionWorker: ExecutionWorker },
+  ): Promise<LlmJudgeEvaluationRun> {
+    const result = await resultRepo.getExecutionResult(this.db, resultId);
+    if (!result) throw new NotFoundError(`execution_result ${resultId} not found`);
+    const existing = await evaluationRepo.getEvaluationByResultAndType(this.db, resultId, "llm");
+    if (existing) throw new ConflictError(`execution_result ${resultId} already has llm evaluation`);
+
+    const model = input.model?.trim();
+    const judgeJob = await deps.executionJobService.createJob({
+      type: "agent",
+      payload: {
+        prompt: buildLlmJudgePrompt(result, input.prompt),
+        ...(model ? { model } : {}),
+        credential_ref: input.credential_ref,
+      },
+      idempotency_key: `llm-judge-${resultId}-${randomUUID()}`,
+      max_attempts: 1,
+    });
+    const completed = await deps.executionWorker.tickJob(judgeJob.id);
+    if (completed.status !== "success")
+      throw new ValidationError(`llm judge execution failed: ${completed.lastError ?? completed.status}`);
+
+    const judgeResult = (await resultRepo.listResultsByJob(this.db, judgeJob.id)).at(-1);
+    if (!judgeResult) throw new ValidationError("llm judge execution did not persist a result");
+    if (judgeResult.status !== "success")
+      throw new ValidationError(`llm judge result failed: ${judgeResult.errorType ?? judgeResult.status}`);
+
+    const evaluationInput = buildLlmJudgeEvaluation({
+      responseText: judgeTextFromSnapshot(judgeResult.responseSnapshot),
+      model,
+      tags: input.tags,
+    });
+    const evaluation = await this.createEvaluation(ctx, resultId, evaluationInput);
+    return {
+      judgeJobId: judgeJob.id,
+      judgeResultId: judgeResult.id,
+      evaluation,
+      llmCallsPerformed: true,
+      writesPerformed: true,
+    };
   }
 
   async evaluateJobWithRules(ctx: RequestContext, jobId: string): Promise<{
@@ -181,6 +240,89 @@ export class ExecutionResultEvaluationService {
     }
     return out;
   }
+}
+
+function buildLlmJudgePrompt(result: ExecutionResultRow, prompt?: string): string {
+  const defaultInstruction =
+    "Evaluate this execution result. Return strict JSON with quality_score, cost_score, latency_score, notes, and tags.";
+  const instruction = sanitizeJudgePromptText(prompt?.trim() || defaultInstruction);
+  return `${instruction}
+
+Return strict JSON only. Scores must be integers from 0 to 100.
+Execution result summary:
+${JSON.stringify(buildLlmJudgeResultSummary(result))}`;
+}
+
+function buildLlmJudgeResultSummary(result: ExecutionResultRow): Record<string, unknown> {
+  const metadata = record(result.responseSnapshot.metadata);
+  const output = record(result.responseSnapshot.output);
+  const providerContract = record(metadata?.providerResponseContract);
+  return {
+    id: result.id,
+    execution_job_id: result.executionJobId,
+    status: result.status,
+    runtime_status: result.runtimeStatus,
+    error_type: result.errorType,
+    duration_ms: result.durationMs,
+    provider_kind: safeString(metadata?.providerKind),
+    model: safeString(providerContract?.model),
+    output_text: safeString(textFromOutput(output)),
+    cost_estimate: safeCostEstimate(metadata?.costEstimate),
+    quota: safeQuotaDecision(metadata?.quotaDecision),
+  };
+}
+
+function judgeTextFromSnapshot(snapshot: Record<string, unknown>): string {
+  const output = record(snapshot.output);
+  const result = record(output?.result);
+  const text = result?.text ?? output?.text;
+  if (typeof text !== "string" || text.trim().length === 0)
+    throw new ValidationError("llm judge response text is missing");
+  return text;
+}
+
+function textFromOutput(output: Record<string, unknown> | null): unknown {
+  const result = record(output?.result);
+  return result?.text ?? output?.text;
+}
+
+function safeCostEstimate(value: unknown): Record<string, unknown> | null {
+  const cost = record(value);
+  if (!cost) return null;
+  return {
+    source: safeString(cost.source),
+    amount_cents: typeof cost.amountCents === "number" ? cost.amountCents : null,
+    currency: safeString(cost.currency),
+  };
+}
+
+function safeQuotaDecision(value: unknown): Record<string, unknown> | null {
+  const quota = record(value);
+  if (!quota) return null;
+  const usedRequests = quota.usedRequests ?? quota.used_requests;
+  const usedCostCents = quota.usedCostCents ?? quota.used_cost_cents;
+  return {
+    status: safeString(quota.status),
+    distributed: typeof quota.distributed === "boolean" ? quota.distributed : null,
+    used_requests: typeof usedRequests === "number" ? usedRequests : null,
+    used_cost_cents: typeof usedCostCents === "number" ? usedCostCents : null,
+  };
+}
+
+function safeString(value: unknown): string | null {
+  if (typeof value !== "string" || value.trim().length === 0) return null;
+  return sanitizeJudgePromptText(value.trim()).slice(0, 8000);
+}
+
+function sanitizeJudgePromptText(value: string): string {
+  return value.replace(
+    /(sk-[A-Za-z0-9_-]+|Bearer\s+[^\s"']+|secret|api[_-]?key|password|authorization|credential|token)/gi,
+    "[redacted]",
+  );
+}
+
+function record(value: unknown): Record<string, unknown> | null {
+  return typeof value === "object" && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : null;
 }
 
 export class ExecutionRegressionEvaluationRunner {

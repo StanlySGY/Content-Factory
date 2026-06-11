@@ -165,6 +165,29 @@ export function buildRuleEvaluation(input: ExecutionResultEvaluationRuleInput): 
   };
 }
 
+export function buildLlmJudgeEvaluation(input: {
+  responseText: string;
+  model?: string;
+  tags?: string[];
+}): CreateExecutionResultEvaluationBody {
+  const parsed = parseLlmJudgeJson(input.responseText);
+  const evaluation: CreateExecutionResultEvaluationBody = {
+    evaluator_type: "llm",
+    quality_score: readScore(parsed, "quality_score"),
+    cost_score: readScore(parsed, "cost_score"),
+    latency_score: readScore(parsed, "latency_score"),
+    notes: readOptionalString(parsed, "notes"),
+    tags: normalizeEvaluationTags([
+      "llm-judge",
+      input.model ? `model:${input.model}` : "",
+      ...(input.tags ?? []),
+      ...readOptionalStringArray(parsed, "tags"),
+    ]),
+  };
+  validateExecutionResultEvaluation(evaluation);
+  return evaluation;
+}
+
 export function summarizeEvaluationAnalytics(
   rows: Array<{
     executionResultId: string;
@@ -366,6 +389,38 @@ function extractModel(tags: string[]): string | null {
   const tag = tags.find((item) => item.startsWith(MODEL_TAG_PREFIX));
   const model = tag?.slice(MODEL_TAG_PREFIX.length).trim();
   return model ? model : null;
+}
+
+function parseLlmJudgeJson(responseText: string): Record<string, unknown> {
+  try {
+    const parsed = JSON.parse(responseText);
+    if (!isRecord(parsed)) throw new ValidationError("llm judge response must be a JSON object");
+    return parsed;
+  } catch (error) {
+    if (error instanceof ValidationError) throw error;
+    throw new ValidationError("llm judge response must be strict JSON");
+  }
+}
+
+function readScore(input: Record<string, unknown>, field: string): number {
+  const value = input[field];
+  validateScore(value as number, field);
+  return value as number;
+}
+
+function readOptionalString(input: Record<string, unknown>, field: string): string | undefined {
+  const value = input[field];
+  if (value === undefined || value === null) return undefined;
+  if (typeof value !== "string") throw new ValidationError(`llm judge ${field} must be a string`);
+  return value;
+}
+
+function readOptionalStringArray(input: Record<string, unknown>, field: string): string[] {
+  const value = input[field];
+  if (value === undefined || value === null) return [];
+  if (!Array.isArray(value) || value.some((item) => typeof item !== "string"))
+    throw new ValidationError(`llm judge ${field} must be a string array`);
+  return value;
 }
 
 function responseMetadata(responseSnapshot: Record<string, unknown>): Record<string, unknown> | null {

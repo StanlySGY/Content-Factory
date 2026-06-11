@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ValidationError } from "../../src/domain/errors.js";
 import {
+  buildLlmJudgeEvaluation,
   buildRuleEvaluation,
   listLowQualityEvaluations,
   normalizeEvaluationTags,
@@ -23,7 +24,7 @@ describe("Execution result evaluation domain", () => {
     ).not.toThrow();
     expect(() =>
       validateExecutionResultEvaluation({
-        evaluator_type: "llm",
+        evaluator_type: "robot",
         quality_score: 90,
         cost_score: 80,
         latency_score: 70,
@@ -116,6 +117,35 @@ describe("Execution result evaluation domain", () => {
       cost_score: 100,
       latency_score: 40,
     });
+  });
+
+  it("builds llm judge evaluations only from strict JSON scores", () => {
+    expect(
+      buildLlmJudgeEvaluation({
+        responseText: JSON.stringify({
+          quality_score: 91,
+          cost_score: 73,
+          latency_score: 85,
+          notes: "accepted",
+          tags: ["llm-judge", "model:gpt-judge"],
+        }),
+        model: "gpt-judge",
+        tags: ["release-candidate"],
+      }),
+    ).toEqual({
+      evaluator_type: "llm",
+      quality_score: 91,
+      cost_score: 73,
+      latency_score: 85,
+      notes: "accepted",
+      tags: ["llm-judge", "model:gpt-judge", "release-candidate"],
+    });
+    expect(() => buildLlmJudgeEvaluation({ responseText: "quality=91" })).toThrow(ValidationError);
+    expect(() =>
+      buildLlmJudgeEvaluation({
+        responseText: JSON.stringify({ quality_score: 101, cost_score: 73, latency_score: 85 }),
+      }),
+    ).toThrow(ValidationError);
   });
 
   it("summarizes empty and populated evaluation rows", () => {

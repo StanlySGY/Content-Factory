@@ -242,7 +242,7 @@ export const KNOWLEDGE_ENTRY_STATUSES = ["active", "archived"] as const;
 export type KnowledgeEntryStatus = (typeof KNOWLEDGE_ENTRY_STATUSES)[number];
 
 // ── Product Gap 5：Agent Evaluation Backend MVP ──
-export const EXECUTION_RESULT_EVALUATOR_TYPES = ["human", "rule"] as const;
+export const EXECUTION_RESULT_EVALUATOR_TYPES = ["human", "rule", "llm"] as const;
 export type ExecutionResultEvaluatorType = (typeof EXECUTION_RESULT_EVALUATOR_TYPES)[number];
 
 // ── Sprint-5 执行层值集（独立异步执行骨架；与控制平面状态机无关）──

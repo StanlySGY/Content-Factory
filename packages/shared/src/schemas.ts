@@ -1239,6 +1239,39 @@ export const CreateExecutionResultEvaluationSchema = Type.Object(
 );
 export type CreateExecutionResultEvaluationBody = Static<typeof CreateExecutionResultEvaluationSchema>;
 
+const LlmJudgeCredentialRefSchema = Type.Object(
+  {
+    provider: Type.String({ minLength: 1 }),
+    key_ref: Type.String({ minLength: 1 }),
+    scope: StringEnum(["project", "workspace", "system"] as const),
+  },
+  { additionalProperties: false },
+);
+
+export const LlmJudgeEvaluationSchema = Type.Object(
+  {
+    credential_ref: LlmJudgeCredentialRefSchema,
+    model: Type.Optional(Type.String({ minLength: 1, maxLength: 120 })),
+    prompt: Type.Optional(Type.String({ minLength: 1, maxLength: 4000 })),
+    tags: Type.Optional(Type.Array(Type.String({ minLength: 1, maxLength: 80 }), { maxItems: 50 })),
+  },
+  { additionalProperties: false },
+);
+export type LlmJudgeEvaluationBody = Static<typeof LlmJudgeEvaluationSchema>;
+
+export const LlmJudgeEvaluationResponseSchema = Type.Object(
+  {
+    mode: Type.Literal("llm_judge_evaluation"),
+    judge_job_id: Uuid(),
+    judge_result_id: Uuid(),
+    llm_calls_performed: Type.Boolean(),
+    writes_performed: Type.Boolean(),
+    evaluation: ExecutionResultEvaluationSchema,
+  },
+  { additionalProperties: false },
+);
+export type LlmJudgeEvaluationResponse = Static<typeof LlmJudgeEvaluationResponseSchema>;
+
 export const ExecutionResultEvaluationSummarySchema = Type.Object(
   {
     job_id: Uuid(),

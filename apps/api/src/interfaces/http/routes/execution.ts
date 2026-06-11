@@ -27,6 +27,8 @@ import {
   ListExecutionJobsQuerySchema,
   ListExecutionWritebacksQuerySchema,
   ListOutboxEventsQuerySchema,
+  LlmJudgeEvaluationResponseSchema,
+  LlmJudgeEvaluationSchema,
   LowQualityEvaluationsQuerySchema,
   LowQualityEvaluationsResponseSchema,
   OutboxEventSchema,
@@ -66,6 +68,7 @@ import {
   toExecutionWritebackDTO,
   toOutboxEventDTO,
   toLowQualityEvaluationsResponse,
+  toLlmJudgeEvaluationResponse,
   toRegressionEvaluationRunResponse,
   toRuleEvaluationBatchResponse,
 } from "../../../application/mappers.js";
@@ -283,6 +286,27 @@ export const executionRoutes: FastifyPluginAsyncTypebox<ExecutionRoutesOptions> 
       );
       reply.code(201);
       return toExecutionResultEvaluationDTO(evaluation);
+    },
+  );
+
+  app.post(
+    "/api/execution/results/:id/evaluate-llm",
+    {
+      schema: {
+        params: IdParamSchema,
+        body: LlmJudgeEvaluationSchema,
+        response: { 201: LlmJudgeEvaluationResponseSchema },
+      },
+    },
+    async (request, reply) => {
+      const result = await executionResultEvaluationService.evaluateResultWithLlmJudge(
+        { projectId: "execution", actorId: env.defaultUserId, requestId: request.id },
+        request.params.id,
+        request.body,
+        { executionJobService, executionWorker },
+      );
+      reply.code(201);
+      return toLlmJudgeEvaluationResponse(result);
     },
   );
 
