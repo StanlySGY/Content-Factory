@@ -486,7 +486,7 @@ MVP 后再进入：
 - MCP 市场安装与热加载。
 - Skill 质量门禁自动化。
 - 微信公众号真实发布集成。
-- 知识库检索与 RAG：后端 MVP 已补齐 knowledge source / entry / source archive/restore / entry archive/restore / inventory read API / keyword search / task candidates、context pack materialization、本地 deterministic embedding pipeline、embedding readiness endpoint 和本地 vector retrieval endpoint；Web 已补齐 knowledge inventory 与 candidate review 只读 UI；尚未接生产级 vector index、LLM rerank 和 context pack 自动刷新。
+- 知识库检索与 RAG：后端 MVP 已补齐 knowledge source / entry / source archive/restore / entry archive/restore / inventory read API / keyword search / task candidates、context pack materialization、本地 deterministic embedding pipeline、embedding readiness endpoint、本地 vector retrieval endpoint 和 append-only context pack auto-refresh policy；Web 已补齐 knowledge inventory 与 candidate review 只读 UI；尚未接生产级 vector index 和 LLM rerank。
 - 多团队权限和审计：RBAC 后端 MVP 已具备，Web 已支持成员与项目授权管理，角色变更要求 `approval_ref`，成员和 membership 变更已写入审计链，项目级 RBAC 端点已有跨项目拒绝回归矩阵；后端已接入 header-based session context 和全局项目业务 API enforcement，后续仍需生产 auth provider、session lifecycle hardening 和组织项目归属模型。
 - Agent 效果评估和成本分析：后端 MVP 已补齐 execution result 评价账本、人工评分、确定性 rule evaluator runner、默认关闭 deterministic regression evaluation runner、job 级 summary 和只读 evaluation analytics；Web 已补齐只读 evaluation dashboard；尚未接 LLM judge、真实成本归因、模型对比和跨模型回归评测编排。
 
@@ -543,6 +543,8 @@ MVP 后再进入：
 > **Knowledge Embedding Pipeline Backend MVP 已补齐**：Product Gap 13 新增 `knowledge_entry_embeddings`、本地 `local_hash_v1` deterministic embedding 生成、知识条目创建同事务 embedding snapshot 写入，以及 `GET /api/knowledge/embedding-readiness` 覆盖率端点。它不调用外部模型、不接真实 vector index、不做 LLM rerank、不自动刷新 context pack、不改 keyword search 语义。证据见 `docs/reviews/product-gap-13-knowledge-embedding-pipeline-audit.md`。
 
 > **Knowledge Local Vector Retrieval Backend MVP 已补齐**：Product Gap 14 新增 `GET /api/knowledge/vector-search`，基于 `local_hash_v1` embedding snapshot 计算本地相似度并返回 active knowledge entries。它不调用外部模型、不建立生产级 vector index、不做 ANN、不做 LLM rerank、不自动刷新 context pack。证据见 `docs/reviews/product-gap-14-knowledge-vector-retrieval-audit.md`。
+
+> **Knowledge Context Pack Auto-refresh Backend MVP 已补齐**：Product Gap 15 为由 knowledge entries 物化的 task 级 context pack 增加 append-only 自动刷新策略。匹配的 knowledge entry 创建、归档、恢复或 source active/archive 变化后，系统会在同事务内追加下一版 context pack 快照；旧版本不被修改。它不调用 LLM、不做后台 scheduler、不重写历史 context pack、不替代生产级 RAG 编排。证据见 `docs/reviews/product-gap-15-knowledge-context-refresh-audit.md`。
 
 > **Agent Evaluation Backend MVP 已补齐**：Product Gap 5 新增 `execution_result_evaluations`、人工/规则评价 API、result 评价列表和 job 级 evaluation summary。它不调用 LLM、不做自动评测、不改 `execution_results` append-only 账本、不做 UI。证据见 `docs/reviews/product-gap-5-agent-evaluation-backend-audit.md`。
 

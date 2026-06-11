@@ -73,8 +73,10 @@ describe("product route readiness", () => {
     expect(knowledgeRoute.delivered_capabilities).toContain("deterministic local embedding pipeline");
     expect(knowledgeRoute.delivered_capabilities).toContain("knowledge embedding readiness endpoint");
     expect(knowledgeRoute.delivered_capabilities).toContain("local vector retrieval over embedding snapshots");
+    expect(knowledgeRoute.delivered_capabilities).toContain("append-only context pack auto-refresh policy for knowledge changes");
     expect(knowledgeRoute.missing_product_requirements).not.toContain("embedding pipeline");
     expect(knowledgeRoute.missing_product_requirements).not.toContain("vector index integration");
+    expect(knowledgeRoute.missing_product_requirements).not.toContain("automatic context pack refresh policy");
     expect(knowledgeRoute.missing_product_requirements).toContain("production vector index integration");
     expect(JSON.stringify(body)).not.toContain("sk-");
     expect(JSON.stringify(body)).not.toContain("Bearer");

@@ -1,26 +1,45 @@
 import { randomUUID } from "node:crypto";
 import type { FastifyInstance } from "fastify";
+import type pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { buildApp, type BuiltApp } from "../../src/app.js";
 import { loadEnv } from "../../src/config/env.js";
+import { createDb, createPool, type Db } from "../../src/infrastructure/db/client.js";
+import { projects } from "../../src/infrastructure/db/schema.js";
 
 let built: BuiltApp;
 let app: FastifyInstance;
+let pool: pg.Pool;
+let db: Db;
+let projectId: string;
 
 beforeAll(async () => {
-  built = await buildApp(loadEnv(), { logger: false });
+  const env = loadEnv();
+  projectId = randomUUID();
+  built = await buildApp(env, { logger: false });
   app = built.app;
+  pool = createPool(env.databaseUrl);
+  db = createDb(pool);
+  await db.insert(projects).values({
+    id: projectId,
+    ownerId: env.defaultUserId,
+    name: `Vector Project ${randomUUID()}`,
+  });
   await app.ready();
 });
 
 afterAll(async () => {
   await built.close();
+  await pool.end();
 });
+
+const projectHeaders = () => ({ "x-cf-project-id": projectId });
 
 async function createSource() {
   const response = await app.inject({
     method: "POST",
     url: "/api/knowledge/sources",
+    headers: projectHeaders(),
     payload: {
       name: `Vector Source ${randomUUID()}`,
       source_type: "document",
@@ -35,6 +54,7 @@ async function createEntry(sourceId: string, input: { title: string; body: strin
   const response = await app.inject({
     method: "POST",
     url: `/api/knowledge/sources/${sourceId}/entries`,
+    headers: projectHeaders(),
     payload: input,
   });
   expect(response.statusCode).toBe(201);
@@ -62,12 +82,14 @@ describe("Product Gap 14 Knowledge local vector retrieval Backend MVP", () => {
     const archive = await app.inject({
       method: "POST",
       url: `/api/knowledge/entries/${archivedEntry.id}/archive`,
+      headers: projectHeaders(),
     });
     expect(archive.statusCode).toBe(200);
 
     const response = await app.inject({
       method: "GET",
       url: "/api/knowledge/vector-search?q=release%20approval%20sequencing&limit=2",
+      headers: projectHeaders(),
     });
 
     expect(response.statusCode).toBe(200);

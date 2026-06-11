@@ -5,6 +5,10 @@ import type {
   ListKnowledgeSourcesQuery,
   KnowledgeSearchQuery,
 } from "@cf/shared";
+import {
+  buildKnowledgeContextPackPayload,
+  createContextPack,
+} from "../domain/context-pack/context-pack.js";
 import { NotFoundError, ValidationError } from "../domain/errors.js";
 import {
   buildLocalKnowledgeEmbedding,
@@ -21,7 +25,8 @@ import {
   validateKnowledgeSource,
 } from "../domain/knowledge/knowledge.js";
 import { runInProject, type Db } from "../infrastructure/db/client.js";
-import type { KnowledgeEntryRow, KnowledgeSourceRow } from "../infrastructure/db/schema.js";
+import type { ContextPackRow, KnowledgeEntryRow, KnowledgeSourceRow } from "../infrastructure/db/schema.js";
+import * as contextRepo from "../infrastructure/repositories/context-pack.repository.js";
 import * as repo from "../infrastructure/repositories/knowledge.repository.js";
 import type { RequestContext } from "./task.service.js";
 
@@ -111,14 +116,17 @@ export class KnowledgeService {
         vector: embedding.vector,
         text_hash: embedding.textHash,
       });
+      await refreshMaterializedKnowledgeContextPacks(tx, ctx.projectId);
       return entry;
     });
   }
 
   async archiveSource(ctx: RequestContext, sourceId: string): Promise<KnowledgeSourceRow> {
-    const row = await runInProject(this.db, ctx.projectId, (tx) =>
-      repo.archiveSource(tx, ctx.projectId, sourceId),
-    );
+    const row = await runInProject(this.db, ctx.projectId, async (tx) => {
+      const archived = await repo.archiveSource(tx, ctx.projectId, sourceId);
+      if (archived) await refreshMaterializedKnowledgeContextPacks(tx, ctx.projectId);
+      return archived;
+    });
     if (!row) throw new NotFoundError(`knowledge_source ${sourceId} not found`);
     return row;
   }
@@ -153,17 +161,21 @@ export class KnowledgeService {
   }
 
   async restoreSource(ctx: RequestContext, sourceId: string): Promise<KnowledgeSourceRow> {
-    const row = await runInProject(this.db, ctx.projectId, (tx) =>
-      repo.restoreSource(tx, ctx.projectId, sourceId),
-    );
+    const row = await runInProject(this.db, ctx.projectId, async (tx) => {
+      const restored = await repo.restoreSource(tx, ctx.projectId, sourceId);
+      if (restored) await refreshMaterializedKnowledgeContextPacks(tx, ctx.projectId);
+      return restored;
+    });
     if (!row) throw new NotFoundError(`knowledge_source ${sourceId} not found`);
     return row;
   }
 
   async archiveEntry(ctx: RequestContext, entryId: string): Promise<KnowledgeEntryRow> {
-    const row = await runInProject(this.db, ctx.projectId, (tx) =>
-      repo.archiveEntry(tx, ctx.projectId, entryId),
-    );
+    const row = await runInProject(this.db, ctx.projectId, async (tx) => {
+      const archived = await repo.archiveEntry(tx, ctx.projectId, entryId);
+      if (archived) await refreshMaterializedKnowledgeContextPacks(tx, ctx.projectId);
+      return archived;
+    });
     if (!row) throw new NotFoundError(`knowledge_entry ${entryId} not found`);
     return row;
   }
@@ -177,6 +189,7 @@ export class KnowledgeService {
       assertKnowledgeSourceActive(source.status);
       const restored = await repo.restoreEntry(tx, ctx.projectId, entryId);
       if (!restored) throw new NotFoundError(`knowledge_entry ${entryId} not found`);
+      await refreshMaterializedKnowledgeContextPacks(tx, ctx.projectId);
       return restored;
     });
   }
@@ -263,4 +276,81 @@ export class KnowledgeService {
 
 function withKeywordReason(row: KnowledgeEntryRow): KnowledgeEntryRow & { reason: "keyword_match" } {
   return { ...row, reason: "keyword_match" };
+}
+
+async function refreshMaterializedKnowledgeContextPacks(db: Db, projectId: string): Promise<void> {
+  const packs = await contextRepo.listTaskScoped(db, projectId);
+  const latestByTaskAndQuery = new Map<string, ContextPackRow>();
+  for (const pack of packs) {
+    const query = getMaterializedKnowledgeQuery(pack);
+    if (!query) continue;
+    const key = `${pack.contentTaskId}:${query}`;
+    const current = latestByTaskAndQuery.get(key);
+    if (!current || pack.version > current.version) latestByTaskAndQuery.set(key, pack);
+  }
+
+  for (const pack of latestByTaskAndQuery.values()) {
+    const query = getMaterializedKnowledgeQuery(pack);
+    if (!query) continue;
+    const limit = getMaterializedKnowledgeLimit(pack);
+    const entries = await repo.searchEntries(db, projectId, query, limit);
+    const nextEntryIds = entries.map((entry) => entry.id);
+    const currentEntryIds = getKnowledgeEntryIds(pack);
+    if (sameOrderedStrings(nextEntryIds, currentEntryIds)) continue;
+
+    const { data, source_refs } = buildKnowledgeContextPackPayload(
+      query,
+      entries.map((entry) => ({ id: entry.id, title: entry.title, source_id: entry.sourceId })),
+    );
+    const refreshed = createContextPack({
+      content_task_id: pack.contentTaskId,
+      stage_run_id: null,
+      version: pack.version + 1,
+      scope: "task",
+      data: {
+        ...data,
+        limit,
+        refresh_policy: "on_knowledge_change",
+        refreshed_from_context_pack_id: pack.id,
+        refreshed_from_version: pack.version,
+      },
+      source_refs: {
+        ...source_refs,
+        refreshed_from_context_pack_id: pack.id,
+      },
+      sensitivity_level: pack.sensitivityLevel,
+    });
+    await contextRepo.create(db, projectId, {
+      content_task_id: refreshed.content_task_id,
+      stage_run_id: refreshed.stage_run_id,
+      version: refreshed.version,
+      scope: refreshed.scope,
+      data: refreshed.data,
+      source_refs: refreshed.source_refs,
+      sensitivity_level: refreshed.sensitivity_level,
+    });
+  }
+}
+
+function getMaterializedKnowledgeQuery(pack: ContextPackRow): string | null {
+  if (pack.scope !== "task") return null;
+  if (pack.data.materialized_from !== "knowledge_entries") return null;
+  if (typeof pack.data.query !== "string") return null;
+  return normalizeKnowledgeQuery(pack.data.query);
+}
+
+function getMaterializedKnowledgeLimit(pack: ContextPackRow): number {
+  if (typeof pack.data.limit === "number") return normalizeKnowledgeLimit(pack.data.limit);
+  const ids = getKnowledgeEntryIds(pack);
+  return normalizeKnowledgeLimit(ids.length > 0 ? ids.length : undefined);
+}
+
+function getKnowledgeEntryIds(pack: ContextPackRow): string[] {
+  const value = pack.sourceRefs.knowledge_entry_ids;
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === "string");
+}
+
+function sameOrderedStrings(left: string[], right: string[]): boolean {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
 }

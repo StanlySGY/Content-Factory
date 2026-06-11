@@ -82,7 +82,11 @@ export class ContextPackService {
         stage_run_id: null,
         version: input.version,
         scope: "task",
-        data,
+        data: {
+          ...data,
+          limit,
+          refresh_policy: "on_knowledge_change",
+        },
         source_refs,
         sensitivity_level: "internal",
       });

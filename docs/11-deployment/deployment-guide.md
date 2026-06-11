@@ -79,7 +79,7 @@ MCP 与 Publisher 真实入口还需分别开启：
 9. 打开 Web `/publisher`，确认 publisher channels 可创建、启用/停用/归档，publish records 只读展示，且未触发真实发布。
 10. 打开 Web `/knowledge`，确认 knowledge sources、source detail 与 source entries 只读展示，且未触发 context pack 自动刷新。
 11. 打开 Web `/knowledge/candidates`，确认 task knowledge candidates、命中原因与已有 context pack 关联只读展示，且未触发 context pack 自动刷新或物化。
-12. 调用 `GET /api/knowledge/embedding-readiness` 与 `GET /api/knowledge/vector-search`，确认本地 embedding snapshot 覆盖 active knowledge entries，本地 vector retrieval 可返回候选，`external_calls_performed=false` 且 `vector_index_integrated=false`。
+12. 调用 `GET /api/knowledge/embedding-readiness` 与 `GET /api/knowledge/vector-search`，确认本地 embedding snapshot 覆盖 active knowledge entries，本地 vector retrieval 可返回候选，`external_calls_performed=false` 且 `vector_index_integrated=false`；对已物化的 knowledge context pack 新增或归档匹配 entry 时，应追加下一版 task context pack 而不修改旧版本。
 13. 打开 Web `/mcp`，确认 MCP server/tool inventory 与 real-runtime readiness 只读展示，且未触发 tool invocation 或真实外部 transport。
 14. 打开 Web `/mcp/invocations`，确认 MCP tool invocation ledger 按 tool 只读展示 status、caller、risk、duration 与输入/输出摘要，且未触发 mock invoke、health check、真实 transport、replay 或写操作。
 15. 打开 Web `/execution/results`，确认 execution result ledger 按 job 只读展示 attempts、latest status、error_type、duration、request/response snapshot 与 result summary，且未触发 tick、retry、evaluate-rule、writeback、replay 或写操作。
@@ -115,6 +115,7 @@ MCP 与 Publisher 真实入口还需分别开启：
 | knowledge candidates | Web `/knowledge/candidates` 只读展示 task knowledge candidates、命中原因与已有 context pack 关联，不触发 rerank、context pack 自动刷新或物化 |
 | knowledge embedding readiness | `GET /api/knowledge/embedding-readiness` 返回 active entry embedding 覆盖率；本地 provider 为 `local_hash_v1`，不调用外部模型，尚未集成真实 vector index |
 | knowledge vector search | `GET /api/knowledge/vector-search` 基于本地 embedding snapshot 返回相似候选；不调用外部模型，不代表生产级 vector index / ANN 已启用 |
+| knowledge context refresh | knowledge entry 创建/归档/恢复或 source active/archive 变化会为受影响的 knowledge-derived task context pack 追加下一版；旧版本保持可追溯 |
 | mcp management | Web `/mcp` 只读展示 MCP servers、selected server tools 与 real-runtime readiness，不触发 health-check、mock invoke、安装/卸载或真实 transport |
 | mcp invocation ledger | Web `/mcp/invocations` 只读展示 MCP tool invocation status、caller、risk、duration 与输入/输出摘要，不触发 mock invoke、health-check、真实 transport、replay 或写操作 |
 | execution result ledger | Web `/execution/results` 只读展示 execution job results、attempt snapshots 与 result summary，不触发 tick/retry/evaluate-rule/writeback/replay 或写操作 |

@@ -96,6 +96,22 @@ export async function listByTask(
     .orderBy(asc(contextPacks.version));
 }
 
+export async function listTaskScoped(
+  db: Db,
+  projectId: string,
+): Promise<ContextPackRow[]> {
+  const rows = await db
+    .select({ pack: contextPacks })
+    .from(contextPacks)
+    .innerJoin(contentTasks, eq(contentTasks.id, contextPacks.contentTaskId))
+    .where(and(
+      eq(contentTasks.projectId, projectId),
+      eq(contextPacks.scope, "task"),
+    ))
+    .orderBy(asc(contextPacks.version));
+  return rows.map((r) => r.pack);
+}
+
 export async function listByStage(
   db: Db,
   projectId: string,
