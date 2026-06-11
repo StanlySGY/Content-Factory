@@ -47,6 +47,9 @@ describe("product route readiness", () => {
     const publisherRoute = body.routes.find((route: { key: string }) => route.key === "publisher_platform");
     expect(publisherRoute.delivered_capabilities).toContain("channel configuration write UI");
     expect(publisherRoute.missing_product_requirements).not.toContain("channel configuration write UI");
+    const mcpMarketplaceRoute = body.routes.find((route: { key: string }) => route.key === "mcp_marketplace");
+    expect(mcpMarketplaceRoute.delivered_capabilities).toContain("marketplace install, disable, and uninstall UI");
+    expect(mcpMarketplaceRoute.missing_product_requirements).toContain("hot-load install and disable execution");
     const rbacRoute = body.routes.find((route: { key: string }) => route.key === "multi_tenant_rbac");
     expect(rbacRoute.delivered_capabilities).toContain("RBAC member and project membership mutation UI");
     expect(rbacRoute.missing_product_requirements).not.toContain("role mutation UI with approval/audit policy");

@@ -1647,6 +1647,11 @@ button {
   color: var(--text-secondary);
   font-size: 11px;
 }
+.marketplace-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
 
 /* ---- Publisher workbench ---- */
 .publisher-kpi-grid {

@@ -994,9 +994,10 @@ export class ExecutionOpsService {
         ],
         deliveredCapabilities: [
           "marketplace entry and installation APIs",
+          "marketplace install, disable, and uninstall UI",
           "tool invocation ledger read model",
           "default-closed MCP real runtime readiness",
-          "readonly marketplace and invocation ledger UIs",
+          "marketplace management UI and readonly invocation ledger UI",
         ],
         missingProductRequirements: [
           "external marketplace discovery",
@@ -1007,7 +1008,7 @@ export class ExecutionOpsService {
         safetyBoundaries: [
           "readiness checks do not invoke MCP tools",
           "real MCP runtime remains endpoint and tool allowlist gated",
-          "marketplace UI does not install, disable, or uninstall entries",
+          "marketplace UI only mutates local installation control-plane records",
         ],
       },
       {

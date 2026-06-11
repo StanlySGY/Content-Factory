@@ -51,7 +51,7 @@ Content Factory 当前处于 **Final RC / production candidate** 收口阶段：
 | MCP Management UI | 已完成 | Web 新增 `/mcp` 只读 MCP 管理入口，展示 MCP server/tool inventory 与 real-runtime readiness；不启用热加载、不执行 tool invocation、不打开真实外部 transport |
 | RBAC Management UI | 已完成 | Web `/rbac` 支持 organization member 添加、角色更新、停用，以及默认项目 membership 授权/撤销；不接 auth/session、不做全局业务 API enforcement、不替代角色变更审批/审计策略 |
 | Agent Evaluation Dashboard UI | 已完成 | Web 新增 `/evaluations` 只读评估看板，展示 evaluation analytics、low-quality results 与 result evaluation ledger；不接 LLM judge、不做模型对比、不触发自动回归评测或 rule runner |
-| MCP Marketplace Management UI | 已完成 | Web 新增 `/mcp/marketplace` 只读 marketplace 管理入口，展示 marketplace entries、project installations 与 server binding；不做外部发现、不执行安装/禁用/卸载、不触发 hot-load 或 tool invocation |
+| MCP Marketplace Management UI | 已完成 | Web `/mcp/marketplace` 支持本地 marketplace entry 安装、installation 禁用与卸载，并展示 project installations 与 server binding；不做外部发现、不触发 hot-load、真实 transport 或 tool invocation |
 | Tool Invocation Ledger UI | 已完成 | Web 新增 `/mcp/invocations` 只读 MCP tool invocation 账本入口，按工具展示 invocation status、risk、duration、caller 与输入/输出摘要；不触发 mock invoke、真实 transport、重放或任何写操作 |
 | Execution Result Ledger UI | 已完成 | Web 新增 `/execution/results` 只读 execution result 账本入口，按 job 展示 `execution_results` attempts、latest status、error_type、duration、request/response snapshot 与 result summary；不触发 tick、retry、evaluate-rule、writeback、replay 或任何写操作 |
 | Execution Outbox Event Ledger UI | 已完成 | Web 新增 `/execution/outbox` 只读 execution outbox event 账本入口，按 job 展示 `outbox_events` event_type、processed/error、retry_count、claim 状态与 payload 摘要；不触发 process-batch、retry、tick、relay、replay、writeback 或任何写操作 |
@@ -75,7 +75,7 @@ Content Factory 当前处于 **Final RC / production candidate** 收口阶段：
 
 | 路线 | 范围 | 当前缺口 |
 | --- | --- | --- |
-| MCP Marketplace | 外部发现、SDK transport、SSE/stdio、热加载、tool invocation ledger 回写 | 当前已有 backend MVP、只读管理 UI 与只读 invocation ledger UI |
+| MCP Marketplace | 外部发现、SDK transport、SSE/stdio、热加载、tool invocation ledger 回写 | 当前已有 backend MVP、本地安装控制面 UI 与只读 invocation ledger UI |
 | Knowledge / RAG | embedding、向量库、LLM rerank、context pack 自动刷新 | 当前已有关键词、后端管理 API、knowledge inventory UI 与 candidate review UI |
 | Agent Evaluation | LLM judge、真实成本归因、模型对比、回归评测 | 当前已有人工/规则评价、analytics API 与只读 dashboard |
 | Skill / Plugin | Skill 路由、质量门禁自动化、插件隔离、供应链验证、UI | 当前不是 MVP 验收项 |

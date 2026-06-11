@@ -283,7 +283,7 @@ export const api = {
   listExecutionJobEvents: (jobId: string) =>
     request<OutboxEventDTO[]>("GET", `/execution/jobs/${jobId}/events`),
 
-  // ── MCP Marketplace Management（只读管理面）──
+  // ── MCP Marketplace Management（本地安装控制面）──
   listMcpMarketplaceEntries: () =>
     request<McpMarketplaceEntryDTO[]>("GET", "/mcp/marketplace/entries"),
   listMcpMarketplaceInstallations: (projectId: string) =>
@@ -291,6 +291,12 @@ export const api = {
       "GET",
       `/mcp/marketplace/installations${toQuery({ project_id: projectId })}`,
     ),
+  installMcpMarketplaceEntry: (entryId: string) =>
+    request<McpMarketplaceInstallationDTO>("POST", `/mcp/marketplace/entries/${entryId}/install`),
+  disableMcpMarketplaceInstallation: (id: string) =>
+    request<McpMarketplaceInstallationDTO>("POST", `/mcp/marketplace/installations/${id}/disable`),
+  uninstallMcpMarketplaceInstallation: (id: string) =>
+    request<McpMarketplaceInstallationDTO>("POST", `/mcp/marketplace/installations/${id}/uninstall`),
 
   // ── MCP Management（只读管理面）──
   listMcpServers: () => request<McpServerDTO[]>("GET", "/mcp/servers"),

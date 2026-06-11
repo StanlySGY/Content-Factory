@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import type {
@@ -54,6 +55,19 @@ const browserOpsEntry: McpMarketplaceEntryDTO = {
   updated_at: "2026-06-10T00:03:00.000Z",
 };
 
+const grammarEntry: McpMarketplaceEntryDTO = {
+  id: "00000000-0000-0000-0000-000000001403",
+  slug: "grammar-tools",
+  manifest: {
+    server_ref: "mcp://grammar-tools",
+    display_name: "Grammar Tools Pack",
+    endpoint: "https://grammar-mcp.example.test/rpc",
+    tools: [{ name: "check_grammar", description: "Check grammar issues" }],
+  },
+  created_at: "2026-06-10T00:10:00.000Z",
+  updated_at: "2026-06-10T00:11:00.000Z",
+};
+
 const mcpServers: McpServerDTO[] = [
   {
     id: "00000000-0000-0000-0000-000000001501",
@@ -101,6 +115,8 @@ const installations: McpMarketplaceInstallationDTO[] = [
     updated_at: "2026-06-10T00:09:00.000Z",
   },
 ];
+const installedInstallation = installations[0]!;
+const disabledInstallation = installations[1]!;
 
 function renderRoute() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -141,6 +157,42 @@ describe("McpMarketplaceManagementPage", () => {
     expect(apiMock.installMcpMarketplaceEntry).not.toHaveBeenCalled();
     expect(apiMock.disableMcpMarketplaceInstallation).not.toHaveBeenCalled();
     expect(apiMock.uninstallMcpMarketplaceInstallation).not.toHaveBeenCalled();
+    expect(apiMock.mockInvokeMcpTool).not.toHaveBeenCalled();
+  });
+
+  it("installs, disables and uninstalls marketplace entries without invoking tools", async () => {
+    apiMock.listMcpMarketplaceEntries.mockResolvedValue([
+      contentSearchEntry,
+      browserOpsEntry,
+      grammarEntry,
+    ]);
+    apiMock.listMcpMarketplaceInstallations.mockResolvedValue(installations);
+    apiMock.listMcpServers.mockResolvedValue(mcpServers);
+    apiMock.installMcpMarketplaceEntry.mockResolvedValue({
+      ...installedInstallation,
+      id: "00000000-0000-0000-0000-000000001603",
+      entry_id: grammarEntry.id,
+    });
+    apiMock.disableMcpMarketplaceInstallation.mockResolvedValue({
+      ...installedInstallation,
+      status: "disabled",
+    });
+    apiMock.uninstallMcpMarketplaceInstallation.mockResolvedValue({
+      ...disabledInstallation,
+      status: "uninstalled",
+    });
+
+    renderRoute();
+
+    await screen.findByText("Grammar Tools Pack");
+    await userEvent.click(screen.getByRole("button", { name: "安装 Grammar Tools Pack" }));
+    expect(apiMock.installMcpMarketplaceEntry).toHaveBeenCalledWith(grammarEntry.id);
+
+    await userEvent.click(screen.getByRole("button", { name: `禁用 ${installedInstallation.id}` }));
+    expect(apiMock.disableMcpMarketplaceInstallation).toHaveBeenCalledWith(installedInstallation.id);
+
+    await userEvent.click(screen.getByRole("button", { name: `卸载 ${disabledInstallation.id}` }));
+    expect(apiMock.uninstallMcpMarketplaceInstallation).toHaveBeenCalledWith(disabledInstallation.id);
     expect(apiMock.mockInvokeMcpTool).not.toHaveBeenCalled();
   });
 });

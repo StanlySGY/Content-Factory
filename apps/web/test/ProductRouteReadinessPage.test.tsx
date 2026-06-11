@@ -39,10 +39,19 @@ const readiness: ProductRouteReadinessResponse = {
       mvp_ready: true,
       production_ready: false,
       status: "ready",
-      evidence_endpoints: ["/api/mcp/marketplace/entries"],
-      delivered_capabilities: ["marketplace entry and installation APIs"],
-      missing_product_requirements: ["external marketplace discovery"],
-      safety_boundaries: ["readiness checks do not invoke MCP tools"],
+      evidence_endpoints: ["/api/mcp/marketplace/entries", "/mcp/marketplace"],
+      delivered_capabilities: [
+        "marketplace entry and installation APIs",
+        "marketplace install, disable, and uninstall UI",
+      ],
+      missing_product_requirements: [
+        "external marketplace discovery",
+        "hot-load install and disable execution",
+      ],
+      safety_boundaries: [
+        "readiness checks do not invoke MCP tools",
+        "marketplace UI only mutates local installation control-plane records",
+      ],
     },
     {
       key: "multi_tenant_rbac",

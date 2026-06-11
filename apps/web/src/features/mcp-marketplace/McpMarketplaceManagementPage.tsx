@@ -1,7 +1,12 @@
 import type { McpMarketplaceEntryDTO, McpMarketplaceInstallationDTO, McpServerDTO } from "@cf/shared";
 import { EmptyState, ErrorBar, Skeleton } from "../../components/states.js";
 import { DEFAULT_PROJECT_ID } from "../../lib/config.js";
-import { useMcpMarketplaceDashboard } from "./hooks.js";
+import {
+  useDisableMcpMarketplaceInstallation,
+  useInstallMcpMarketplaceEntry,
+  useMcpMarketplaceDashboard,
+  useUninstallMcpMarketplaceInstallation,
+} from "./hooks.js";
 
 type DashboardData = {
   entries: McpMarketplaceEntryDTO[];
@@ -29,6 +34,17 @@ function latestInstallationForEntry(
   installations: McpMarketplaceInstallationDTO[],
 ) {
   return installations.find((installation) => installation.entry_id === entryId);
+}
+
+function activeInstallationForEntry(
+  entryId: string,
+  installations: McpMarketplaceInstallationDTO[],
+) {
+  return installations.find(
+    (installation) =>
+      installation.entry_id === entryId &&
+      (installation.status === "installed" || installation.status === "disabled"),
+  );
 }
 
 function Summary({ data }: { data: DashboardData }) {
@@ -79,9 +95,13 @@ function ToolList({ entry }: { entry: McpMarketplaceEntryDTO }) {
 function EntryTable({
   entries,
   installations,
+  actionPending,
+  onInstall,
 }: {
   entries: McpMarketplaceEntryDTO[];
   installations: McpMarketplaceInstallationDTO[];
+  actionPending: boolean;
+  onInstall: (entryId: string) => void;
 }) {
   if (entries.length === 0) {
     return <EmptyState title="还没有 marketplace entry" hint="本地 marketplace catalog 创建后会出现在这里。" />;
@@ -95,11 +115,13 @@ function EntryTable({
           <th>Endpoint</th>
           <th>Tools</th>
           <th>Install state</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
         {entries.map((entry) => {
           const installation = latestInstallationForEntry(entry.id, installations);
+          const activeInstallation = activeInstallationForEntry(entry.id, installations);
           return (
             <tr key={entry.id}>
               <td>
@@ -115,6 +137,19 @@ function EntryTable({
               </td>
               <td>
                 <span>{installation ? `${installation.status} entry` : "not installed"}</span>
+              </td>
+              <td>
+                {!activeInstallation && (
+                  <button
+                    aria-label={`安装 ${entry.manifest.display_name}`}
+                    className="btn primary"
+                    disabled={actionPending}
+                    type="button"
+                    onClick={() => onInstall(entry.id)}
+                  >
+                    安装
+                  </button>
+                )}
               </td>
             </tr>
           );
@@ -133,10 +168,16 @@ function InstallationTable({
   installations,
   entries,
   servers,
+  actionPending,
+  onDisable,
+  onUninstall,
 }: {
   installations: McpMarketplaceInstallationDTO[];
   entries: McpMarketplaceEntryDTO[];
   servers: McpServerDTO[];
+  actionPending: boolean;
+  onDisable: (installationId: string) => void;
+  onUninstall: (installationId: string) => void;
 }) {
   if (installations.length === 0) {
     return <EmptyState title="还没有安装记录" hint="安装历史会按项目显示在这里。" />;
@@ -153,6 +194,7 @@ function InstallationTable({
           <th>Status</th>
           <th>Server binding</th>
           <th>Project</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -178,6 +220,32 @@ function InstallationTable({
               <td>
                 <code>{installation.project_id}</code>
               </td>
+              <td>
+                <div className="marketplace-actions">
+                  {installation.status === "installed" && (
+                    <button
+                      aria-label={`禁用 ${installation.id}`}
+                      className="btn"
+                      disabled={actionPending}
+                      type="button"
+                      onClick={() => onDisable(installation.id)}
+                    >
+                      禁用
+                    </button>
+                  )}
+                  {(installation.status === "installed" || installation.status === "disabled") && (
+                    <button
+                      aria-label={`卸载 ${installation.id}`}
+                      className="btn danger"
+                      disabled={actionPending}
+                      type="button"
+                      onClick={() => onUninstall(installation.id)}
+                    >
+                      卸载
+                    </button>
+                  )}
+                </div>
+              </td>
             </tr>
           );
         })}
@@ -186,7 +254,19 @@ function InstallationTable({
   );
 }
 
-function LoadedMarketplaceDashboard({ data }: { data: DashboardData }) {
+function LoadedMarketplaceDashboard({
+  data,
+  actionPending,
+  onDisable,
+  onInstall,
+  onUninstall,
+}: {
+  data: DashboardData;
+  actionPending: boolean;
+  onDisable: (installationId: string) => void;
+  onInstall: (entryId: string) => void;
+  onUninstall: (installationId: string) => void;
+}) {
   return (
     <>
       <Summary data={data} />
@@ -196,7 +276,12 @@ function LoadedMarketplaceDashboard({ data }: { data: DashboardData }) {
             <h2 className="section-title">Marketplace entries</h2>
             <span>{data.entries.length} total</span>
           </div>
-          <EntryTable entries={data.entries} installations={data.installations} />
+          <EntryTable
+            actionPending={actionPending}
+            entries={data.entries}
+            installations={data.installations}
+            onInstall={onInstall}
+          />
         </section>
 
         <section className="marketplace-detail-column">
@@ -205,8 +290,11 @@ function LoadedMarketplaceDashboard({ data }: { data: DashboardData }) {
             <span>{DEFAULT_PROJECT_ID}</span>
           </div>
           <InstallationTable
+            actionPending={actionPending}
             entries={data.entries}
             installations={data.installations}
+            onDisable={onDisable}
+            onUninstall={onUninstall}
             servers={data.servers}
           />
         </section>
@@ -217,21 +305,35 @@ function LoadedMarketplaceDashboard({ data }: { data: DashboardData }) {
 
 export function McpMarketplaceManagementPage() {
   const dashboardQuery = useMcpMarketplaceDashboard();
+  const installEntry = useInstallMcpMarketplaceEntry();
+  const disableInstallation = useDisableMcpMarketplaceInstallation();
+  const uninstallInstallation = useUninstallMcpMarketplaceInstallation();
+  const actionPending = installEntry.isPending || disableInstallation.isPending || uninstallInstallation.isPending;
+  const mutationError = installEntry.error || disableInstallation.error || uninstallInstallation.error;
 
   return (
     <div className="marketplace-management">
       <div className="page-head">
         <div>
           <h1>MCP 市场</h1>
-          <p>只读 marketplace catalog、项目安装历史与 server binding</p>
+          <p>本地 marketplace catalog、项目安装控制面与 server binding</p>
         </div>
       </div>
 
       {dashboardQuery.isError && (
         <ErrorBar message={`MCP marketplace 加载失败：${(dashboardQuery.error as Error).message}`} />
       )}
+      {mutationError && <ErrorBar message={`MCP marketplace 操作失败：${(mutationError as Error).message}`} />}
       {dashboardQuery.isLoading && <Skeleton rows={5} />}
-      {dashboardQuery.data && <LoadedMarketplaceDashboard data={dashboardQuery.data} />}
+      {dashboardQuery.data && (
+        <LoadedMarketplaceDashboard
+          actionPending={actionPending}
+          data={dashboardQuery.data}
+          onDisable={(installationId) => disableInstallation.mutate(installationId)}
+          onInstall={(entryId) => installEntry.mutate(entryId)}
+          onUninstall={(installationId) => uninstallInstallation.mutate(installationId)}
+        />
+      )}
     </div>
   );
 }
