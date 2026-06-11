@@ -53,8 +53,10 @@ describe("product route readiness", () => {
     const rbacRoute = body.routes.find((route: { key: string }) => route.key === "multi_tenant_rbac");
     expect(rbacRoute.delivered_capabilities).toContain("RBAC member and project membership mutation UI");
     expect(rbacRoute.delivered_capabilities).toContain("RBAC member and project membership audit events");
+    expect(rbacRoute.delivered_capabilities).toContain("RBAC project route cross-project denial regression matrix");
     expect(rbacRoute.missing_product_requirements).not.toContain("role mutation UI with approval/audit policy");
     expect(rbacRoute.missing_product_requirements).not.toContain("approval and audit policy for role mutations");
+    expect(rbacRoute.missing_product_requirements).not.toContain("cross-project access denial regression matrix");
     expect(rbacRoute.missing_product_requirements).toContain("approval policy for role mutations");
     expect(JSON.stringify(body)).not.toContain("sk-");
     expect(JSON.stringify(body)).not.toContain("Bearer");

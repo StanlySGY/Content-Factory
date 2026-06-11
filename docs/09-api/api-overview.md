@@ -138,7 +138,7 @@
 | --- | --- | --- |
 | MCP Marketplace | `/api/mcp/marketplace/entries`、`/api/mcp/marketplace/installations`、安装/禁用/卸载、Web `/mcp/marketplace` 本地安装控制面 UI | 外部 marketplace 发现、SDK transport、SSE/stdio、热加载 |
 | Publisher Platform Backend | `/api/publisher/channels`、`/api/publish-records`、Publisher real-runtime readiness、Web `/publisher` 渠道创建与启用/停用/归档 UI | 真实发布审批流、素材管理、撤回/重发、失败告警、多渠道编排 |
-| Multi-tenant RBAC Backend | `/api/rbac/organizations`、`/api/rbac/organizations/:id/members`、`/api/rbac/projects/:id/memberships`、成员管理、项目 membership、`check-access`、RBAC 成员和 membership 变更审计、Web `/rbac` 成员与项目授权管理 UI | auth/session、全局业务 API enforcement、角色变更审批策略、跨项目拒绝回归矩阵 |
+| Multi-tenant RBAC Backend | `/api/rbac/organizations`、`/api/rbac/organizations/:id/members`、`/api/rbac/projects/:id/memberships`、成员管理、项目 membership、`check-access`、项目级 RBAC 端点跨项目拒绝回归矩阵、RBAC 成员和 membership 变更审计、Web `/rbac` 成员与项目授权管理 UI | auth/session、全局业务 API enforcement、角色变更审批策略 |
 | Knowledge/RAG Backend | `/api/knowledge/sources`、entries、archive/restore、keyword search、task candidates、只读 candidate review UI | embedding、向量库、LLM rerank、context pack 自动刷新 |
 | Agent Evaluation Backend | `/api/execution/results/:id/evaluations`、rule evaluation、analytics、low-quality list、只读 dashboard UI | LLM judge、真实成本归因、模型对比、回归评测 |
 | Execution Observability | `/api/execution/jobs`、`/api/execution/jobs/:id/results`、`/api/execution/jobs/:id/result-summary`、`/api/execution/jobs/:id/events`、`/api/execution/results/:id/writebacks`、只读 result/outbox/writeback ledger UI | replay、写回操作台 |

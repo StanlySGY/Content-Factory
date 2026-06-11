@@ -1029,12 +1029,12 @@ export class ExecutionOpsService {
           "RBAC management UI with member and project membership controls",
           "RBAC member and project membership mutation UI",
           "RBAC member and project membership audit events",
+          "RBAC project route cross-project denial regression matrix",
         ],
         missingProductRequirements: [
           "auth and session integration",
           "global API authorization enforcement",
           "approval policy for role mutations",
-          "cross-project access denial regression matrix",
         ],
         safetyBoundaries: [
           "current UI only calls explicit RBAC control-plane mutation APIs",

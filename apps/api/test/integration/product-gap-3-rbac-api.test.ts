@@ -6,7 +6,9 @@ import { afterEach, describe, expect, it } from "vitest";
 import { buildApp, type BuiltApp } from "../../src/app.js";
 import { DEFAULT_PROJECT_ID, DEFAULT_USER_ID, loadEnv } from "../../src/config/env.js";
 import { createDb, createPool, runInProject, type Db } from "../../src/infrastructure/db/client.js";
-import { auditEvents, users } from "../../src/infrastructure/db/schema.js";
+import { auditEvents, projectMemberships, projects, users } from "../../src/infrastructure/db/schema.js";
+
+const OTHER_PROJECT_ID = "00000000-0000-0000-0000-000000000099";
 
 let built: BuiltApp | null = null;
 let app: FastifyInstance | null = null;
@@ -37,6 +39,11 @@ async function createUser(name = "Member") {
     status: "active",
   }).returning();
   return user!;
+}
+
+async function createProject(id = OTHER_PROJECT_ID) {
+  await db!.insert(projects).values({ id, ownerId: DEFAULT_USER_ID, name: `RBAC Project ${randomUUID()}` });
+  return id;
 }
 
 async function auditActionsFor(subjectType: string, subjectId: string) {
@@ -245,5 +252,58 @@ describe("Product Gap 3 Multi-tenant RBAC Backend MVP", () => {
     });
     expect(denied.statusCode).toBe(200);
     expect(denied.json()).toMatchObject({ allowed: false });
+  });
+
+  it("denies cross-project project membership list, grant, access check and revoke by id", async () => {
+    const api = await startApp();
+    const otherProjectId = await createProject();
+    const user = await createUser("Cross Project RBAC");
+    const org = await api.inject({
+      method: "POST",
+      url: "/api/rbac/organizations",
+      payload: { name: `Org ${randomUUID()}` },
+    });
+    expect(org.statusCode).toBe(201);
+    const member = await api.inject({
+      method: "POST",
+      url: `/api/rbac/organizations/${org.json().id}/members`,
+      payload: { user_id: user.id, role: "member" },
+    });
+    expect(member.statusCode).toBe(201);
+
+    const [otherProjectMembership] = await db!.insert(projectMemberships).values({
+      projectId: otherProjectId,
+      organizationMemberId: member.json().id,
+      role: "viewer",
+      grantedBy: DEFAULT_USER_ID,
+    }).returning();
+
+    const listDenied = await api.inject({
+      method: "GET",
+      url: `/api/rbac/projects/${otherProjectId}/memberships`,
+    });
+    expect(listDenied.statusCode).toBe(404);
+
+    const grantDenied = await api.inject({
+      method: "POST",
+      url: `/api/rbac/projects/${otherProjectId}/memberships`,
+      payload: { organization_member_id: member.json().id, role: "editor" },
+    });
+    expect(grantDenied.statusCode).toBe(404);
+
+    const accessDenied = await api.inject({
+      method: "GET",
+      url: `/api/rbac/projects/${otherProjectId}/check-access?user_id=${user.id}&permission=project.read`,
+    });
+    expect(accessDenied.statusCode).toBe(404);
+
+    const revokeDenied = await api.inject({
+      method: "POST",
+      url: `/api/rbac/project-memberships/${otherProjectMembership!.id}/revoke`,
+    });
+    expect(revokeDenied.statusCode).toBe(404);
+
+    const [unchanged] = await db!.select().from(projectMemberships).where(eq(projectMemberships.id, otherProjectMembership!.id));
+    expect(unchanged!.status).toBe("active");
   });
 });
