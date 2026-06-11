@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
+import type { FormEvent } from "react";
 import type {
+  CrossModelRegressionRunResponse,
   EvaluationCostAttributionResponse,
+  EvaluationCostSettlementRunResponse,
+  EvaluationGovernanceReadinessResponse,
   EvaluationModelComparisonResponse,
+  EvaluationTrendResponse,
   ExecutionEvaluationAnalyticsDTO,
   ExecutionResultEvaluationDTO,
   LowQualityEvaluationsResponse,
@@ -11,6 +16,8 @@ import {
   DEFAULT_LOW_QUALITY_QUERY,
   useEvaluationDashboard,
   useExecutionResultEvaluations,
+  useRunCrossModelRegression,
+  useRunEvaluationCostSettlement,
 } from "./hooks.js";
 
 type LowQualityItem = LowQualityEvaluationsResponse["items"][number];
@@ -20,6 +27,8 @@ type EvaluationDashboardData = {
   lowQuality: LowQualityEvaluationsResponse;
   modelComparison: EvaluationModelComparisonResponse;
   costAttribution: EvaluationCostAttributionResponse;
+  trend: EvaluationTrendResponse;
+  governance: EvaluationGovernanceReadinessResponse;
 };
 
 function statusTone(score: number) {
@@ -304,6 +313,225 @@ function CostAttributionCard({
   );
 }
 
+function EvaluationTrendCard({ trend }: { trend: EvaluationTrendResponse }) {
+  return (
+    <section className="card evaluation-trend-card">
+      <div className="evaluation-card-head">
+        <div>
+          <h2>Evaluation trends</h2>
+          <span>{trend.bucket_count} buckets / latest {trend.latest_bucket_date ?? "-"}</span>
+        </div>
+        <span className="evaluation-muted">{trend.days} days</span>
+      </div>
+      {trend.buckets.length > 0 ? (
+        <table className="table evaluation-table evaluation-trend-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Count</th>
+              <th>Scores</th>
+              <th>Low quality</th>
+            </tr>
+          </thead>
+          <tbody>
+            {trend.buckets.map((bucket) => (
+              <tr key={bucket.date}>
+                <td><strong>{bucket.date}</strong></td>
+                <td>{bucket.evaluation_count}</td>
+                <td>
+                  <strong>avg quality {formatNumber(bucket.average_quality_score)}</strong>
+                  <span>
+                    cost {formatNumber(bucket.average_cost_score)} / latency{" "}
+                    {formatNumber(bucket.average_latency_score)}
+                  </span>
+                </td>
+                <td>{bucket.low_quality_count}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <EmptyState title="暂无趋势数据" hint="创建 evaluation 后会显示按天聚合的趋势。" />
+      )}
+    </section>
+  );
+}
+
+function GovernanceReadinessCard({
+  governance,
+}: {
+  governance: EvaluationGovernanceReadinessResponse;
+}) {
+  return (
+    <section className="card evaluation-governance-card">
+      <div className="evaluation-card-head">
+        <div>
+          <h2>Governance readiness</h2>
+          <span>{governance.ready_gate_count} ready / {governance.blocked_gate_count} blocked</span>
+        </div>
+        <span className={`badge ${governance.production_ready ? "success" : "running"}`}>
+          {governance.production_ready ? "production ready" : "external gates"}
+        </span>
+      </div>
+      <table className="table evaluation-table evaluation-governance-table">
+        <thead>
+          <tr>
+            <th>Gate</th>
+            <th>Status</th>
+            <th>Evidence</th>
+          </tr>
+        </thead>
+        <tbody>
+          {governance.gates.map((gate) => (
+            <tr key={gate.key}>
+              <td>
+                <strong>{gate.title}</strong>
+                <span>{gate.external_dependency ? "external dependency" : "local control"}</span>
+              </td>
+              <td><span className={`badge ${gate.status === "ready" ? "success" : "running"}`}>{gate.status}</span></td>
+              <td>{gate.evidence}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+  );
+}
+
+function CostSettlementResult({ result }: { result: EvaluationCostSettlementRunResponse | undefined }) {
+  if (!result) return null;
+
+  return (
+    <div className="evaluation-operation-result">
+      <strong>{result.settlement_count} settled / {result.skipped_count} skipped</strong>
+      <span>{result.total_amount_cents} cents total</span>
+      {result.settlements.map((item) => (
+        <span key={item.execution_result_id}>{item.model}</span>
+      ))}
+    </div>
+  );
+}
+
+function CostSettlementPanel() {
+  const mutation = useRunEvaluationCostSettlement();
+  const [jobId, setJobId] = useState("");
+  const [version, setVersion] = useState("manual-rate-card-v1");
+  const [currency, setCurrency] = useState("USD");
+  const [promptRate, setPromptRate] = useState("0");
+  const [completionRate, setCompletionRate] = useState("0");
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await mutation.mutateAsync({
+      job_id: jobId.trim(),
+      rate_card: {
+        version: version.trim(),
+        currency: currency.trim(),
+        prompt_micro_cents_per_token: Number(promptRate),
+        completion_micro_cents_per_token: Number(completionRate),
+      },
+    });
+  }
+
+  return (
+    <section className="card evaluation-operation-card">
+      <div className="evaluation-card-head">
+        <div>
+          <h2>Cost settlement</h2>
+          <span>explicit rate card</span>
+        </div>
+      </div>
+      <form className="evaluation-operation-form" onSubmit={submit}>
+        <label>Settlement job ID<input required value={jobId} onChange={(e) => setJobId(e.target.value)} /></label>
+        <label>Rate card version<input required value={version} onChange={(e) => setVersion(e.target.value)} /></label>
+        <label>Currency<input required value={currency} onChange={(e) => setCurrency(e.target.value)} /></label>
+        <label>
+          Prompt micro-cents per token
+          <input min="0" required type="number" value={promptRate} onChange={(e) => setPromptRate(e.target.value)} />
+        </label>
+        <label>
+          Completion micro-cents per token
+          <input min="0" required type="number" value={completionRate} onChange={(e) => setCompletionRate(e.target.value)} />
+        </label>
+        <button className="btn primary" disabled={mutation.isPending} type="submit">Run settlement</button>
+      </form>
+      {mutation.isError && <ErrorBar message={`cost settlement failed: ${(mutation.error as Error).message}`} />}
+      <CostSettlementResult result={mutation.data} />
+    </section>
+  );
+}
+
+function CrossModelResult({ result }: { result: CrossModelRegressionRunResponse | undefined }) {
+  if (!result) return null;
+
+  return (
+    <div className="evaluation-operation-result">
+      <strong>{result.run_id}</strong>
+      <span>{result.job_count} jobs / {result.evaluation_count} evaluations</span>
+      {result.items.map((item) => (
+        <span key={item.evaluation_id}>{item.model}</span>
+      ))}
+    </div>
+  );
+}
+
+function splitList(value: string) {
+  return value.split(/[\n,]/).map((item) => item.trim()).filter(Boolean);
+}
+
+function CrossModelRegressionPanel() {
+  const mutation = useRunCrossModelRegression();
+  const [prompt, setPrompt] = useState("");
+  const [models, setModels] = useState("");
+  const [runId, setRunId] = useState("manual-regression-run");
+  const [tags, setTags] = useState("");
+  const [maxAttempts, setMaxAttempts] = useState("1");
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await mutation.mutateAsync({
+      prompt: prompt.trim(),
+      models: splitList(models),
+      idempotency_key: runId.trim(),
+      max_attempts: Number(maxAttempts),
+      tags: splitList(tags),
+    });
+  }
+
+  return (
+    <section className="card evaluation-operation-card">
+      <div className="evaluation-card-head">
+        <div>
+          <h2>Cross-model regression</h2>
+          <span>model-tagged rule evaluations</span>
+        </div>
+      </div>
+      <form className="evaluation-operation-form" onSubmit={submit}>
+        <label>Regression prompt<textarea required value={prompt} onChange={(e) => setPrompt(e.target.value)} /></label>
+        <label>Regression models<textarea required value={models} onChange={(e) => setModels(e.target.value)} /></label>
+        <label>Regression run ID<input required value={runId} onChange={(e) => setRunId(e.target.value)} /></label>
+        <label>Regression tags<input value={tags} onChange={(e) => setTags(e.target.value)} /></label>
+        <label>
+          Max attempts
+          <input min="1" max="5" required type="number" value={maxAttempts} onChange={(e) => setMaxAttempts(e.target.value)} />
+        </label>
+        <button className="btn primary" disabled={mutation.isPending} type="submit">Run cross-model regression</button>
+      </form>
+      {mutation.isError && <ErrorBar message={`cross-model regression failed: ${(mutation.error as Error).message}`} />}
+      <CrossModelResult result={mutation.data} />
+    </section>
+  );
+}
+
+function EvaluationOperationsPanel() {
+  return (
+    <section className="evaluation-operations-grid">
+      <CostSettlementPanel />
+      <CrossModelRegressionPanel />
+    </section>
+  );
+}
+
 function LowQualityTable({
   items,
   selectedResultId,
@@ -478,6 +706,8 @@ function LoadedEvaluationDashboard({ data }: { data: EvaluationDashboardData }) 
     <>
       <Summary analytics={data.analytics} />
       <DistributionCard analytics={data.analytics} />
+      <EvaluationTrendCard trend={data.trend} />
+      <GovernanceReadinessCard governance={data.governance} />
       <ModelComparisonCard modelComparison={data.modelComparison} />
       <CostAttributionCard costAttribution={data.costAttribution} />
 
@@ -517,6 +747,7 @@ export function AgentEvaluationDashboardPage() {
       )}
       {dashboardQuery.isLoading && <Skeleton rows={5} />}
 
+      <EvaluationOperationsPanel />
       {dashboardQuery.data && <LoadedEvaluationDashboard data={dashboardQuery.data} />}
     </div>
   );

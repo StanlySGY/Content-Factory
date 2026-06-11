@@ -134,7 +134,7 @@
 
 ### 4.5 Final RC 后端扩展 MVP
 
-> 以下能力已在后端补齐 MVP API，但尚未代表完整产品体验完成；当前主要缺口是前端页面、真实外部集成、生产启用配置或高级自动化。后续范围以 `docs/10-development/production-candidate-next-actions.md` 为准。
+> 以下能力已在后端补齐 MVP API，并按路线提供必要 Web 入口；这仍不代表真实生产环境已经启用。当前主要缺口是外部系统集成、生产启用配置或高级自动化。后续范围以 `docs/10-development/production-candidate-next-actions.md` 为准。
 
 | 能力 | 已有 API 范围 | 仍未完成 |
 | --- | --- | --- |
@@ -142,7 +142,7 @@
 | Publisher Platform Backend | `/api/publisher/channels`、`/api/publish-records`、本地撤回/重发控制面、Publisher real-runtime readiness、Web `/publisher` 渠道创建与启用/停用/归档 UI | 真实发布审批流、素材管理、失败告警、多渠道编排 |
 | Multi-tenant RBAC Backend | `/api/rbac/organizations`、`/api/rbac/organizations/:id/members`、`/api/rbac/projects/:id/memberships`、成员管理、项目 membership、`check-access`、项目级 RBAC 端点跨项目拒绝回归矩阵、角色变更 `approval_ref` 合同、RBAC 成员和 membership 变更审计、Web `/rbac` 成员与项目授权管理 UI、`x-cf-actor-id` / `x-cf-project-id` header-based session context、全局项目业务 API `project.read/write` enforcement | 生产级 auth provider、session lifecycle hardening、组织与项目归属模型 |
 | Knowledge/RAG Backend | `/api/knowledge/sources`、entries、archive/restore、keyword search、task candidates、`/api/knowledge/embedding-readiness`、`/api/knowledge/vector-search`、本地 deterministic embedding snapshot、本地 vector retrieval、append-only context pack auto-refresh、只读 candidate review UI | 生产级 vector index、LLM rerank |
-| Agent Evaluation Backend | `/api/execution/results/:id/evaluations`、rule evaluation、`POST /api/execution/results/:id/evaluate-llm` real-runtime LLM judge、`/api/execution/evaluations/regression-run`、analytics、low-quality list、`/api/execution/evaluations/model-comparison` tag-based 模型对比、`/api/execution/evaluations/cost-attribution` provider runtime metadata 成本归因校准、`POST /api/execution/evaluations/cost-settlement-run` 显式费率卡成本结算、`POST /api/execution/evaluations/cross-model-regression-run` 跨模型回归评测编排、只读 dashboard、model comparison 与 cost attribution UI | 生产级评测治理、写入型结算触发 UI、编排触发 UI 与趋势分析 |
+| Agent Evaluation Backend | `/api/execution/results/:id/evaluations`、rule evaluation、`POST /api/execution/results/:id/evaluate-llm` real-runtime LLM judge、`/api/execution/evaluations/regression-run`、analytics、low-quality list、`/api/execution/evaluations/trends` 趋势分析、`/api/execution/evaluations/governance-readiness` 评测治理门禁、`/api/execution/evaluations/model-comparison` tag-based 模型对比、`/api/execution/evaluations/cost-attribution` provider runtime metadata 成本归因校准、`POST /api/execution/evaluations/cost-settlement-run` 显式费率卡成本结算、`POST /api/execution/evaluations/cross-model-regression-run` 跨模型回归评测编排，以及 Web `/evaluations` 看板、趋势/治理展示、成本结算触发表单和跨模型回归触发表单 | 生产级评测治理流程、真实 rate-card registry、provider billing reconciliation、生产 Secret Store / alerting 与正式生产启用 |
 | Execution Observability | `/api/execution/jobs`、`/api/execution/jobs/:id/results`、`/api/execution/jobs/:id/result-summary`、`/api/execution/jobs/:id/events`、`/api/execution/results/:id/writebacks`、只读 result/outbox/writeback ledger UI | replay、写回操作台 |
 
 ## 5. 调用追溯端点（支撑可追溯硬指标）

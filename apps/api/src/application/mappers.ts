@@ -34,7 +34,9 @@ import type {
   ExecutionEvaluationAnalyticsDTO,
   EvaluationCostAttributionResponse,
   EvaluationCostSettlementRunResponse,
+  EvaluationGovernanceReadinessResponse,
   EvaluationModelComparisonResponse,
+  EvaluationTrendResponse,
   ExecutionResultEvaluationDTO,
   ExecutionResultEvaluationSummaryDTO,
   ExecutionResultSummaryDTO,
@@ -121,7 +123,9 @@ import type { ExecutionResultSummary } from "../domain/execution/result.js";
 import type {
   ExecutionEvaluationAnalytics,
   ExecutionEvaluationCostAttribution,
+  ExecutionEvaluationGovernanceReadiness,
   ExecutionEvaluationModelComparison,
+  ExecutionEvaluationTrend,
   ExecutionResultEvaluationSummary,
   LowQualityEvaluationList,
 } from "../domain/execution/evaluation.js";
@@ -1240,6 +1244,44 @@ export function toExecutionEvaluationAnalyticsDTO(
     low_quality_count: analytics.lowQualityCount,
     evaluator_type_counts: analytics.evaluatorTypeCounts,
     latest_evaluated_at: iso(analytics.latestEvaluatedAt),
+  };
+}
+
+export function toEvaluationTrendResponse(input: ExecutionEvaluationTrend): EvaluationTrendResponse {
+  return {
+    mode: input.mode,
+    days: input.days,
+    bucket_count: input.bucketCount,
+    latest_bucket_date: input.latestBucketDate,
+    llm_calls_performed: input.llmCallsPerformed,
+    writes_performed: input.writesPerformed,
+    buckets: input.buckets.map((bucket) => ({
+      date: bucket.date,
+      evaluation_count: bucket.evaluationCount,
+      low_quality_count: bucket.lowQualityCount,
+      average_quality_score: bucket.averageQualityScore,
+      average_cost_score: bucket.averageCostScore,
+      average_latency_score: bucket.averageLatencyScore,
+    })),
+  };
+}
+
+export function toEvaluationGovernanceReadinessResponse(
+  input: ExecutionEvaluationGovernanceReadiness,
+): EvaluationGovernanceReadinessResponse {
+  return {
+    mode: input.mode,
+    production_ready: input.productionReady,
+    ready_gate_count: input.readyGateCount,
+    blocked_gate_count: input.blockedGateCount,
+    writes_performed: input.writesPerformed,
+    gates: input.gates.map((gate) => ({
+      key: gate.key,
+      title: gate.title,
+      status: gate.status,
+      external_dependency: gate.externalDependency,
+      evidence: gate.evidence,
+    })),
   };
 }
 

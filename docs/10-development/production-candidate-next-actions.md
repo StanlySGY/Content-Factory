@@ -50,7 +50,7 @@ Content Factory 当前处于 **Final RC / production candidate** 收口阶段：
 | Knowledge Candidate Review UI | 已完成 | Web 新增 `/knowledge/candidates` 只读任务知识候选入口，展示 task knowledge candidates、命中原因与已有 context packs 关联；不接真实 vector index、LLM rerank，不自动刷新或物化 context pack |
 | MCP Management UI | 已完成 | Web 新增 `/mcp` 只读 MCP 管理入口，展示 MCP server/tool inventory 与 real-runtime readiness；不启用热加载、不执行 tool invocation、不打开真实外部 transport |
 | RBAC Management UI | 已完成 | Web `/rbac` 支持 organization member 添加、角色更新、停用，以及默认项目 membership 授权/撤销；角色变更要求 `approval_ref`；成员和 membership 变更写入审计链；项目级 RBAC 端点已有跨项目拒绝回归矩阵；后端已接入 header-based session context 与全局项目业务 API enforcement，但仍不提供生产登录态 / IdP |
-| Agent Evaluation Dashboard UI | 已完成 | Web 新增 `/evaluations` 只读评估看板，展示 evaluation analytics、low-quality results、tag-based model comparison、provider metadata cost attribution 与 result evaluation ledger；后端已有默认关闭的 deterministic regression evaluation runner、显式费率卡成本结算 API、cross-model regression orchestration API 和 real-runtime LLM judge evaluation API；Web 不触发 `regression-run` / `cross-model-regression-run` / `evaluate-rule` / `evaluate-llm` / `cost-settlement-run`，暂不提供写入型结算触发、编排触发或趋势分析 |
+| Agent Evaluation Dashboard UI | 已完成 | Web `/evaluations` 展示 evaluation analytics、low-quality results、趋势分析、governance readiness、tag-based model comparison、provider metadata cost attribution 与 result evaluation ledger；同时提供显式成本结算和跨模型回归触发表单。页面加载不触发 `regression-run` / `cross-model-regression-run` / `evaluate-rule` / `evaluate-llm` / `cost-settlement-run`，只有用户提交对应表单才调用结算或跨模型编排写接口 |
 | MCP Marketplace Management UI | 已完成 | Web `/mcp/marketplace` 支持本地 marketplace entry 安装、installation 禁用与卸载，并展示 project installations 与 server binding；不做外部发现、不触发 hot-load、真实 transport 或 tool invocation |
 | Tool Invocation Ledger UI | 已完成 | Web 新增 `/mcp/invocations` 只读 MCP tool invocation 账本入口，按工具展示 invocation status、risk、duration、caller 与输入/输出摘要；不触发 mock invoke、真实 transport、重放或任何写操作 |
 | Execution Result Ledger UI | 已完成 | Web 新增 `/execution/results` 只读 execution result 账本入口，按 job 展示 `execution_results` attempts、latest status、error_type、duration、request/response snapshot 与 result summary；不触发 tick、retry、evaluate-rule、writeback、replay 或任何写操作 |
@@ -77,7 +77,7 @@ Content Factory 当前处于 **Final RC / production candidate** 收口阶段：
 | --- | --- | --- |
 | MCP Marketplace | 外部发现、SDK transport、SSE/stdio、热加载、tool invocation ledger 回写 | 当前已有 backend MVP、本地安装控制面 UI 与只读 invocation ledger UI |
 | Knowledge / RAG | 生产级 vector index、LLM rerank | 当前已有关键词、后端管理 API、本地 deterministic embedding pipeline、embedding readiness endpoint、本地 vector retrieval endpoint、append-only context pack auto-refresh policy、knowledge inventory UI 与 candidate review UI |
-| Agent Evaluation | 生产级评测治理与 UI 编排 | 当前已有人工/规则评价、real-runtime LLM judge evaluation API、默认关闭 deterministic regression evaluation runner、analytics API、tag-based 模型对比 API、provider metadata 成本归因校准 API、显式费率卡成本结算 ledger API、cross-model regression orchestration API 与只读 dashboard |
+| Agent Evaluation | 生产级评测治理 | 当前已有人工/规则评价、real-runtime LLM judge evaluation API、默认关闭 deterministic regression evaluation runner、analytics API、趋势 API、governance readiness API、tag-based 模型对比 API、provider metadata 成本归因校准 API、显式费率卡成本结算 ledger API、cross-model regression orchestration API，以及包含显式结算/跨模型回归触发表单的 `/evaluations` dashboard；剩余为真实 rate-card registry、provider billing reconciliation、生产 Secret Store / alerting 与正式评测治理流程 |
 | Skill / Plugin | Skill 路由、质量门禁自动化、插件隔离、供应链验证、UI | 当前不是 MVP 验收项 |
 
 ## 5. 仓库收口项

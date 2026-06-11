@@ -20,11 +20,18 @@ import type {
   CreatePublisherChannelBody,
   CreateTaskBody,
   CreateWorkflowBody,
+  CrossModelRegressionRunBody,
+  CrossModelRegressionRunResponse,
   EditorStateDTO,
   EvaluationCostAttributionQuery,
   EvaluationCostAttributionResponse,
+  EvaluationCostSettlementRunBody,
+  EvaluationCostSettlementRunResponse,
+  EvaluationGovernanceReadinessResponse,
   EvaluationModelComparisonQuery,
   EvaluationModelComparisonResponse,
+  EvaluationTrendQuery,
+  EvaluationTrendResponse,
   ExecutionMonitoringReadinessResponse,
   ExecutionEvaluationAnalyticsDTO,
   ExecutionJobDTO,
@@ -259,6 +266,16 @@ export const api = {
   // ── Agent Evaluation Dashboard（只读看板）──
   getExecutionEvaluationAnalytics: () =>
     request<ExecutionEvaluationAnalyticsDTO>("GET", "/execution/evaluations/analytics"),
+  getEvaluationTrend: (q: EvaluationTrendQuery = {}) =>
+    request<EvaluationTrendResponse>(
+      "GET",
+      `/execution/evaluations/trends${toQuery(q)}`,
+    ),
+  getEvaluationGovernanceReadiness: () =>
+    request<EvaluationGovernanceReadinessResponse>(
+      "GET",
+      "/execution/evaluations/governance-readiness",
+    ),
   getEvaluationModelComparison: (q: EvaluationModelComparisonQuery = {}) =>
     request<EvaluationModelComparisonResponse>(
       "GET",
@@ -278,6 +295,18 @@ export const api = {
     request<ExecutionResultEvaluationDTO[]>(
       "GET",
       `/execution/results/${resultId}/evaluations`,
+    ),
+  runEvaluationCostSettlement: (body: EvaluationCostSettlementRunBody) =>
+    request<EvaluationCostSettlementRunResponse>(
+      "POST",
+      "/execution/evaluations/cost-settlement-run",
+      body,
+    ),
+  runCrossModelRegression: (body: CrossModelRegressionRunBody) =>
+    request<CrossModelRegressionRunResponse>(
+      "POST",
+      "/execution/evaluations/cross-model-regression-run",
+      body,
     ),
 
   // ── Execution Result Ledger（只读账本）──

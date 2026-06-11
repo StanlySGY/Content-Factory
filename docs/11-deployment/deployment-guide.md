@@ -93,7 +93,7 @@ MCP 与 Publisher 真实入口还需分别开启：
 23. 打开 Web `/ops/provider-http-boundary`，确认 provider HTTP boundary 只读展示 fake HTTP client、network/real HTTP disabled、HTTP mapping、secret material boundary、allowed adapter modes、runtime/adapter mode 与 blocked reason，且未执行真实网络请求、未注入 secret material、未写 execution/outbox 表。
 24. 打开 Web `/ops/secret-injection`，确认 secret injection preflight 只读展示 resolver、secret store/injection readiness、allowed ref schemes、supported purposes、persistence boundary、audit metadata 与 runtime gate，且未读取 secret material、未注入 header、未执行 transport 或写操作。
 25. 打开 Web `/rbac`，确认 organization members 可添加、更新角色、停用，默认项目 memberships 可授权/撤销，相关变更写入 audit_events；后端 header-based session context 与全局项目业务 API enforcement 已接入，但仍未接生产登录态 / IdP。
-26. 打开 Web `/evaluations`，确认 evaluation analytics、model comparison、cost attribution、low-quality results 与 result evaluations 只读展示；调用 `GET /api/execution/evaluations/model-comparison` 可按 `model:<id>` tag 聚合模型分数，调用 `GET /api/execution/evaluations/cost-attribution` 可从已持久化 provider runtime metadata 读取成本归因校准，调用 `POST /api/execution/evaluations/cost-settlement-run` 可用显式 rate card 追加幂等成本结算 ledger，调用 `POST /api/execution/evaluations/cross-model-regression-run` 可为同一 prompt 生成多模型 execution jobs 与 model-tagged rule evaluations；Web 未触发 create evaluation、`evaluate-rule`、`regression-run`、`cross-model-regression-run`、`evaluate-llm`、`cost-settlement-run` 或写 execution 表。若要验证 LLM judge 写路径，只能在低权限 key、allowlist、secret injection 和 provider quota gate 均显式满足后调用 `POST /api/execution/results/:id/evaluate-llm`。
+26. 打开 Web `/evaluations`，确认 evaluation analytics、trends、governance readiness、model comparison、cost attribution、low-quality results 与 result evaluations 只读展示；调用 `GET /api/execution/evaluations/model-comparison` 可按 `model:<id>` tag 聚合模型分数，调用 `GET /api/execution/evaluations/cost-attribution` 可从已持久化 provider runtime metadata 读取成本归因校准，调用 `GET /api/execution/evaluations/trends` 可按天聚合评测趋势，调用 `GET /api/execution/evaluations/governance-readiness` 可展示生产治理门禁。Web 页面加载不得触发 create evaluation、`evaluate-rule`、`regression-run`、`cross-model-regression-run`、`evaluate-llm`、`cost-settlement-run` 或写 execution 表；只有用户提交成本结算表单时才调用 `POST /api/execution/evaluations/cost-settlement-run`，只有用户提交跨模型回归表单时才调用 `POST /api/execution/evaluations/cross-model-regression-run`。若要验证 LLM judge 写路径，只能在低权限 key、allowlist、secret injection 和 provider quota gate 均显式满足后调用 `POST /api/execution/results/:id/evaluate-llm`。
 27. 打开 Web `/mcp/marketplace`，确认 marketplace entries、project installations 与 server binding 可见，且安装、禁用、卸载只修改本地 installation 控制面记录，不触发 hot-load、真实 transport 或 tool invocation。
 28. 若进入真实启用，按 `production-candidate-next-actions.md` 选择单一路线逐项开启 gate，不混开 Agent / MCP / Publisher / writeback。
 
@@ -121,6 +121,8 @@ MCP 与 Publisher 真实入口还需分别开启：
 | execution result ledger | Web `/execution/results` 只读展示 execution job results、attempt snapshots 与 result summary，不触发 tick/retry/evaluate-rule/writeback/replay 或写操作 |
 | evaluation model comparison | `GET /api/execution/evaluations/model-comparison` 只读聚合已有 evaluation tags 中的 `model:<id>` 维度，返回 quality/cost/latency/composite 对比；不触发评估、不调用 LLM、不写 execution 表 |
 | evaluation cost attribution | `GET /api/execution/evaluations/cost-attribution` 只读聚合 evaluation 关联 result snapshot 中的 provider runtime metadata cost estimate、token usage 与 quota decision；不触发 provider/LLM 调用、不重新计算真实账单、不写 execution 表 |
+| evaluation trends | `GET /api/execution/evaluations/trends` 只读按天聚合 evaluation count、low-quality count 与 quality/cost/latency 均值；不触发评估、不调用 LLM、不写 execution 表 |
+| evaluation governance readiness | `GET /api/execution/evaluations/governance-readiness` 只读展示 evaluation ledger、model comparison、cost attribution、cost settlement ledger、cross-model orchestration 等本地 gate，以及 rate-card registry、provider billing reconciliation、production Secret Store、monitoring/alerting 等 blocked gate；`production_ready=false` 直到外部生产依赖真实接入 |
 | evaluation cost settlement | `POST /api/execution/evaluations/cost-settlement-run` 使用显式 rate card 和已持久化 token usage 追加 `execution_cost_settlements`，同一 `(execution_result_id, rate_card_version)` 幂等；不触发 provider/LLM 调用、不修改 execution jobs/results/evaluations |
 | cross-model regression orchestration | `POST /api/execution/evaluations/cross-model-regression-run` 为同一 prompt 按多个 model 创建隔离 execution jobs、同步 tick，并追加带 `model:<id>` / `regression:<run_id>` tag 的 rule evaluations；真实 provider 调用仅在 runtime gate、credential ref 和 allowlist 显式满足时发生 |
 | llm judge evaluation | `POST /api/execution/results/:id/evaluate-llm` 显式创建 judge agent job，并经 real runtime、secret injection、network allowlist、provider quota 和 result ledger 追加 `llm` evaluation；原始 execution job/result 不被修改；不得在默认 production candidate 验证中自动触发 |
@@ -134,7 +136,7 @@ MCP 与 Publisher 真实入口还需分别开启：
 | secret resolver readiness | Web `/ops/secret-resolver` 只读展示 resolver kind、available、allowed ref schemes、supported purposes、env/network/process boundary 与 runtime/adapter mode，不读取或返回 secret material、不写 execution/outbox 表 |
 | provider HTTP boundary | Web `/ops/provider-http-boundary` 只读展示 fake HTTP client、network/real HTTP disabled、abort/timeout/request-id/status-code mapping、secret material boundary、allowed adapter modes、runtime/adapter mode 与 blocked reason，不执行真实网络请求、不注入 secret material、不写 execution/outbox 表 |
 | rbac management | Web `/rbac` 支持 organization member 添加/角色更新/停用与默认项目 membership 授权/撤销，角色变更要求 `approval_ref`，相关变更写入 audit_events，项目级 RBAC 端点已有跨项目拒绝回归矩阵；后端已接入 header-based session context 和全局项目业务 API enforcement，但不替代生产登录态 / IdP |
-| evaluation dashboard | Web `/evaluations` 只读展示 analytics、low-quality results 与 result evaluations，不触发 create/evaluate-rule/regression-run/cross-model-regression-run/cost-settlement-run/evaluate-llm；deterministic regression evaluation runner 默认关闭且只做规则评价 |
+| evaluation dashboard | Web `/evaluations` 加载时只读展示 analytics、trends、governance readiness、model comparison、cost attribution、low-quality results 与 result evaluations，不触发 create/evaluate-rule/regression-run/cross-model-regression-run/cost-settlement-run/evaluate-llm；成本结算与跨模型回归仅在用户显式提交对应表单后触发，deterministic regression evaluation runner 默认关闭且只做规则评价 |
 | mcp marketplace | Web `/mcp/marketplace` 支持本地 marketplace entry 安装、installation 禁用与卸载，并展示 project installations 与 server binding；不触发外部发现、hot-load、真实 transport 或 tool invocation |
 | rollback | 已演练 env 级关闭 runtime、network、writeback executor |
 
@@ -157,5 +159,6 @@ MCP 与 Publisher 真实入口还需分别开启：
 - 具体云环境拓扑与网络策略。
 - Secret Manager / Vault / KMS 的供应商配置。
 - Grafana / PagerDuty / Alertmanager 等真实告警配置。
+- 评测治理的真实 rate-card registry 与 provider billing reconciliation。
 - 备份、恢复、数据保留与合规策略。
 - 多实例 worker / relay 的容量与故障演练。

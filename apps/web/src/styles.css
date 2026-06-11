@@ -1209,7 +1209,9 @@ button {
   margin-bottom: var(--sp-5);
 }
 .evaluation-comparison-card,
-.evaluation-cost-card {
+.evaluation-cost-card,
+.evaluation-trend-card,
+.evaluation-governance-card {
   margin-bottom: var(--sp-5);
 }
 .evaluation-card-head {
@@ -1293,6 +1295,53 @@ button {
 .evaluation-cost-sources strong {
   color: var(--text-primary);
 }
+.evaluation-operations-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-5);
+}
+.evaluation-operation-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-3);
+}
+.evaluation-operation-form label {
+  display: grid;
+  gap: var(--sp-1);
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.evaluation-operation-form input,
+.evaluation-operation-form textarea {
+  width: 100%;
+  min-width: 0;
+}
+.evaluation-operation-form textarea {
+  min-height: 82px;
+  resize: vertical;
+}
+.evaluation-operation-form button {
+  align-self: end;
+}
+.evaluation-operation-result {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+}
+.evaluation-operation-result strong,
+.evaluation-operation-result span {
+  display: inline-flex;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.evaluation-operation-result strong {
+  color: var(--text-primary);
+}
 .evaluation-grid {
   display: grid;
   grid-template-columns: minmax(420px, 0.9fr) minmax(0, 1.1fr);
@@ -1358,7 +1407,9 @@ button {
 .evaluation-low-quality-table,
 .evaluation-ledger-table,
 .evaluation-model-comparison-table,
-.evaluation-cost-attribution-table {
+.evaluation-cost-attribution-table,
+.evaluation-trend-table,
+.evaluation-governance-table {
   table-layout: fixed;
 }
 .evaluation-low-quality-table th,
@@ -1368,7 +1419,11 @@ button {
 .evaluation-model-comparison-table th,
 .evaluation-model-comparison-table td,
 .evaluation-cost-attribution-table th,
-.evaluation-cost-attribution-table td {
+.evaluation-cost-attribution-table td,
+.evaluation-trend-table th,
+.evaluation-trend-table td,
+.evaluation-governance-table th,
+.evaluation-governance-table td {
   word-break: break-word;
 }
 .evaluation-tags {
@@ -1802,6 +1857,8 @@ button {
   .rbac-grid,
   .evaluation-distribution,
   .evaluation-cost-summary,
+  .evaluation-operations-grid,
+  .evaluation-operation-form,
   .evaluation-grid,
   .execution-result-grid,
   .execution-outbox-grid,

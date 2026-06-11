@@ -25,8 +25,11 @@ import {
   EvaluationCostAttributionResponseSchema,
   EvaluationCostSettlementRunResponseSchema,
   EvaluationCostSettlementRunSchema,
+  EvaluationGovernanceReadinessResponseSchema,
   EvaluationModelComparisonQuerySchema,
   EvaluationModelComparisonResponseSchema,
+  EvaluationTrendQuerySchema,
+  EvaluationTrendResponseSchema,
   IdParamSchema,
   ListExecutionJobsQuerySchema,
   ListExecutionWritebacksQuerySchema,
@@ -61,7 +64,9 @@ import {
   toExecutionEvaluationAnalyticsDTO,
   toEvaluationCostAttributionResponse,
   toEvaluationCostSettlementRunResponse,
+  toEvaluationGovernanceReadinessResponse,
   toEvaluationModelComparisonResponse,
+  toEvaluationTrendResponse,
   toExecutionResultEvaluationDTO,
   toExecutionResultEvaluationSummaryDTO,
   toExecutionResultDTO,
@@ -186,6 +191,27 @@ export const executionRoutes: FastifyPluginAsyncTypebox<ExecutionRoutesOptions> 
     "/api/execution/evaluations/analytics",
     { schema: { response: { 200: ExecutionEvaluationAnalyticsSchema } } },
     async () => toExecutionEvaluationAnalyticsDTO(await executionResultEvaluationService.analytics()),
+  );
+
+  app.get(
+    "/api/execution/evaluations/trends",
+    {
+      schema: {
+        querystring: EvaluationTrendQuerySchema,
+        response: { 200: EvaluationTrendResponseSchema },
+      },
+    },
+    async (request) =>
+      toEvaluationTrendResponse(await executionResultEvaluationService.trends(request.query)),
+  );
+
+  app.get(
+    "/api/execution/evaluations/governance-readiness",
+    { schema: { response: { 200: EvaluationGovernanceReadinessResponseSchema } } },
+    async () =>
+      toEvaluationGovernanceReadinessResponse(
+        executionResultEvaluationService.governanceReadiness(),
+      ),
   );
 
   app.get(

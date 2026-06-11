@@ -1379,6 +1379,64 @@ export const ExecutionEvaluationAnalyticsSchema = Type.Object(
 );
 export type ExecutionEvaluationAnalyticsDTO = Static<typeof ExecutionEvaluationAnalyticsSchema>;
 
+export const EvaluationTrendQuerySchema = Type.Object(
+  {
+    days: Type.Optional(Type.Integer({ minimum: 1, maximum: 365 })),
+  },
+  { additionalProperties: false },
+);
+export type EvaluationTrendQuery = Static<typeof EvaluationTrendQuerySchema>;
+
+export const EvaluationTrendBucketSchema = Type.Object(
+  {
+    date: Type.String(),
+    evaluation_count: Type.Integer(),
+    low_quality_count: Type.Integer(),
+    average_quality_score: Nullable(Type.Number()),
+    average_cost_score: Nullable(Type.Number()),
+    average_latency_score: Nullable(Type.Number()),
+  },
+  { additionalProperties: false },
+);
+
+export const EvaluationTrendResponseSchema = Type.Object(
+  {
+    mode: Type.Literal("evaluation_trend"),
+    days: Type.Integer(),
+    bucket_count: Type.Integer(),
+    latest_bucket_date: Nullable(Type.String()),
+    llm_calls_performed: Type.Boolean(),
+    writes_performed: Type.Boolean(),
+    buckets: Type.Array(EvaluationTrendBucketSchema),
+  },
+  { additionalProperties: false },
+);
+export type EvaluationTrendResponse = Static<typeof EvaluationTrendResponseSchema>;
+
+export const EvaluationGovernanceGateSchema = Type.Object(
+  {
+    key: Type.String(),
+    title: Type.String(),
+    status: StringEnum(["ready", "blocked"] as const),
+    external_dependency: Type.Boolean(),
+    evidence: Type.String(),
+  },
+  { additionalProperties: false },
+);
+
+export const EvaluationGovernanceReadinessResponseSchema = Type.Object(
+  {
+    mode: Type.Literal("evaluation_governance_readiness"),
+    production_ready: Type.Boolean(),
+    ready_gate_count: Type.Integer(),
+    blocked_gate_count: Type.Integer(),
+    writes_performed: Type.Boolean(),
+    gates: Type.Array(EvaluationGovernanceGateSchema),
+  },
+  { additionalProperties: false },
+);
+export type EvaluationGovernanceReadinessResponse = Static<typeof EvaluationGovernanceReadinessResponseSchema>;
+
 export const EvaluationModelComparisonQuerySchema = Type.Object(
   {
     model_prefix: Type.Optional(Type.String({ minLength: 1, maxLength: 120 })),

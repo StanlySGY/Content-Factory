@@ -5,6 +5,7 @@ import type {
   EvaluationCostSettlementRunBody,
   EvaluationCostAttributionQuery,
   EvaluationModelComparisonQuery,
+  EvaluationTrendQuery,
   LlmJudgeEvaluationBody,
   RegressionEvaluationRunBody,
 } from "@cf/shared";
@@ -12,9 +13,11 @@ import { ConflictError, NotFoundError, ValidationError } from "../domain/errors.
 import {
   attributeEvaluationCosts,
   buildCostSettlementFromResult,
+  buildEvaluationTrend,
   buildLlmJudgeEvaluation,
   buildRuleEvaluation,
   compareEvaluationsByModel,
+  evaluationGovernanceReadiness,
   listLowQualityEvaluations,
   normalizeCostSettlementRateCard,
   normalizeEvaluationTags,
@@ -22,7 +25,9 @@ import {
   summarizeEvaluations,
   type ExecutionEvaluationAnalytics,
   type ExecutionEvaluationCostAttribution,
+  type ExecutionEvaluationGovernanceReadiness,
   type ExecutionEvaluationModelComparison,
+  type ExecutionEvaluationTrend,
   validateExecutionResultEvaluation,
   type ExecutionResultEvaluationSummary,
   type LowQualityEvaluationList,
@@ -234,6 +239,14 @@ export class ExecutionResultEvaluationService {
 
   async analytics(): Promise<ExecutionEvaluationAnalytics> {
     return summarizeEvaluationAnalytics(await evaluationRepo.listAllEvaluations(this.db));
+  }
+
+  async trends(query: EvaluationTrendQuery = {}): Promise<ExecutionEvaluationTrend> {
+    return buildEvaluationTrend(await evaluationRepo.listAllEvaluations(this.db), { days: query.days });
+  }
+
+  governanceReadiness(): ExecutionEvaluationGovernanceReadiness {
+    return evaluationGovernanceReadiness();
   }
 
   async modelComparison(query: EvaluationModelComparisonQuery = {}): Promise<ExecutionEvaluationModelComparison> {

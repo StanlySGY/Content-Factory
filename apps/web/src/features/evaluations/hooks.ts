@@ -1,5 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
-import type { EvaluationCostAttributionQuery, EvaluationModelComparisonQuery } from "@cf/shared";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import type {
+  CrossModelRegressionRunBody,
+  EvaluationCostAttributionQuery,
+  EvaluationCostSettlementRunBody,
+  EvaluationModelComparisonQuery,
+  EvaluationTrendQuery,
+} from "@cf/shared";
 import { api, type ListLowQualityEvaluationsQuery } from "../../lib/api.js";
 
 export const DEFAULT_LOW_QUALITY_QUERY: Required<ListLowQualityEvaluationsQuery> = {
@@ -15,6 +21,10 @@ export const DEFAULT_COST_ATTRIBUTION_QUERY: Required<Pick<EvaluationCostAttribu
   limit: 10,
 };
 
+export const DEFAULT_EVALUATION_TREND_QUERY: Required<Pick<EvaluationTrendQuery, "days">> = {
+  days: 30,
+};
+
 export function useEvaluationDashboard() {
   return useQuery({
     queryKey: [
@@ -25,17 +35,32 @@ export function useEvaluationDashboard() {
       DEFAULT_LOW_QUALITY_QUERY.limit,
       DEFAULT_MODEL_COMPARISON_QUERY.limit,
       DEFAULT_COST_ATTRIBUTION_QUERY.limit,
+      DEFAULT_EVALUATION_TREND_QUERY.days,
     ],
     queryFn: async () => {
-      const [analytics, lowQuality, modelComparison, costAttribution] = await Promise.all([
+      const [analytics, lowQuality, modelComparison, costAttribution, trend, governance] = await Promise.all([
         api.getExecutionEvaluationAnalytics(),
         api.listLowQualityEvaluations(DEFAULT_LOW_QUALITY_QUERY),
         api.getEvaluationModelComparison(DEFAULT_MODEL_COMPARISON_QUERY),
         api.getEvaluationCostAttribution(DEFAULT_COST_ATTRIBUTION_QUERY),
+        api.getEvaluationTrend(DEFAULT_EVALUATION_TREND_QUERY),
+        api.getEvaluationGovernanceReadiness(),
       ]);
 
-      return { analytics, lowQuality, modelComparison, costAttribution };
+      return { analytics, lowQuality, modelComparison, costAttribution, trend, governance };
     },
+  });
+}
+
+export function useRunEvaluationCostSettlement() {
+  return useMutation({
+    mutationFn: (body: EvaluationCostSettlementRunBody) => api.runEvaluationCostSettlement(body),
+  });
+}
+
+export function useRunCrossModelRegression() {
+  return useMutation({
+    mutationFn: (body: CrossModelRegressionRunBody) => api.runCrossModelRegression(body),
   });
 }
 

@@ -44,6 +44,42 @@ export interface ExecutionEvaluationAnalytics {
   latestEvaluatedAt: Date | null;
 }
 
+export interface ExecutionEvaluationTrendBucket {
+  date: string;
+  evaluationCount: number;
+  lowQualityCount: number;
+  averageQualityScore: number | null;
+  averageCostScore: number | null;
+  averageLatencyScore: number | null;
+}
+
+export interface ExecutionEvaluationTrend {
+  mode: "evaluation_trend";
+  days: number;
+  bucketCount: number;
+  latestBucketDate: string | null;
+  llmCallsPerformed: false;
+  writesPerformed: false;
+  buckets: ExecutionEvaluationTrendBucket[];
+}
+
+export interface ExecutionEvaluationGovernanceGate {
+  key: string;
+  title: string;
+  status: "ready" | "blocked";
+  externalDependency: boolean;
+  evidence: string;
+}
+
+export interface ExecutionEvaluationGovernanceReadiness {
+  mode: "evaluation_governance_readiness";
+  productionReady: boolean;
+  readyGateCount: number;
+  blockedGateCount: number;
+  writesPerformed: false;
+  gates: ExecutionEvaluationGovernanceGate[];
+}
+
 export interface ExecutionEvaluationModelComparisonItem {
   model: string;
   evaluationCount: number;
@@ -252,6 +288,75 @@ export function summarizeEvaluationAnalytics(
     lowQualityCount: rows.filter((row) => lowestScore(row) <= lowQualityThreshold).length,
     evaluatorTypeCounts,
     latestEvaluatedAt: latest.createdAt,
+  };
+}
+
+export function buildEvaluationTrend(
+  rows: Array<{
+    qualityScore: number;
+    costScore: number;
+    latencyScore: number;
+    createdAt: Date;
+  }>,
+  options: { days?: number; lowQualityThreshold?: number } = {},
+): ExecutionEvaluationTrend {
+  const days = normalizeTrendDays(options.days);
+  const cutoff = new Date();
+  cutoff.setUTCDate(cutoff.getUTCDate() - days + 1);
+  cutoff.setUTCHours(0, 0, 0, 0);
+
+  const byDate = new Map<string, typeof rows>();
+  for (const row of rows) {
+    if (row.createdAt < cutoff) continue;
+    const date = row.createdAt.toISOString().slice(0, 10);
+    byDate.set(date, [...(byDate.get(date) ?? []), row]);
+  }
+
+  const buckets = [...byDate.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, bucketRows]) => ({
+      date,
+      evaluationCount: bucketRows.length,
+      lowQualityCount: bucketRows.filter((row) => lowestScore(row) <= (options.lowQualityThreshold ?? 60)).length,
+      averageQualityScore: bucketRows.length ? average(bucketRows.map((row) => row.qualityScore)) : null,
+      averageCostScore: bucketRows.length ? average(bucketRows.map((row) => row.costScore)) : null,
+      averageLatencyScore: bucketRows.length ? average(bucketRows.map((row) => row.latencyScore)) : null,
+    }));
+
+  return {
+    mode: "evaluation_trend",
+    days,
+    bucketCount: buckets.length,
+    latestBucketDate: buckets.at(-1)?.date ?? null,
+    llmCallsPerformed: false,
+    writesPerformed: false,
+    buckets,
+  };
+}
+
+export function evaluationGovernanceReadiness(): ExecutionEvaluationGovernanceReadiness {
+  const gates: ExecutionEvaluationGovernanceGate[] = [
+    readyGate("evaluation_ledger", "Evaluation ledger", "/api/execution/results/:id/evaluations"),
+    readyGate("rule_evaluation", "Rule evaluation", "/api/execution/results/:id/evaluate-rule"),
+    readyGate("llm_judge_gate", "LLM judge gate", "/api/execution/results/:id/evaluate-llm"),
+    readyGate("model_comparison", "Model comparison", "/api/execution/evaluations/model-comparison"),
+    readyGate("cost_attribution", "Cost attribution", "/api/execution/evaluations/cost-attribution"),
+    readyGate("cost_settlement_ledger", "Cost settlement ledger", "/api/execution/evaluations/cost-settlement-run"),
+    readyGate("cross_model_orchestration", "Cross-model orchestration", "/api/execution/evaluations/cross-model-regression-run"),
+    blockedGate("rate_card_registry", "Rate card registry", "approved rate-card registry is required", false),
+    blockedGate("provider_billing_reconciliation", "Provider billing reconciliation", "provider invoice export required", true),
+    blockedGate("production_secret_store", "Production secret store", "production Secret Manager / Vault / KMS required", true),
+    blockedGate("monitoring_alerting", "Monitoring and alerting", "production alerting integration required", true),
+  ];
+  const readyGateCount = gates.filter((gate) => gate.status === "ready").length;
+  const blockedGateCount = gates.length - readyGateCount;
+  return {
+    mode: "evaluation_governance_readiness",
+    productionReady: blockedGateCount === 0,
+    readyGateCount,
+    blockedGateCount,
+    writesPerformed: false,
+    gates,
   };
 }
 
@@ -623,6 +728,26 @@ export function summarizeEvaluations(
     latestEvaluatorType: latest.evaluatorType as ExecutionResultEvaluatorType,
     latestEvaluatedAt: latest.createdAt,
   };
+}
+
+function readyGate(key: string, title: string, evidence: string): ExecutionEvaluationGovernanceGate {
+  return { key, title, status: "ready", externalDependency: false, evidence };
+}
+
+function blockedGate(
+  key: string,
+  title: string,
+  evidence: string,
+  externalDependency: boolean,
+): ExecutionEvaluationGovernanceGate {
+  return { key, title, status: "blocked", externalDependency, evidence };
+}
+
+function normalizeTrendDays(days: number | undefined): number {
+  if (days === undefined) return 30;
+  if (!Number.isInteger(days) || days < 1 || days > 365)
+    throw new ValidationError("evaluation trend days must be an integer between 1 and 365");
+  return days;
 }
 
 function validateScore(value: number, field: string): void {
