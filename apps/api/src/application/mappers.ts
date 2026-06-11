@@ -32,6 +32,7 @@ import type {
   ExecutionMonitoringReadinessResponse,
   ExecutionEvaluationAnalyticsDTO,
   EvaluationCostAttributionResponse,
+  EvaluationCostSettlementRunResponse,
   EvaluationModelComparisonResponse,
   ExecutionResultEvaluationDTO,
   ExecutionResultEvaluationSummaryDTO,
@@ -93,6 +94,7 @@ import type {
   ContentTaskRow,
   ContextPackRow,
   ExecutionJobRow,
+  ExecutionCostSettlementRow,
   ExecutionResultEvaluationRow,
   ExecutionResultRow,
   ExecutionWritebackRow,
@@ -122,7 +124,7 @@ import type {
   ExecutionResultEvaluationSummary,
   LowQualityEvaluationList,
 } from "../domain/execution/evaluation.js";
-import type { LlmJudgeEvaluationRun } from "./execution-result-evaluation.service.js";
+import type { EvaluationCostSettlementRun, LlmJudgeEvaluationRun } from "./execution-result-evaluation.service.js";
 import type {
   ExecutionWritebackApplyGuard,
   ExecutionWritebackApplyGuardReadiness,
@@ -1286,6 +1288,44 @@ export function toEvaluationCostAttributionResponse(
         }
         : null,
     })),
+  };
+}
+
+export function toExecutionCostSettlementDTO(
+  row: ExecutionCostSettlementRow,
+): EvaluationCostSettlementRunResponse["settlements"][number] {
+  return {
+    execution_result_id: row.executionResultId,
+    execution_job_id: row.executionJobId,
+    provider: row.provider,
+    model: row.model,
+    prompt_tokens: row.promptTokens,
+    completion_tokens: row.completionTokens,
+    total_tokens: row.totalTokens,
+    amount_micro_cents: row.amountMicroCents,
+    amount_cents: row.amountCents,
+    currency: row.currency,
+    rate_card_version: row.rateCardVersion,
+    settlement_source: row.settlementSource as "explicit_rate_card_token_usage",
+  };
+}
+
+export function toEvaluationCostSettlementRunResponse(
+  input: EvaluationCostSettlementRun,
+): EvaluationCostSettlementRunResponse {
+  return {
+    mode: input.mode,
+    job_id: input.jobId,
+    rate_card_version: input.rateCardVersion,
+    currency: input.currency,
+    settlement_count: input.settlementCount,
+    skipped_count: input.skippedCount,
+    total_amount_micro_cents: input.totalAmountMicroCents,
+    total_amount_cents: input.totalAmountCents,
+    llm_calls_performed: input.llmCallsPerformed,
+    writes_performed: input.writesPerformed,
+    skipped_result_ids: input.skippedResultIds,
+    settlements: input.settlements.map(toExecutionCostSettlementDTO),
   };
 }
 

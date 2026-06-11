@@ -21,6 +21,8 @@ import {
   ExecutionWritebacksResponseSchema,
   EvaluationCostAttributionQuerySchema,
   EvaluationCostAttributionResponseSchema,
+  EvaluationCostSettlementRunResponseSchema,
+  EvaluationCostSettlementRunSchema,
   EvaluationModelComparisonQuerySchema,
   EvaluationModelComparisonResponseSchema,
   IdParamSchema,
@@ -55,6 +57,7 @@ import {
   toExecutionJobDTO,
   toExecutionEvaluationAnalyticsDTO,
   toEvaluationCostAttributionResponse,
+  toEvaluationCostSettlementRunResponse,
   toEvaluationModelComparisonResponse,
   toExecutionResultEvaluationDTO,
   toExecutionResultEvaluationSummaryDTO,
@@ -207,6 +210,20 @@ export const executionRoutes: FastifyPluginAsyncTypebox<ExecutionRoutesOptions> 
     async (request) =>
       toEvaluationCostAttributionResponse(
         await executionResultEvaluationService.costAttribution(request.query),
+      ),
+  );
+
+  app.post(
+    "/api/execution/evaluations/cost-settlement-run",
+    {
+      schema: {
+        body: EvaluationCostSettlementRunSchema,
+        response: { 200: EvaluationCostSettlementRunResponseSchema },
+      },
+    },
+    async (request) =>
+      toEvaluationCostSettlementRunResponse(
+        await executionResultEvaluationService.settleEvaluationCosts(request.body),
       ),
   );
 

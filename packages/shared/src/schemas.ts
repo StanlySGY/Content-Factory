@@ -1447,6 +1447,63 @@ export const EvaluationCostAttributionResponseSchema = Type.Object(
 );
 export type EvaluationCostAttributionResponse = Static<typeof EvaluationCostAttributionResponseSchema>;
 
+export const EvaluationCostSettlementRateCardSchema = Type.Object(
+  {
+    version: Type.String({ minLength: 1, maxLength: 120 }),
+    currency: Type.String({ minLength: 1, maxLength: 12 }),
+    prompt_micro_cents_per_token: Type.Integer({ minimum: 0 }),
+    completion_micro_cents_per_token: Type.Integer({ minimum: 0 }),
+  },
+  { additionalProperties: false },
+);
+export type EvaluationCostSettlementRateCard = Static<typeof EvaluationCostSettlementRateCardSchema>;
+
+export const EvaluationCostSettlementRunSchema = Type.Object(
+  {
+    job_id: Uuid(),
+    rate_card: EvaluationCostSettlementRateCardSchema,
+  },
+  { additionalProperties: false },
+);
+export type EvaluationCostSettlementRunBody = Static<typeof EvaluationCostSettlementRunSchema>;
+
+export const EvaluationCostSettlementItemSchema = Type.Object(
+  {
+    execution_result_id: Uuid(),
+    execution_job_id: Uuid(),
+    provider: Type.String(),
+    model: Type.String(),
+    prompt_tokens: Type.Integer(),
+    completion_tokens: Type.Integer(),
+    total_tokens: Type.Integer(),
+    amount_micro_cents: Type.Integer(),
+    amount_cents: Type.Integer(),
+    currency: Type.String(),
+    rate_card_version: Type.String(),
+    settlement_source: Type.Literal("explicit_rate_card_token_usage"),
+  },
+  { additionalProperties: false },
+);
+
+export const EvaluationCostSettlementRunResponseSchema = Type.Object(
+  {
+    mode: Type.Literal("evaluation_cost_settlement"),
+    job_id: Uuid(),
+    rate_card_version: Type.String(),
+    currency: Type.String(),
+    settlement_count: Type.Integer(),
+    skipped_count: Type.Integer(),
+    total_amount_micro_cents: Type.Integer(),
+    total_amount_cents: Type.Integer(),
+    llm_calls_performed: Type.Boolean(),
+    writes_performed: Type.Boolean(),
+    skipped_result_ids: Type.Array(Uuid()),
+    settlements: Type.Array(EvaluationCostSettlementItemSchema),
+  },
+  { additionalProperties: false },
+);
+export type EvaluationCostSettlementRunResponse = Static<typeof EvaluationCostSettlementRunResponseSchema>;
+
 export const LowQualityEvaluationItemSchema = Type.Object(
   {
     evaluation_id: Uuid(),

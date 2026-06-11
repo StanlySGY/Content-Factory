@@ -531,6 +531,35 @@ export const executionResultEvaluations = pgTable(
   ],
 );
 
+export const executionCostSettlements = pgTable(
+  "execution_cost_settlements",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    executionResultId: uuid("execution_result_id").notNull(),
+    executionJobId: uuid("execution_job_id").notNull(),
+    provider: varchar("provider", { length: 80 }).notNull(),
+    model: varchar("model", { length: 120 }).notNull(),
+    promptTokens: integer("prompt_tokens").notNull(),
+    completionTokens: integer("completion_tokens").notNull(),
+    totalTokens: integer("total_tokens").notNull(),
+    promptMicroCentsPerToken: integer("prompt_micro_cents_per_token").notNull(),
+    completionMicroCentsPerToken: integer("completion_micro_cents_per_token").notNull(),
+    amountMicroCents: bigint("amount_micro_cents", { mode: "number" }).notNull(),
+    amountCents: integer("amount_cents").notNull(),
+    currency: varchar("currency", { length: 12 }).notNull(),
+    rateCardVersion: varchar("rate_card_version", { length: 120 }).notNull(),
+    settlementSource: varchar("settlement_source", { length: 80 }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("idx_execution_cost_settlements_result_rate_unique").on(t.executionResultId, t.rateCardVersion),
+    index("idx_execution_cost_settlements_result").on(t.executionResultId),
+    index("idx_execution_cost_settlements_job").on(t.executionJobId),
+    index("idx_execution_cost_settlements_rate_card").on(t.rateCardVersion),
+    index("idx_execution_cost_settlements_created_at").on(t.createdAt),
+  ],
+);
+
 export const executionWritebacks = pgTable("execution_writebacks", {
   id: uuid("id").primaryKey().defaultRandom(),
   idempotencyKey: varchar("idempotency_key", { length: 200 }).notNull(),
@@ -592,5 +621,6 @@ export type ExecutionJobRow = typeof executionJobs.$inferSelect;
 export type OutboxEventRow = typeof outboxEvents.$inferSelect;
 export type ExecutionResultRow = typeof executionResults.$inferSelect;
 export type ExecutionResultEvaluationRow = typeof executionResultEvaluations.$inferSelect;
+export type ExecutionCostSettlementRow = typeof executionCostSettlements.$inferSelect;
 export type ExecutionWritebackRow = typeof executionWritebacks.$inferSelect;
 export type ExecutionProviderQuotaLedgerRow = typeof executionProviderQuotaLedger.$inferSelect;

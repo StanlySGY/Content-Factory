@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type {
   CreateExecutionResultEvaluationBody,
+  EvaluationCostSettlementRunBody,
   EvaluationCostAttributionQuery,
   EvaluationModelComparisonQuery,
   LlmJudgeEvaluationBody,
@@ -9,10 +10,12 @@ import type {
 import { ConflictError, NotFoundError, ValidationError } from "../domain/errors.js";
 import {
   attributeEvaluationCosts,
+  buildCostSettlementFromResult,
   buildLlmJudgeEvaluation,
   buildRuleEvaluation,
   compareEvaluationsByModel,
   listLowQualityEvaluations,
+  normalizeCostSettlementRateCard,
   normalizeEvaluationTags,
   summarizeEvaluationAnalytics,
   summarizeEvaluations,
@@ -24,7 +27,9 @@ import {
   type LowQualityEvaluationList,
 } from "../domain/execution/evaluation.js";
 import type { Db } from "../infrastructure/db/client.js";
-import type { ExecutionResultEvaluationRow, ExecutionResultRow } from "../infrastructure/db/schema.js";
+import type { ExecutionCostSettlementRow, ExecutionResultEvaluationRow, ExecutionResultRow } from "../infrastructure/db/schema.js";
+import * as costSettlementRepo from "../infrastructure/repositories/execution-cost-settlement.repository.js";
+import * as jobRepo from "../infrastructure/repositories/execution-job.repository.js";
 import * as evaluationRepo from "../infrastructure/repositories/execution-result-evaluation.repository.js";
 import * as resultRepo from "../infrastructure/repositories/execution-result.repository.js";
 import type { ExecutionJobService } from "./execution-job.service.js";
@@ -34,6 +39,7 @@ import type { RequestContext } from "./task.service.js";
 const isUniqueViolation = (error: unknown): boolean => (error as { code?: string }).code === "23505";
 const DEFAULT_REGRESSION_EVALUATION_LIMIT = 50;
 const DEFAULT_COST_ATTRIBUTION_LIMIT = 100;
+const DEFAULT_COST_SETTLEMENT_LIMIT = 1000;
 
 export interface RegressionEvaluationBatch {
   limit: number;
@@ -47,6 +53,21 @@ export interface LlmJudgeEvaluationRun {
   evaluation: ExecutionResultEvaluationRow;
   llmCallsPerformed: true;
   writesPerformed: true;
+}
+
+export interface EvaluationCostSettlementRun {
+  mode: "evaluation_cost_settlement";
+  jobId: string;
+  rateCardVersion: string;
+  currency: string;
+  settlementCount: number;
+  skippedCount: number;
+  totalAmountMicroCents: number;
+  totalAmountCents: number;
+  llmCallsPerformed: false;
+  writesPerformed: boolean;
+  skippedResultIds: string[];
+  settlements: ExecutionCostSettlementRow[];
 }
 
 export class ExecutionResultEvaluationService {
@@ -215,6 +236,56 @@ export class ExecutionResultEvaluationService {
       })),
       { jobId: query.job_id, limit },
     );
+  }
+
+  async settleEvaluationCosts(input: EvaluationCostSettlementRunBody): Promise<EvaluationCostSettlementRun> {
+    const job = await jobRepo.getJob(this.db, input.job_id);
+    if (!job) throw new NotFoundError(`execution_job ${input.job_id} not found`);
+    const rateCard = normalizeCostSettlementRateCard({
+      version: input.rate_card.version,
+      currency: input.rate_card.currency,
+      promptMicroCentsPerToken: input.rate_card.prompt_micro_cents_per_token,
+      completionMicroCentsPerToken: input.rate_card.completion_micro_cents_per_token,
+    });
+    const rows = await evaluationRepo.listEvaluationsWithResults(this.db, {
+      jobId: input.job_id,
+      limit: DEFAULT_COST_SETTLEMENT_LIMIT,
+    });
+    const seenResultIds = new Set<string>();
+    const settlements: ExecutionCostSettlementRow[] = [];
+    const skippedResultIds: string[] = [];
+
+    for (const { result } of rows) {
+      if (seenResultIds.has(result.id)) continue;
+      seenResultIds.add(result.id);
+      const settlement = buildCostSettlementFromResult({
+        executionResultId: result.id,
+        executionJobId: result.executionJobId,
+        responseSnapshot: result.responseSnapshot,
+      }, rateCard);
+      if (!settlement) {
+        skippedResultIds.push(result.id);
+        continue;
+      }
+      const created = await costSettlementRepo.createSettlementIfAbsent(this.db, settlement);
+      if (created) settlements.push(created);
+      else skippedResultIds.push(result.id);
+    }
+
+    return {
+      mode: "evaluation_cost_settlement",
+      jobId: input.job_id,
+      rateCardVersion: rateCard.version,
+      currency: rateCard.currency,
+      settlementCount: settlements.length,
+      skippedCount: skippedResultIds.length,
+      totalAmountMicroCents: settlements.reduce((sum, item) => sum + item.amountMicroCents, 0),
+      totalAmountCents: settlements.reduce((sum, item) => sum + item.amountCents, 0),
+      llmCallsPerformed: false,
+      writesPerformed: settlements.length > 0,
+      skippedResultIds,
+      settlements,
+    };
   }
 
   async listLowQuality(threshold = 60, limit = 20): Promise<LowQualityEvaluationList> {

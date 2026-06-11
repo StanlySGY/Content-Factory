@@ -112,6 +112,30 @@ export interface ExecutionEvaluationCostAttribution {
   items: ExecutionEvaluationCostAttributionItem[];
 }
 
+export interface ExecutionEvaluationCostSettlementRateCard {
+  version: string;
+  currency: string;
+  promptMicroCentsPerToken: number;
+  completionMicroCentsPerToken: number;
+}
+
+export interface ExecutionEvaluationCostSettlementWrite {
+  executionResultId: string;
+  executionJobId: string;
+  provider: string;
+  model: string;
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  promptMicroCentsPerToken: number;
+  completionMicroCentsPerToken: number;
+  amountMicroCents: number;
+  amountCents: number;
+  currency: string;
+  rateCardVersion: string;
+  settlementSource: "explicit_rate_card_token_usage";
+}
+
 export interface LowQualityEvaluationItem {
   evaluationId: string;
   executionResultId: string;
@@ -336,6 +360,68 @@ export function attributeEvaluationCosts(
   };
 }
 
+export function normalizeCostSettlementRateCard(input: {
+  version: string;
+  currency: string;
+  promptMicroCentsPerToken: number;
+  completionMicroCentsPerToken: number;
+}): ExecutionEvaluationCostSettlementRateCard {
+  const version = input.version.trim();
+  const currency = input.currency.trim();
+  if (!version) throw new ValidationError("cost settlement rate_card version is required");
+  if (!currency) throw new ValidationError("cost settlement rate_card currency is required");
+  if (!isNonNegativeInteger(input.promptMicroCentsPerToken))
+    throw new ValidationError("cost settlement prompt_micro_cents_per_token must be a non-negative integer");
+  if (!isNonNegativeInteger(input.completionMicroCentsPerToken))
+    throw new ValidationError("cost settlement completion_micro_cents_per_token must be a non-negative integer");
+  return {
+    version,
+    currency,
+    promptMicroCentsPerToken: input.promptMicroCentsPerToken,
+    completionMicroCentsPerToken: input.completionMicroCentsPerToken,
+  };
+}
+
+export function buildCostSettlementFromResult(
+  input: {
+    executionResultId: string;
+    executionJobId: string;
+    responseSnapshot: Record<string, unknown>;
+  },
+  rateCard: ExecutionEvaluationCostSettlementRateCard,
+): ExecutionEvaluationCostSettlementWrite | null {
+  const metadata = responseMetadata(input.responseSnapshot);
+  if (!metadata) return null;
+  const tokenUsage = parseTokenUsage(metadata.tokenUsage ?? metadata.token_usage);
+  const provider = readNonBlank(metadata.providerKind ?? metadata.provider_kind);
+  const providerContract = isRecord(metadata.providerResponseContract)
+    ? metadata.providerResponseContract
+    : isRecord(metadata.provider_response_contract)
+      ? metadata.provider_response_contract
+      : null;
+  const model = readNonBlank(providerContract?.model ?? metadata.model);
+  if (!tokenUsage || !provider || !model) return null;
+  const amountMicroCents =
+    tokenUsage.promptTokens * rateCard.promptMicroCentsPerToken +
+    tokenUsage.completionTokens * rateCard.completionMicroCentsPerToken;
+  return {
+    executionResultId: input.executionResultId,
+    executionJobId: input.executionJobId,
+    provider,
+    model,
+    promptTokens: tokenUsage.promptTokens,
+    completionTokens: tokenUsage.completionTokens,
+    totalTokens: tokenUsage.totalTokens,
+    promptMicroCentsPerToken: rateCard.promptMicroCentsPerToken,
+    completionMicroCentsPerToken: rateCard.completionMicroCentsPerToken,
+    amountMicroCents,
+    amountCents: Math.ceil(amountMicroCents / 1_000_000),
+    currency: rateCard.currency,
+    rateCardVersion: rateCard.version,
+    settlementSource: "explicit_rate_card_token_usage",
+  };
+}
+
 export function listLowQualityEvaluations(
   rows: Array<{
     id: string;
@@ -439,9 +525,9 @@ function parseCostEstimate(value: unknown): ExecutionEvaluationCostEstimate | nu
 
 function parseTokenUsage(value: unknown): ExecutionEvaluationTokenUsage | null {
   if (!isRecord(value)) return null;
-  const promptTokens = value.promptTokens;
-  const completionTokens = value.completionTokens;
-  const totalTokens = value.totalTokens;
+  const promptTokens = value.promptTokens ?? value.prompt_tokens;
+  const completionTokens = value.completionTokens ?? value.completion_tokens;
+  const totalTokens = value.totalTokens ?? value.total_tokens;
   if (
     !isNonNegativeInteger(promptTokens) ||
     !isNonNegativeInteger(completionTokens) ||
@@ -449,6 +535,10 @@ function parseTokenUsage(value: unknown): ExecutionEvaluationTokenUsage | null {
   )
     return null;
   return { promptTokens, completionTokens, totalTokens };
+}
+
+function readNonBlank(value: unknown): string | null {
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
 }
 
 function parseQuotaDecision(value: unknown): ExecutionEvaluationQuotaDecision | null {
