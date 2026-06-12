@@ -335,7 +335,7 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
   await app.register(taskRoutes, { env, service });
   await app.register(workflowRoutes, { env, defService, runService });
   await app.register(workflowRunRoutes, { env, runService });
-  await app.register(stageRunRoutes, { env, runService, contextService, executionBridgeService });
+  await app.register(stageRunRoutes, { env, runService, contextService, executionBridgeService, agentProfileService });
   await app.register(contextPackRoutes, { env, contextService });
   await app.register(assetRoutes, { env, assetService });
   await app.register(reviewRoutes, { env, reviewService });

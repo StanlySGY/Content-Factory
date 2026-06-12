@@ -1747,6 +1747,11 @@ export const RequestStageExecutionSchema = Type.Object(
     input: Type.Optional(JsonRecord()),
     project_id: Type.Optional(Uuid()),
     idempotency_key: Type.Optional(Type.String({ minLength: 1, maxLength: 200 })),
+    // 引用 Agent 管理页中的 profile（如自动种子的 Claude Code）；从其 constraints 解析 provider，
+    // 把 job 路由到对应 runtime。不传则维持原 mock 行为（向后兼容）。
+    agent_profile_id: Type.Optional(Uuid()),
+    // 交给 agent 的 prompt（local_cli 等真实 provider 需要）。
+    prompt: Type.Optional(Type.String({ minLength: 1, maxLength: 20000 })),
   },
   { additionalProperties: false },
 );

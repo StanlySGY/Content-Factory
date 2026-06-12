@@ -255,10 +255,6 @@ export type ExecutionJobType = (typeof EXECUTION_JOB_TYPES)[number];
 export const AGENT_PROVIDER_KINDS = ["openai_compatible", "local_cli"] as const;
 export type AgentProviderKind = (typeof AGENT_PROVIDER_KINDS)[number];
 
-/** 本地 CLI agent 种类：与宿主机已安装的 agentic CLI 对应 */
-export const LOCAL_CLI_AGENT_KINDS = ["claude", "codex", "gemini", "opencode"] as const;
-export type LocalCliAgentKind = (typeof LOCAL_CLI_AGENT_KINDS)[number];
-
 /** 执行作业状态（db execution_jobs_status_chk；可变生命周期 pending→running→success/failed，running→pending 为重试回退）*/
 export const EXECUTION_JOB_STATUSES = ["pending", "running", "success", "failed"] as const;
 export type ExecutionJobStatus = (typeof EXECUTION_JOB_STATUSES)[number];
