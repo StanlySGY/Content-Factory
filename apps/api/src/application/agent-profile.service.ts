@@ -15,6 +15,8 @@ import * as agentRepo from "../infrastructure/repositories/agent-profile.reposit
 import { recordAudit } from "./audit.service.js";
 import type { RequestContext } from "./task.service.js";
 
+export type { RequestContext } from "./task.service.js";
+
 type JsonRecord = Record<string, unknown>;
 
 export interface CreateAgentProfileInput {

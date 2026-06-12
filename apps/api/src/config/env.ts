@@ -58,6 +58,12 @@ export interface Env {
   executionPublisherEndpointRegistry: string[];
   executionPublisherChannelAllowlist: string[];
   agentOpenAICompatibleEndpoint: string | null;
+  // 本地 CLI agent（Claude Code 等）：默认关闭；启用后经子进程驱动宿主 CLI，凭继承环境，不读 secret:// 引用
+  executionLocalCliAgentEnabled: boolean;
+  // 限定允许的 provider 子集（如 claude_code）；空表示不限制（仍受 registry 闭集约束）
+  executionLocalCliAgentProviders: string[];
+  // 启动时自动探测 PATH 并将可用 CLI 种子为 agent_profiles
+  executionLocalCliAgentAutoSeed: boolean;
   outboxRelayEnabled: boolean;
   outboxRelayIntervalMs: number;
 }
@@ -235,6 +241,9 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     executionPublisherEndpointRegistry: csv(source.EXECUTION_PUBLISHER_ENDPOINT_REGISTRY),
     executionPublisherChannelAllowlist: csv(source.EXECUTION_PUBLISHER_CHANNEL_ALLOWLIST),
     agentOpenAICompatibleEndpoint: source.AGENT_OPENAI_COMPATIBLE_ENDPOINT ?? null,
+    executionLocalCliAgentEnabled: bool(source.EXECUTION_LOCAL_CLI_AGENT_ENABLED, false),
+    executionLocalCliAgentProviders: csv(source.EXECUTION_LOCAL_CLI_AGENT_PROVIDERS),
+    executionLocalCliAgentAutoSeed: bool(source.EXECUTION_LOCAL_CLI_AGENT_AUTO_SEED, false),
     outboxRelayEnabled: bool(source.OUTBOX_RELAY_ENABLED, false),
     outboxRelayIntervalMs: Number(source.OUTBOX_RELAY_INTERVAL_MS ?? 5000),
   };

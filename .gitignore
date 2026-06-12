@@ -9,9 +9,13 @@ coverage/
 .env
 .env.*
 !.env.example
+!.env.docker.example
 
 # tooling
 .ace-tool/
 .playwright-mcp/
 .DS_Store
 *.log
+
+# 大体积非运行时资源（字体包等，不入仓）
+Meslo.zip

@@ -16,6 +16,8 @@ import { AgentProviderRuntime } from "./agent-provider-runtime.js";
 import { AgentProviderPreflightRuntime } from "./provider-preflight-runtime.js";
 import { throwAgentRealAdapterDisabledFixture } from "./agent-real-adapter-disabled-fixture.js";
 import type { AgentRealRuntime } from "./agent-real-runtime.js";
+import type { LocalCliAgentRuntime } from "./local-cli-agent-runtime.js";
+import { findLocalCliAgentSpec } from "./local-cli-agent-registry.js";
 import type { MCPRealRuntime } from "./mcp-real-runtime.js";
 import type { MCPSafetyRuntime } from "./mcp-safety-runtime.js";
 import type { PublisherRealRuntime } from "./publisher-real-runtime.js";
@@ -39,6 +41,7 @@ export interface RuntimeAdapterFactory {
 export interface RuntimeAdapterFactoryOptions extends Partial<RuntimeSafetyPolicy> {
   adapterMode?: RuntimeAdapterMode;
   realAgentRuntime?: AgentRealRuntime;
+  localCliAgentRuntime?: LocalCliAgentRuntime;
   mcpRealRuntime?: MCPRealRuntime;
   mcpSafetyRuntime?: MCPSafetyRuntime;
   publisherRealRuntime?: PublisherRealRuntime;
@@ -64,6 +67,7 @@ export class MockRuntimeAdapterFactory implements RuntimeAdapterFactory {
   private readonly agentProviderRuntime = new AgentProviderRuntime();
   private readonly agentProviderPreflightRuntime = new AgentProviderPreflightRuntime();
   private readonly realAgentRuntime: AgentRealRuntime | null;
+  private readonly localCliAgentRuntime: LocalCliAgentRuntime | null;
   private readonly mcpRealRuntime: MCPRealRuntime | null;
   private readonly mcpSafetyRuntime: MCPSafetyRuntime | null;
   private readonly publisherRealRuntime: PublisherRealRuntime | null;
@@ -73,6 +77,7 @@ export class MockRuntimeAdapterFactory implements RuntimeAdapterFactory {
     const {
       adapterMode = "mock",
       realAgentRuntime = null,
+      localCliAgentRuntime = null,
       mcpRealRuntime = null,
       mcpSafetyRuntime = null,
       publisherRealRuntime = null,
@@ -81,6 +86,7 @@ export class MockRuntimeAdapterFactory implements RuntimeAdapterFactory {
     } = policy;
     this.adapterMode = adapterMode;
     this.realAgentRuntime = realAgentRuntime;
+    this.localCliAgentRuntime = localCliAgentRuntime;
     this.mcpRealRuntime = mcpRealRuntime;
     this.mcpSafetyRuntime = mcpSafetyRuntime;
     this.publisherRealRuntime = publisherRealRuntime;
@@ -92,6 +98,14 @@ export class MockRuntimeAdapterFactory implements RuntimeAdapterFactory {
   getRuntime(type: ExecutionJobType, context?: RuntimeExecutionContext): AnyRuntime {
     const policy = context?.policy ?? this.policy;
     if (this.adapterMode === "real") {
+      if (type === "agent" && this.localCliAgentRuntime && context?.credentialRef &&
+        findLocalCliAgentSpec(context.credentialRef.provider)) {
+        if (policy.mode !== "real_enabled" || !policy.allowRealExecution)
+          throw new ValidationError("local cli adapter requires real_enabled mode and allowRealExecution=true");
+        if (!policy.allowProcessSpawn)
+          throw new ValidationError("local cli adapter requires allowProcessSpawn=true");
+        return this.localCliAgentRuntime;
+      }
       if (type === "agent" && this.realAgentRuntime) {
         if (policy.mode !== "real_enabled" || !policy.allowRealExecution)
           throw new ValidationError("real adapter requires real_enabled mode and allowRealExecution=true");

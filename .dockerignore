@@ -1,0 +1,26 @@
+# 构建产物与依赖（镜像内重新安装/构建）
+node_modules
+**/node_modules
+dist
+**/dist
+coverage
+**/coverage
+*.tsbuildinfo
+
+# 本地环境与密钥
+.env
+.env.*
+!.env.example
+
+# 大体积非运行时资源
+Meslo.zip
+
+# 工具与缓存
+.git
+.ace-tool
+.playwright-mcp
+.claude
+.codex
+.agents
+*.log
+.DS_Store

@@ -1,0 +1,85 @@
+# Content Factory — 生产容器编排（单机本地部署模板）
+# 与 docker-compose.yml（仅开发期 PostgreSQL）互不干扰。
+# 用法：cp .env.docker.example .env.docker && 按需改密码 && docker compose -f docker-compose.prod.yml --env-file .env.docker up -d --build
+#
+# 启动顺序：postgres(healthy) -> migrate(跑完退出) -> api(healthy) -> web
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cf_prod_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: content_factory
+      LANG: C.UTF-8
+      # init 脚本据此建 cf_app / cf_audit_reader，须与 api 连接串密码一致
+      CF_APP_PASSWORD: ${CF_APP_PASSWORD:-cf_app_dev_pw}
+      CF_AUDIT_PASSWORD: ${CF_AUDIT_PASSWORD:-cf_audit_dev_pw}
+    volumes:
+      - cf_prod_pgdata:/var/lib/postgresql/data
+      # 生产 init：仅建最小权限角色，不建测试库
+      - ./db/docker-init-prod:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d content_factory"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  # 一次性迁移：postgres healthy 后执行，跑完即退出；api 依赖其成功完成
+  migrate:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: migrate
+    image: cf-api-migrate:latest
+    environment:
+      DATABASE_ADMIN_URL: postgres://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/content_factory
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: runtime
+    image: cf-api:latest
+    container_name: cf_prod_api
+    environment:
+      # 应用运行时：最小权限角色 cf_app
+      DATABASE_URL: postgres://cf_app:${CF_APP_PASSWORD:-cf_app_dev_pw}@postgres:5432/content_factory
+      # 审计只读身份（写读分离）
+      DATABASE_AUDIT_URL: postgres://cf_audit_reader:${CF_AUDIT_PASSWORD:-cf_audit_dev_pw}@postgres:5432/content_factory
+      APP_PORT: "3001"
+      # CORS 允许的前端来源（Web 对外暴露地址，按部署环境调整）
+      WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:8080}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      # 镜像内含 node，用其内置 http 探活，避免依赖 curl/wget
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3001/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    image: cf-web:latest
+    container_name: cf_prod_web
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  cf_prod_pgdata:

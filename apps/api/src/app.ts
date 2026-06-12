@@ -22,6 +22,10 @@ import { createWorkflowStageRunWritebackHandler } from "./application/execution-
 import { ExecutionWorker } from "./application/execution-worker.js";
 import { MockRuntimeAdapterFactory, type RuntimeAdapterFactory } from "./application/runtime/adapter-factory.js";
 import { AgentRealRuntime } from "./application/runtime/agent-real-runtime.js";
+import { LocalCliAgentRuntime } from "./application/runtime/local-cli-agent-runtime.js";
+import { discoverLocalCliAgents } from "./application/runtime/local-cli-agent-discovery.js";
+import { listLocalCliAgentSpecs } from "./application/runtime/local-cli-agent-registry.js";
+import { seedLocalCliAgents } from "./application/runtime/local-cli-agent-seed.js";
 import {
   MCPJsonRpcHttpClient,
   MCPRealRuntime,
@@ -130,6 +134,16 @@ function shouldAssembleProductizedPublisherRuntime(env: Env): boolean {
     env.executionNetworkAllowlist.length > 0;
 }
 
+// 本地 CLI Agent gate：与 HTTP agent 不同——不需要 network / secret store / endpoint，
+// 凭继承的进程环境驱动本地 CLI，故只要 real_enabled + allowRealExecution + allowProcessSpawn + 开关。
+function shouldAssembleLocalCliAgentRuntime(env: Env): boolean {
+  return env.executionRuntimeMode === "real_enabled" &&
+    env.executionRuntimeAdapterMode === "real" &&
+    env.executionAllowRealRuntime &&
+    env.executionAllowProcessSpawn &&
+    env.executionLocalCliAgentEnabled;
+}
+
 function providerQuotaLimits(env: Env): ProviderQuotaLimits {
   return {
     dailyRequestLimit: env.executionProviderDailyRequestLimit,
@@ -141,9 +155,10 @@ function providerQuotaLimits(env: Env): ProviderQuotaLimits {
 function buildRuntimeAdapterFactory(env: Env, policy: RuntimeSafetyPolicy, opts: BuildOptions, db: ReturnType<typeof createDb>): RuntimeAdapterFactory {
   if (opts.runtimeAdapterFactory) return opts.runtimeAdapterFactory;
   const assembleAgent = shouldAssembleProductizedAgentRuntime(env);
+  const assembleLocalCli = shouldAssembleLocalCliAgentRuntime(env);
   const assembleMcp = shouldAssembleProductizedMcpRuntime(env);
   const assemblePublisher = shouldAssembleProductizedPublisherRuntime(env);
-  if (!assembleAgent && !assembleMcp && !assemblePublisher)
+  if (!assembleAgent && !assembleLocalCli && !assembleMcp && !assemblePublisher)
     return new MockRuntimeAdapterFactory({ ...policy, adapterMode: env.executionRuntimeAdapterMode });
 
   const realAgentRuntime = assembleAgent ? (() => {
@@ -178,10 +193,12 @@ function buildRuntimeAdapterFactory(env: Env, policy: RuntimeSafetyPolicy, opts:
       networkAllowlist: env.executionNetworkAllowlist,
     },
   ) : undefined;
+  const localCliAgentRuntime = assembleLocalCli ? new LocalCliAgentRuntime() : undefined;
   return new MockRuntimeAdapterFactory({
     ...policy,
     adapterMode: "real",
     realAgentRuntime,
+    localCliAgentRuntime,
     mcpRealRuntime,
     publisherRealRuntime,
   });
@@ -347,6 +364,23 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
   if (env.executionWorkerEnabled) executionWorker.start();
   if (env.outboxRelayEnabled) outboxRelay.start();
   if (env.executionRegressionEvaluationRunnerEnabled) executionRegressionEvaluationRunner.start();
+
+  // 本地 CLI Agent 自动发现并种子（默认关闭）：探测宿主 PATH 中可用的 agentic CLI，
+  // 幂等写入默认项目的 agent_profiles。失败只告警不阻断启动。
+  if (env.executionLocalCliAgentEnabled && env.executionLocalCliAgentAutoSeed) {
+    void (async () => {
+      try {
+        const discovered = await discoverLocalCliAgents(env.executionLocalCliAgentProviders);
+        const availableProviders = discovered.filter((d) => d.available).map((d) => d.provider);
+        const specs = listLocalCliAgentSpecs().filter((s) => availableProviders.includes(s.provider));
+        const seedCtx = { projectId: env.defaultProjectId, actorId: env.defaultUserId, requestId: "local-cli-agent-seed" };
+        const result = await seedLocalCliAgents(agentProfileService, seedCtx, specs);
+        app.log.info({ discovered, seeded: result }, "local cli agent discovery complete");
+      } catch (e) {
+        app.log.warn({ err: e }, "local cli agent discovery/seed failed");
+      }
+    })();
+  }
 
   const close = async (): Promise<void> => {
     executionWorker.stop();
