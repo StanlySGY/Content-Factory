@@ -2418,6 +2418,18 @@ button {
   }
 }
 
+/* ---- 可访问性 ---- */
+
+/* Focus 样式 */
+:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
 
 
 

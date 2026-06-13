@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 
 interface RouteItem {
@@ -38,6 +38,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   const filteredRoutes = routes.filter((route) => {
     const searchLower = search.toLowerCase();
@@ -59,6 +60,35 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
   useEffect(() => {
     setSelectedIndex(0);
   }, [search]);
+
+  const handleTabTrap = useCallback((e: KeyboardEvent) => {
+    if (e.key !== "Tab" || !dialogRef.current) return;
+
+    const focusableElements = dialogRef.current.querySelectorAll<HTMLElement>(
+      'input, button, [href], [tabindex]:not([tabindex="-1"])'
+    );
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+
+    if (e.shiftKey) {
+      if (document.activeElement === firstElement) {
+        e.preventDefault();
+        lastElement?.focus();
+      }
+    } else {
+      if (document.activeElement === lastElement) {
+        e.preventDefault();
+        firstElement?.focus();
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.addEventListener("keydown", handleTabTrap);
+      return () => document.removeEventListener("keydown", handleTabTrap);
+    }
+  }, [isOpen, handleTabTrap]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowDown") {
@@ -86,8 +116,14 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
 
   return (
     <>
-      <div className="palette-overlay" onClick={onClose} />
-      <div className="command-palette">
+      <div className="palette-overlay" onClick={onClose} aria-hidden="true" />
+      <div
+        ref={dialogRef}
+        className="command-palette"
+        role="dialog"
+        aria-modal="true"
+        aria-label="命令面板"
+      >
         <div className="palette-header">
           <input
             ref={inputRef}
@@ -97,9 +133,10 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={handleKeyDown}
             className="palette-input"
+            aria-label="搜索页面"
           />
         </div>
-        <div className="palette-results">
+        <div className="palette-results" role="listbox" aria-label="搜索结果">
           {filteredRoutes.length === 0 ? (
             <div className="palette-empty">未找到匹配的页面</div>
           ) : (
@@ -109,8 +146,10 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
                 className={`palette-item ${index === selectedIndex ? "selected" : ""}`}
                 onClick={() => handleSelect(route.path)}
                 onMouseEnter={() => setSelectedIndex(index)}
+                role="option"
+                aria-selected={index === selectedIndex}
               >
-                <span className="palette-icon">{route.icon}</span>
+                <span className="palette-icon" aria-hidden="true">{route.icon}</span>
                 <span className="palette-label">{route.label}</span>
                 <span className="palette-path">{route.path}</span>
               </button>
