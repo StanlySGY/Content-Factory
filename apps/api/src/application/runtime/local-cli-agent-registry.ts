@@ -187,11 +187,11 @@ const OPENCODE_CLI: LocalCliAgentSpec = {
   },
 };
 
-// MiniCode：`minicode run --format json "<prompt>"`（规格同 OpenCode 兼容）
-const MINICODE_CLI: LocalCliAgentSpec = {
-  provider: "minicode_cli",
-  displayName: "MiniCode",
-  command: "minicode",
+// MimoCode：`mimo run --format json "<prompt>"`（规格同 OpenCode 兼容）
+const MIMOCODE_CLI: LocalCliAgentSpec = {
+  provider: "mimocode_cli",
+  displayName: "MimoCode",
+  command: "mimo",
   probeArgs: ["--version"],
   buildArgs: (prompt, options) => {
     const args = ["run", "--format", "json"];
@@ -202,7 +202,7 @@ const MINICODE_CLI: LocalCliAgentSpec = {
   parseOutput: OPENCODE_CLI.parseOutput,
 };
 
-const REGISTRY: readonly LocalCliAgentSpec[] = [CLAUDE_CODE, GEMINI_CLI, CODEX_CLI, OPENCODE_CLI, MINICODE_CLI];
+const REGISTRY: readonly LocalCliAgentSpec[] = [CLAUDE_CODE, GEMINI_CLI, CODEX_CLI, OPENCODE_CLI, MIMOCODE_CLI];
 
 export function listLocalCliAgentSpecs(): readonly LocalCliAgentSpec[] {
   return REGISTRY;

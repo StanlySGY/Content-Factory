@@ -17,14 +17,14 @@ cd "$(dirname "$0")/.."
 
 # 预检：至少有一个已知 CLI 在 PATH
 found_any=false
-for cmd in claude gemini codex opencode minicode; do
+for cmd in claude gemini codex opencode mimo; do
   if command -v "$cmd" >/dev/null 2>&1; then
     echo "✓ 检测到 $cmd：$(command -v "$cmd")"
     found_any=true
   fi
 done
 if [ "$found_any" = false ]; then
-  echo "✗ 未在 PATH 找到任何已知 CLI Agent（claude/gemini/codex/opencode/minicode）。" >&2
+  echo "✗ 未在 PATH 找到任何已知 CLI Agent（claude/gemini/codex/opencode/mimo）。" >&2
   exit 1
 fi
 
