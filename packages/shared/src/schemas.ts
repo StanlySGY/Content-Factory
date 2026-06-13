@@ -388,6 +388,7 @@ export const AssetVersionSchema = Type.Object(
     content_asset_id: Uuid(),
     version: Type.Integer(),
     storage_uri: Type.String(),
+    content_text: Nullable(Type.String()),
     checksum: Type.String(),
     metadata: JsonContract(),
     source_stage_run_id: Nullable(Uuid()),
@@ -412,6 +413,7 @@ export type CreateAssetBody = Static<typeof CreateAssetBodySchema>;
 export const CreateAssetVersionBodySchema = Type.Object(
   {
     storage_uri: Type.String({ minLength: 1 }),
+    content_text: Type.Optional(Nullable(Type.String())),
     checksum: Type.String({ minLength: 1, maxLength: 128 }),
     metadata: JsonContract(),
     source_stage_run_id: Type.Optional(Nullable(Uuid())),

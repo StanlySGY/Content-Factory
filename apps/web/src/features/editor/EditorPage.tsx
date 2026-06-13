@@ -39,7 +39,7 @@ export function EditorPage() {
 
   const s = state.data;
   const selectVersion = (v: AssetVersionDTO) => {
-    setContent(v.storage_uri);
+    setContent(v.content_text || v.storage_uri);
   };
 
   const handleEditorChange = ({ text }: { text: string; html: string }) => {
@@ -49,7 +49,7 @@ export function EditorPage() {
   const submit = () => {
     if (!assetId || !content.trim()) return;
     addVersion.mutate(
-      { storage_uri: content, checksum: hashContent(content), metadata: { schema_version: 1 } },
+      { storage_uri: `editor://${assetId}/${Date.now()}`, content_text: content, checksum: hashContent(content), metadata: { schema_version: 1 } },
       {
         onSuccess: () => {
           void qc.invalidateQueries({ queryKey: editorKeys.state(id) });

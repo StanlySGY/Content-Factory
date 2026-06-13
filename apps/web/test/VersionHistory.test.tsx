@@ -9,6 +9,7 @@ const mk = (version: number): AssetVersionDTO => ({
   content_asset_id: "a1",
   version,
   storage_uri: "inline://editor",
+  content_text: null,
   checksum: `c${version}`,
   metadata: { schema_version: 1 },
   source_stage_run_id: null,

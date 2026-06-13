@@ -17,7 +17,7 @@ function makeState(): EditorStateDTO {
     workflowRun: { id: "run-abcdef00", content_task_id: "t1", workflow_definition_id: "d1", workflow_version: 1, current_stage_run_id: "s1", status: "running", started_at: null, completed_at: null, created_at: iso, updated_at: iso },
     stageRun: { id: "s1", workflow_run_id: "run-abcdef00", workflow_stage_id: "wfstage-aaaaaaaa", agent_profile_id: null, parent_stage_run_id: null, status: "waiting_review", attempt_count: 1, parallel_group: null, gate_result: null, started_at: null, completed_at: null, created_at: iso, updated_at: iso },
     asset: { id: "a1", content_task_id: "t1", stage_run_id: null, asset_type: "draft", title: "DocTitle", status: "review_pending", current_version: 1, current_version_id: "v1", created_at: iso, updated_at: iso },
-    versions: [{ id: "v1", content_asset_id: "a1", version: 1, storage_uri: "hi", checksum: "c1", metadata: { schema_version: 1 }, source_stage_run_id: null, created_by: null, created_at: iso }],
+    versions: [{ id: "v1", content_asset_id: "a1", version: 1, storage_uri: "hi", content_text: null, checksum: "c1", metadata: { schema_version: 1 }, source_stage_run_id: null, created_by: null, created_at: iso }],
     contexts: [],
     review: null,
   };

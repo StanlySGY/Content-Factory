@@ -9,6 +9,7 @@ const mk = (over: Partial<AssetVersionDTO>): AssetVersionDTO => ({
   content_asset_id: "a0",
   version: 1,
   storage_uri: "s3://x",
+  content_text: null,
   checksum: "sum000000000",
   metadata: { schema_version: 1 },
   source_stage_run_id: null,

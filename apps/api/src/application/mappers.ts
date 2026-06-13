@@ -359,6 +359,7 @@ export function toAssetVersionDTO(r: AssetVersionRow): AssetVersionDTO {
     content_asset_id: r.contentAssetId,
     version: r.version,
     storage_uri: r.storageUri,
+    content_text: r.contentText,
     checksum: r.checksum,
     metadata: r.metadata,
     source_stage_run_id: r.sourceStageRunId,

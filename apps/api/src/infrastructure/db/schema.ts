@@ -167,6 +167,7 @@ export const assetVersions = pgTable("asset_versions", {
   contentAssetId: uuid("content_asset_id").notNull(),
   version: integer("version").notNull(),
   storageUri: text("storage_uri").notNull(),
+  contentText: text("content_text"),
   checksum: varchar("checksum", { length: 128 }).notNull(),
   metadata: jsonb("metadata").$type<JsonContract>().notNull(),
   sourceStageRunId: uuid("source_stage_run_id"),
