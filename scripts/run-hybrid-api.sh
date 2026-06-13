@@ -15,12 +15,18 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-# 预检：claude CLI 必须在 PATH（混合模式的前提）
-if ! command -v claude >/dev/null 2>&1; then
-  echo "✗ 未在 PATH 找到 claude CLI。请确认已安装并能在终端直接运行 'claude --version'。" >&2
+# 预检：至少有一个已知 CLI 在 PATH
+found_any=false
+for cmd in claude gemini codex opencode minicode; do
+  if command -v "$cmd" >/dev/null 2>&1; then
+    echo "✓ 检测到 $cmd：$(command -v "$cmd")"
+    found_any=true
+  fi
+done
+if [ "$found_any" = false ]; then
+  echo "✗ 未在 PATH 找到任何已知 CLI Agent（claude/gemini/codex/opencode/minicode）。" >&2
   exit 1
 fi
-echo "✓ 检测到 claude：$(command -v claude)"
 
 # ── 本地 CLI Agent 真实执行 gate（全部显式开启）──
 export EXECUTION_RUNTIME_MODE=real_enabled
@@ -29,7 +35,7 @@ export EXECUTION_ALLOW_REAL_RUNTIME=true
 export EXECUTION_ALLOW_PROCESS_SPAWN=true
 export EXECUTION_LOCAL_CLI_AGENT_ENABLED=true
 export EXECUTION_LOCAL_CLI_AGENT_AUTO_SEED=true
-export EXECUTION_LOCAL_CLI_AGENT_PROVIDERS=claude_code
+export EXECUTION_LOCAL_CLI_AGENT_PROVIDERS=
 
 # worker 必须开启，job 才会被自动领取执行
 export EXECUTION_WORKER_ENABLED=true
@@ -42,7 +48,7 @@ export EXECUTION_RUNTIME_MAX_TIMEOUT_MS=300000
 export EXECUTION_WORKER_LOCK_TIMEOUT_MS=360000
 
 echo "✓ gate 已注入，启动 API（宿主机进程，端口取 .env APP_PORT，默认 3001）"
-echo "  本地 CLI Agent：enabled + auto-seed（claude_code）"
+echo "  本地 CLI Agent：enabled + auto-seed（扫描全注册表）"
 echo "  worker：enabled（间隔 ${EXECUTION_WORKER_INTERVAL_MS}ms）"
 echo "  按 Ctrl+C 停止。"
 echo
