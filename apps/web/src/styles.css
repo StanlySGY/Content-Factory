@@ -29,6 +29,28 @@
     "Microsoft YaHei", Roboto, Helvetica, Arial, sans-serif;
 }
 
+/* 暗色模式 */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-canvas: #1a1a2e;
+    --bg-surface: #16213e;
+    --bg-subtle: #1f2940;
+    --text-primary: #e0e0e0;
+    --text-secondary: #9ca3af;
+    --border-muted: #374151;
+    --accent-primary: #6c63ff;
+    --accent-primary-weak: #2d2b55;
+
+    --status-running: #60a5fa;
+    --status-review: #fbbf24;
+    --status-success: #34d399;
+    --status-warning: #fbbf24;
+    --status-danger: #f87171;
+    --status-neutral: #9ca3af;
+    --status-info: #6c63ff;
+  }
+}
+
 * {
   box-sizing: border-box;
 }
