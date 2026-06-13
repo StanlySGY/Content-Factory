@@ -39,7 +39,7 @@ function pickNumber(obj: Record<string, unknown>, key: string): number | undefin
   return typeof v === "number" && Number.isFinite(v) ? v : undefined;
 }
 
-// Claude Code：`claude -p "<prompt>" --output-format json [--model x]`，stdout 为单个 result envelope。
+// Claude Code：`claude -p "<prompt>" --output-format json [--model x]`
 const CLAUDE_CODE: LocalCliAgentSpec = {
   provider: "claude_code",
   displayName: "Claude Code",
@@ -77,7 +77,132 @@ const CLAUDE_CODE: LocalCliAgentSpec = {
   },
 };
 
-const REGISTRY: readonly LocalCliAgentSpec[] = [CLAUDE_CODE];
+// Gemini CLI：`gemini -p "<prompt>" --output-format json`，stdout 为单个 JSON 对象
+const GEMINI_CLI: LocalCliAgentSpec = {
+  provider: "gemini_cli",
+  displayName: "Gemini CLI",
+  command: "gemini",
+  probeArgs: ["--version"],
+  buildArgs: (prompt, options) => {
+    const args = ["-p", prompt, "--output-format", "json", "--sandbox"];
+    if (options.model) args.push("-m", options.model);
+    return args;
+  },
+  parseOutput: (stdout) => {
+    let envelope: unknown;
+    try {
+      envelope = JSON.parse(stdout);
+    } catch {
+      throw new ValidationError("gemini_cli output is not valid JSON");
+    }
+    if (envelope === null || typeof envelope !== "object" || Array.isArray(envelope))
+      throw new ValidationError("gemini_cli output envelope must be an object");
+    const env = envelope as Record<string, unknown>;
+    const text = pickString(env, "response");
+    if (text === undefined) throw new ValidationError("gemini_cli output missing response text");
+    return {
+      text,
+      raw: {
+        session_id: pickString(env, "session_id"),
+        stats: env.stats ?? null,
+      },
+    };
+  },
+};
+
+// Codex CLI：`codex exec --json "<prompt>"`，stdout 为 JSONL 流
+const CODEX_CLI: LocalCliAgentSpec = {
+  provider: "codex_cli",
+  displayName: "Codex CLI",
+  command: "codex",
+  probeArgs: ["--version"],
+  buildArgs: (prompt, options) => {
+    const args = ["exec", "--json"];
+    if (options.model) args.push("-m", options.model);
+    args.push(prompt);
+    return args;
+  },
+  parseOutput: (stdout) => {
+    const lines = stdout.split("\n").filter((l) => l.trim().length > 0);
+    const textParts: string[] = [];
+    let usage: Record<string, unknown> | null = null;
+    for (const line of lines) {
+      let event: Record<string, unknown>;
+      try {
+        event = JSON.parse(line) as Record<string, unknown>;
+      } catch {
+        continue;
+      }
+      if (event.type === "item.completed") {
+        const item = event.item as Record<string, unknown> | undefined;
+        if (item?.type === "agent_message" && typeof item.text === "string") {
+          textParts.push(item.text);
+        }
+      }
+      if (event.type === "turn.completed" && event.usage) {
+        usage = event.usage as Record<string, unknown>;
+      }
+    }
+    if (textParts.length === 0) throw new ValidationError("codex_cli output contains no agent_message");
+    return { text: textParts.join("\n"), raw: { usage } };
+  },
+};
+
+// OpenCode：`opencode run --format json "<prompt>"`，stdout 为 JSONL 流
+const OPENCODE_CLI: LocalCliAgentSpec = {
+  provider: "opencode_cli",
+  displayName: "OpenCode",
+  command: "opencode",
+  probeArgs: ["--version"],
+  buildArgs: (prompt, options) => {
+    const args = ["run", "--format", "json"];
+    if (options.model) args.push("-m", options.model);
+    args.push(prompt);
+    return args;
+  },
+  parseOutput: (stdout) => {
+    const lines = stdout.split("\n").filter((l) => l.trim().length > 0);
+    const textParts: string[] = [];
+    let sessionID: string | undefined;
+    let cost = 0;
+    for (const line of lines) {
+      let event: Record<string, unknown>;
+      try {
+        event = JSON.parse(line) as Record<string, unknown>;
+      } catch {
+        continue;
+      }
+      if (!sessionID && typeof event.sessionID === "string") sessionID = event.sessionID;
+      if (event.type === "text") {
+        const part = event.part as Record<string, unknown> | undefined;
+        if (part && typeof part.text === "string") textParts.push(part.text);
+      }
+      if (event.type === "step_finish") {
+        const part = event.part as Record<string, unknown> | undefined;
+        if (part && typeof part.cost === "number") cost += part.cost;
+      }
+    }
+    if (textParts.length === 0) throw new ValidationError("opencode_cli output contains no text events");
+    return { text: textParts.join("\n"), raw: { session_id: sessionID, cost } };
+  },
+};
+
+// MiniCode：`minicode run --format json "<prompt>"`（规格同 OpenCode 兼容）
+const MINICODE_CLI: LocalCliAgentSpec = {
+  provider: "minicode_cli",
+  displayName: "MiniCode",
+  command: "minicode",
+  probeArgs: ["--version"],
+  buildArgs: (prompt, options) => {
+    const args = ["run", "--format", "json"];
+    if (options.model) args.push("-m", options.model);
+    args.push(prompt);
+    return args;
+  },
+  parseOutput: OPENCODE_CLI.parseOutput,
+};
+
+const REGISTRY: readonly LocalCliAgentSpec[] = [CLAUDE_CODE, GEMINI_CLI, CODEX_CLI, OPENCODE_CLI, MINICODE_CLI];
 
 export function listLocalCliAgentSpecs(): readonly LocalCliAgentSpec[] {
   return REGISTRY;

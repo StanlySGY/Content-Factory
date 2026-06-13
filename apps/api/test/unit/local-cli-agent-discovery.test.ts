@@ -61,7 +61,8 @@ describe("seedLocalCliAgents", () => {
   });
 
   it("已存在同名 profile 时跳过，不重复创建", async () => {
-    const { service, created } = fakeService(["Claude Code"]);
+    const allNames = listLocalCliAgentSpecs().map((s) => s.displayName);
+    const { service, created } = fakeService(allNames);
     const result = await seedLocalCliAgents(service, ctx, listLocalCliAgentSpecs());
     expect(result.skipped).toContain("claude_code");
     expect(created).toHaveLength(0);

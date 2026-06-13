@@ -24,7 +24,7 @@ function isPlainObject(v: unknown): v is Record<string, unknown> {
 }
 
 // 已知的本地 CLI provider 标识（与 local-cli-agent-registry 保持一致；此处仅做归类判断，不引入运行时依赖）。
-const LOCAL_CLI_PROVIDERS = new Set(["claude_code"]);
+const LOCAL_CLI_PROVIDERS = new Set(["claude_code", "gemini_cli", "codex_cli", "opencode_cli", "minicode_cli"]);
 
 /** 从 profile constraints 推断 provider 选择。constraints 非法 / provider 未知时抛 ValidationError。*/
 export function selectAgentProvider(constraints: unknown): AgentProviderSelection {
