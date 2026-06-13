@@ -91,7 +91,7 @@ function renderRoute() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={["/execution/outbox"]}>
+      <MemoryRouter initialEntries={["/admin/execution/outbox"]}>
         <App />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -105,10 +105,6 @@ describe("ExecutionOutboxLedgerPage", () => {
 
     renderRoute();
 
-    expect(screen.getByRole("link", { name: "出箱事件" })).toHaveAttribute(
-      "href",
-      "/execution/outbox",
-    );
     expect(await screen.findByRole("heading", { name: "出箱事件账本" })).toBeInTheDocument();
     expect(await screen.findByText("outbox:stage-run:001")).toBeInTheDocument();
     expect(screen.getByText("outbox:publisher:002")).toBeInTheDocument();

@@ -49,50 +49,87 @@ export function App() {
   return (
     <AppShell>
       <Routes>
+        {/* 重定向：兼容旧 URL */}
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/content/tasks" element={<Navigate to="/tasks" replace />} />
+        <Route path="/content/tasks/new" element={<Navigate to="/tasks/new" replace />} />
+        <Route path="/content/tasks/:id" element={<Navigate to="/tasks/:id" replace />} />
+        <Route path="/agents" element={<Navigate to="/settings/agents" replace />} />
+        <Route path="/knowledge" element={<Navigate to="/settings/knowledge" replace />} />
+        <Route path="/mcp" element={<Navigate to="/settings/mcp" replace />} />
+        <Route path="/reviews" element={<Navigate to="/admin/reviews" replace />} />
+        <Route path="/reviews/pending" element={<Navigate to="/admin/reviews/pending" replace />} />
+        <Route path="/work-queue" element={<Navigate to="/admin/work-queue" replace />} />
+        <Route path="/execution/results" element={<Navigate to="/admin/execution/results" replace />} />
+        <Route path="/execution/outbox" element={<Navigate to="/admin/execution/outbox" replace />} />
+        <Route path="/execution/writebacks" element={<Navigate to="/admin/execution/writebacks" replace />} />
+        <Route path="/evaluations" element={<Navigate to="/admin/evaluations" replace />} />
+        <Route path="/rbac" element={<Navigate to="/admin/rbac" replace />} />
+        <Route path="/publisher" element={<Navigate to="/admin/publisher" replace />} />
+        <Route path="/ops/*" element={<Navigate to="/admin/ops" replace />} />
+
+        {/* 核心路由 */}
         <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/content/tasks" element={<TaskListPage />} />
-        <Route path="/content/tasks/new" element={<NewTaskPage />} />
-        <Route path="/content/tasks/:id" element={<TaskDetailPage />} />
+
+        {/* 任务中心 */}
+        <Route path="/tasks" element={<TaskListPage />} />
+        <Route path="/tasks/new" element={<NewTaskPage />} />
+        <Route path="/tasks/:id" element={<TaskDetailPage />} />
         <Route path="/tasks/:taskId/workflow-runs" element={<WorkflowRunsPage />} />
         <Route path="/tasks/:taskId/context-packs" element={<ContextPacksPage />} />
         <Route path="/tasks/:id/editor" element={<EditorPage />} />
+
+        {/* 工作流 */}
         <Route path="/workflows" element={<WorkflowListPage />} />
         <Route path="/workflows/new" element={<NewWorkflowPage />} />
         <Route path="/workflows/:id" element={<WorkflowDetailPage />} />
+
+        {/* 素材中心（独立） */}
         <Route path="/assets" element={<AssetsPage />} />
         <Route path="/assets/:id" element={<AssetDetailPage />} />
         <Route path="/assets/:id/compare" element={<AssetComparePage />} />
-        <Route path="/reviews" element={<ReviewQueuePage />} />
-        <Route path="/reviews/pending" element={<PendingReviewsPage />} />
-        <Route path="/work-queue" element={<WorkQueuePage />} />
-        <Route path="/execution/results" element={<ExecutionResultLedgerPage />} />
-        <Route path="/execution/outbox" element={<ExecutionOutboxLedgerPage />} />
-        <Route path="/execution/writebacks" element={<ExecutionWritebackLedgerPage />} />
-        <Route path="/evaluations" element={<AgentEvaluationDashboardPage />} />
-        <Route path="/knowledge" element={<KnowledgeInventoryPage />} />
-        <Route path="/knowledge/candidates" element={<KnowledgeCandidateReviewPage />} />
-        <Route path="/mcp" element={<McpManagementPage />} />
-        <Route path="/mcp/invocations" element={<ToolInvocationLedgerPage />} />
-        <Route path="/mcp/marketplace" element={<McpMarketplaceManagementPage />} />
-        <Route path="/rbac" element={<RbacManagementPage />} />
-        <Route path="/ops/readiness" element={<OpsReadinessPage />} />
-        <Route path="/ops/product-routes" element={<ProductRouteReadinessPage />} />
-        <Route path="/ops/monitoring" element={<OpsMonitoringPage />} />
-        <Route path="/ops/provider-quota" element={<ProviderQuotaCostPreflightPage />} />
-        <Route path="/ops/agent-provider-config" element={<AgentProviderConfigPreflightPage />} />
-        <Route path="/ops/agent-provider-transport" element={<AgentProviderTransportDisabledHarnessPage />} />
-        <Route path="/ops/provider-http-boundary" element={<ProviderHttpBoundaryPage />} />
-        <Route path="/ops/agent-registration-guard" element={<AgentRealAdapterRegistrationGuardPage />} />
-        <Route path="/ops/agent-real-http-adapter" element={<AgentRealHttpAdapterReadinessPage />} />
-        <Route path="/ops/secret-resolver" element={<SecretResolverReadinessPage />} />
-        <Route path="/ops/secret-injection" element={<SecretInjectionPreflightPage />} />
-        <Route path="/publisher" element={<PublisherWorkbenchPage />} />
+
+        {/* 设置模块 */}
+        <Route path="/settings/agents" element={<AgentListPage />} />
+        <Route path="/settings/agents/new" element={<NewAgentPage />} />
+        <Route path="/settings/agents/:id" element={<AgentDetailPage />} />
+        <Route path="/settings/knowledge" element={<KnowledgeInventoryPage />} />
+        <Route path="/settings/knowledge/candidates" element={<KnowledgeCandidateReviewPage />} />
+        <Route path="/settings/mcp" element={<McpManagementPage />} />
+        <Route path="/settings/workflows" element={<WorkflowListPage />} />
+
+        {/* 管理后台模块 */}
+        <Route path="/admin/reviews" element={<ReviewQueuePage />} />
+        <Route path="/admin/reviews/pending" element={<PendingReviewsPage />} />
+        <Route path="/admin/work-queue" element={<WorkQueuePage />} />
+        <Route path="/admin/execution/results" element={<ExecutionResultLedgerPage />} />
+        <Route path="/admin/execution/outbox" element={<ExecutionOutboxLedgerPage />} />
+        <Route path="/admin/execution/writebacks" element={<ExecutionWritebackLedgerPage />} />
+        <Route path="/admin/evaluations" element={<AgentEvaluationDashboardPage />} />
+        <Route path="/admin/mcp" element={<McpManagementPage />} />
+        <Route path="/admin/mcp/invocations" element={<ToolInvocationLedgerPage />} />
+        <Route path="/admin/mcp/marketplace" element={<McpMarketplaceManagementPage />} />
+        <Route path="/admin/rbac" element={<RbacManagementPage />} />
+        <Route path="/admin/publisher" element={<PublisherWorkbenchPage />} />
+
+        {/* 运维看板 */}
+        <Route path="/admin/ops" element={<OpsMonitoringPage />} />
+        <Route path="/admin/ops/readiness" element={<OpsReadinessPage />} />
+        <Route path="/admin/ops/product-routes" element={<ProductRouteReadinessPage />} />
+        <Route path="/admin/ops/monitoring" element={<OpsMonitoringPage />} />
+        <Route path="/admin/ops/provider-quota" element={<ProviderQuotaCostPreflightPage />} />
+        <Route path="/admin/ops/agent-provider-config" element={<AgentProviderConfigPreflightPage />} />
+        <Route path="/admin/ops/agent-provider-transport" element={<AgentProviderTransportDisabledHarnessPage />} />
+        <Route path="/admin/ops/provider-http-boundary" element={<ProviderHttpBoundaryPage />} />
+        <Route path="/admin/ops/agent-registration-guard" element={<AgentRealAdapterRegistrationGuardPage />} />
+        <Route path="/admin/ops/agent-real-http-adapter" element={<AgentRealHttpAdapterReadinessPage />} />
+        <Route path="/admin/ops/secret-resolver" element={<SecretResolverReadinessPage />} />
+        <Route path="/admin/ops/secret-injection" element={<SecretInjectionPreflightPage />} />
+
+        {/* 独立页面（深链） */}
         <Route path="/stage-runs/:id" element={<StageRunDetailPage />} />
-        <Route path="/agents" element={<AgentListPage />} />
-        <Route path="/agents/new" element={<NewAgentPage />} />
-        <Route path="/agents/:id" element={<AgentDetailPage />} />
         <Route path="/agent-sessions/:id" element={<AgentSessionDetailPage />} />
+
         <Route
           path="*"
           element={<EmptyState title="页面不存在" hint="请从左侧导航进入。" />}

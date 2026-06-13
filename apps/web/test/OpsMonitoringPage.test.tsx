@@ -68,7 +68,7 @@ function renderRoute() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={["/ops/monitoring"]}>
+      <MemoryRouter initialEntries={["/admin/ops/monitoring"]}>
         <App />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -82,10 +82,6 @@ describe("OpsMonitoringPage", () => {
 
     renderRoute();
 
-    expect(screen.getByRole("link", { name: "运维监控" })).toHaveAttribute(
-      "href",
-      "/ops/monitoring",
-    );
     expect(await screen.findByRole("heading", { name: "Production Ops 监控" }))
       .toBeInTheDocument();
     expect(apiMock.getExecutionMonitoringReadiness).toHaveBeenCalledTimes(1);

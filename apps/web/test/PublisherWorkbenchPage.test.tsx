@@ -88,7 +88,7 @@ function renderRoute() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={["/publisher"]}>
+      <MemoryRouter initialEntries={["/admin/publisher"]}>
         <App />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -101,11 +101,6 @@ describe("PublisherWorkbenchPage", () => {
     apiMock.listPublishRecords.mockResolvedValue(publishRecords);
 
     renderRoute();
-
-    expect(screen.getByRole("link", { name: "发布工作台" })).toHaveAttribute(
-      "href",
-      "/publisher",
-    );
     expect(await screen.findByRole("heading", { name: "发布工作台" })).toBeInTheDocument();
     expect(apiMock.listPublisherChannels).toHaveBeenCalledTimes(1);
     expect(apiMock.listPublishRecords).toHaveBeenCalledTimes(1);

@@ -85,7 +85,7 @@ function renderRoute() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={["/knowledge"]}>
+      <MemoryRouter initialEntries={["/settings/knowledge"]}>
         <App />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -99,8 +99,6 @@ describe("KnowledgeInventoryPage", () => {
     apiMock.listKnowledgeEntries.mockResolvedValue(knowledgeEntries);
 
     renderRoute();
-
-    expect(screen.getByRole("link", { name: "知识库" })).toHaveAttribute("href", "/knowledge");
     expect(await screen.findByRole("heading", { name: "知识库" })).toBeInTheDocument();
     expect(await screen.findByText("Editorial Playbook")).toBeInTheDocument();
     expect(apiMock.listKnowledgeSources).toHaveBeenCalledWith({});

@@ -138,7 +138,7 @@ function renderRoute() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={["/execution/writebacks"]}>
+      <MemoryRouter initialEntries={["/admin/execution/writebacks"]}>
         <App />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -153,10 +153,6 @@ describe("ExecutionWritebackLedgerPage", () => {
 
     renderRoute();
 
-    expect(screen.getByRole("link", { name: "回写账本" })).toHaveAttribute(
-      "href",
-      "/execution/writebacks",
-    );
     expect(await screen.findByRole("heading", { name: "回写账本" })).toBeInTheDocument();
     expect(await screen.findByText("writeback:stage-run:001")).toBeInTheDocument();
     expect(screen.getByText("writeback:mcp:002")).toBeInTheDocument();

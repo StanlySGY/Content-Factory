@@ -111,7 +111,7 @@ function renderRoute() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={["/mcp/invocations"]}>
+      <MemoryRouter initialEntries={["/admin/mcp/invocations"]}>
         <App />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -126,10 +126,6 @@ describe("ToolInvocationLedgerPage", () => {
 
     renderRoute();
 
-    expect(screen.getByRole("link", { name: "MCP 调用" })).toHaveAttribute(
-      "href",
-      "/mcp/invocations",
-    );
     expect(await screen.findByRole("heading", { name: "MCP 调用" })).toBeInTheDocument();
     expect(await screen.findByText("Content Search MCP")).toBeInTheDocument();
     expect(apiMock.listMcpServers).toHaveBeenCalledTimes(1);

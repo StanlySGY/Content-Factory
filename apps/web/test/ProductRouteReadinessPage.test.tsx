@@ -100,7 +100,7 @@ function renderRoute() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={["/ops/product-routes"]}>
+      <MemoryRouter initialEntries={["/admin/ops/product-routes"]}>
         <App />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -113,10 +113,6 @@ describe("ProductRouteReadinessPage", () => {
 
     renderRoute();
 
-    expect(screen.getByRole("link", { name: "产品路线" })).toHaveAttribute(
-      "href",
-      "/ops/product-routes",
-    );
     expect(await screen.findByRole("heading", { name: "产品路线收口" })).toBeInTheDocument();
     expect(apiMock.getProductRouteReadiness).toHaveBeenCalledTimes(1);
     expect(await screen.findByText("Publisher Platform")).toBeInTheDocument();

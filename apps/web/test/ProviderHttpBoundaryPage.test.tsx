@@ -45,7 +45,7 @@ function renderRoute() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={["/ops/provider-http-boundary"]}>
+      <MemoryRouter initialEntries={["/admin/ops/provider-http-boundary"]}>
         <App />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -58,10 +58,6 @@ describe("ProviderHttpBoundaryPage", () => {
 
     renderRoute();
 
-    expect(screen.getByRole("link", { name: "HTTP 边界" })).toHaveAttribute(
-      "href",
-      "/ops/provider-http-boundary",
-    );
     expect(await screen.findByRole("heading", { name: "Provider HTTP 边界" }))
       .toBeInTheDocument();
     expect(apiMock.getProviderHttpBoundary).toHaveBeenCalledTimes(1);

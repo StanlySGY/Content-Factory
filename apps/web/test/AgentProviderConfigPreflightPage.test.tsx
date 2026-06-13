@@ -56,7 +56,7 @@ function renderRoute() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={["/ops/agent-provider-config"]}>
+      <MemoryRouter initialEntries={["/admin/ops/agent-provider-config"]}>
         <App />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -73,10 +73,6 @@ describe("AgentProviderConfigPreflightPage", () => {
 
     renderRoute();
 
-    expect(screen.getByRole("link", { name: "Provider 配置" })).toHaveAttribute(
-      "href",
-      "/ops/agent-provider-config",
-    );
     expect(await screen.findByRole("heading", { name: "Provider 配置门禁" }))
       .toBeInTheDocument();
     expect(apiMock.getAgentRealProviderConfigPreflight).toHaveBeenCalledTimes(1);

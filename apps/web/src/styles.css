@@ -1867,3 +1867,51 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+/* ---- 折叠导航组样式 ---- */
+.nav-group {
+  margin: var(--sp-2) 0;
+}
+
+.nav-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-2) var(--sp-3);
+  cursor: pointer;
+  font-weight: 600;
+  color: #9ca3af;
+  font-size: 13px;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s;
+}
+
+.nav-group-header:hover {
+  background: #262932;
+  color: #fff;
+}
+
+.nav-group-icon {
+  font-size: 10px;
+  transition: transform 0.2s;
+  opacity: 0.6;
+}
+
+.nav-group.open .nav-group-icon {
+  transform: rotate(90deg);
+}
+
+.nav-group-children {
+  padding-left: var(--sp-3);
+  border-left: 2px solid #2d3139;
+  margin-left: var(--sp-4);
+  margin-top: var(--sp-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.nav-group-children a {
+  font-size: 13px;
+  padding: var(--sp-2) var(--sp-3);
+}

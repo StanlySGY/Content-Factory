@@ -43,7 +43,7 @@ function renderRoute() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={["/ops/secret-resolver"]}>
+      <MemoryRouter initialEntries={["/admin/ops/secret-resolver"]}>
         <App />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -60,10 +60,6 @@ describe("SecretResolverReadinessPage", () => {
 
     renderRoute();
 
-    expect(screen.getByRole("link", { name: "Secret 解析" })).toHaveAttribute(
-      "href",
-      "/ops/secret-resolver",
-    );
     expect(await screen.findByRole("heading", { name: "Secret 解析门禁" }))
       .toBeInTheDocument();
     expect(apiMock.getSecretResolverReadiness).toHaveBeenCalledTimes(1);

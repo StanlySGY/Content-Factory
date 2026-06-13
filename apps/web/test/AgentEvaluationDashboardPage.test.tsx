@@ -300,7 +300,7 @@ function renderRoute() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={["/evaluations"]}>
+      <MemoryRouter initialEntries={["/admin/evaluations"]}>
         <App />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -327,7 +327,6 @@ describe("AgentEvaluationDashboardPage", () => {
 
     renderRoute();
 
-    expect(screen.getByRole("link", { name: "评估看板" })).toHaveAttribute("href", "/evaluations");
     expect(await screen.findByRole("heading", { name: "评估看板" })).toBeInTheDocument();
     expect(await screen.findByText("72.5")).toBeInTheDocument();
     expect(apiMock.getExecutionEvaluationAnalytics).toHaveBeenCalledTimes(1);

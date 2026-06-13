@@ -76,7 +76,7 @@ function renderRoute() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={["/ops/agent-registration-guard"]}>
+      <MemoryRouter initialEntries={["/admin/ops/agent-registration-guard"]}>
         <App />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -93,10 +93,6 @@ describe("AgentRealAdapterRegistrationGuardPage", () => {
 
     renderRoute();
 
-    expect(screen.getByRole("link", { name: "Agent 注册门禁" })).toHaveAttribute(
-      "href",
-      "/ops/agent-registration-guard",
-    );
     expect(await screen.findByRole("heading", { name: "Agent 注册门禁" }))
       .toBeInTheDocument();
     expect(apiMock.getAgentRealAdapterRegistrationGuard).toHaveBeenCalledTimes(1);

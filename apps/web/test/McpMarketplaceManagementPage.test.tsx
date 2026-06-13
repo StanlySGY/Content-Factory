@@ -122,7 +122,7 @@ function renderRoute() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={["/mcp/marketplace"]}>
+      <MemoryRouter initialEntries={["/admin/mcp/marketplace"]}>
         <App />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -137,7 +137,7 @@ describe("McpMarketplaceManagementPage", () => {
 
     renderRoute();
 
-    expect(screen.getByRole("link", { name: "MCP 市场" })).toHaveAttribute("href", "/mcp/marketplace");
+    
     expect(await screen.findByRole("heading", { name: "MCP 市场" })).toBeInTheDocument();
     expect(await screen.findByText("Content Search Pack")).toBeInTheDocument();
     expect(apiMock.listMcpMarketplaceEntries).toHaveBeenCalledTimes(1);

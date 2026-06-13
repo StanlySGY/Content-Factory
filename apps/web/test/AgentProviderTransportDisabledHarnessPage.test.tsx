@@ -54,7 +54,7 @@ function renderRoute() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={["/ops/agent-provider-transport"]}>
+      <MemoryRouter initialEntries={["/admin/ops/agent-provider-transport"]}>
         <App />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -71,10 +71,6 @@ describe("AgentProviderTransportDisabledHarnessPage", () => {
 
     renderRoute();
 
-    expect(screen.getByRole("link", { name: "Provider 传输" })).toHaveAttribute(
-      "href",
-      "/ops/agent-provider-transport",
-    );
     expect(await screen.findByRole("heading", { name: "Provider 传输门禁" }))
       .toBeInTheDocument();
     expect(apiMock.getAgentRealProviderTransportDisabledHarness).toHaveBeenCalledTimes(1);

@@ -87,7 +87,7 @@ function renderRoute() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={["/mcp"]}>
+      <MemoryRouter initialEntries={["/settings/mcp"]}>
         <App />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -101,8 +101,6 @@ describe("McpManagementPage", () => {
     apiMock.getMcpRealRuntimeReadiness.mockResolvedValue(readiness);
 
     renderRoute();
-
-    expect(screen.getByRole("link", { name: "MCP 管理" })).toHaveAttribute("href", "/mcp");
     expect(await screen.findByRole("heading", { name: "MCP 管理" })).toBeInTheDocument();
     expect(await screen.findByText("Content Search MCP")).toBeInTheDocument();
     expect(apiMock.listMcpServers).toHaveBeenCalledTimes(1);

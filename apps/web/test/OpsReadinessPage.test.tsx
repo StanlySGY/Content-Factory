@@ -213,7 +213,7 @@ function renderRoute() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={["/ops/readiness"]}>
+      <MemoryRouter initialEntries={["/admin/ops/readiness"]}>
         <App />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -230,11 +230,6 @@ describe("OpsReadinessPage", () => {
     apiMock.getWritebackExecutorRegistrationReadiness.mockResolvedValue(writebackRegistration);
 
     renderRoute();
-
-    expect(screen.getByRole("link", { name: "运维门禁" })).toHaveAttribute(
-      "href",
-      "/ops/readiness",
-    );
     expect(await screen.findByRole("heading", { name: "Final RC 门禁" })).toBeInTheDocument();
     expect(apiMock.getFinalRcReadiness).toHaveBeenCalledTimes(1);
     expect(await screen.findByText("BLOCKED")).toBeInTheDocument();

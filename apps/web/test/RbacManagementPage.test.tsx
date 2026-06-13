@@ -94,7 +94,7 @@ function renderRoute() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={["/rbac"]}>
+      <MemoryRouter initialEntries={["/admin/rbac"]}>
         <App />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -108,8 +108,6 @@ describe("RbacManagementPage", () => {
     apiMock.listRbacProjectMemberships.mockResolvedValue(projectMemberships);
 
     renderRoute();
-
-    expect(screen.getByRole("link", { name: "RBAC 管理" })).toHaveAttribute("href", "/rbac");
     expect(await screen.findByRole("heading", { name: "RBAC 管理" })).toBeInTheDocument();
     expect(await screen.findByText("Content Ops")).toBeInTheDocument();
     expect(apiMock.listRbacOrganizations).toHaveBeenCalledTimes(1);

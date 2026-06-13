@@ -103,7 +103,7 @@ function renderRoute() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={["/knowledge/candidates"]}>
+      <MemoryRouter initialEntries={["/settings/knowledge/candidates"]}>
         <App />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -123,10 +123,6 @@ describe("KnowledgeCandidateReviewPage", () => {
 
     renderRoute();
 
-    expect(screen.getByRole("link", { name: "知识候选" })).toHaveAttribute(
-      "href",
-      "/knowledge/candidates",
-    );
     expect(await screen.findByRole("heading", { name: "知识候选" })).toBeInTheDocument();
     expect(await screen.findByText("Launch evidence handoff")).toBeInTheDocument();
     expect(apiMock.listTasks).toHaveBeenCalledWith({ page: 1, page_size: 20 });

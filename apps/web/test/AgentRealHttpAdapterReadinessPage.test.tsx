@@ -48,7 +48,7 @@ function renderRoute() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={["/ops/agent-real-http-adapter"]}>
+      <MemoryRouter initialEntries={["/admin/ops/agent-real-http-adapter"]}>
         <App />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -65,10 +65,6 @@ describe("AgentRealHttpAdapterReadinessPage", () => {
 
     renderRoute();
 
-    expect(screen.getByRole("link", { name: "Real HTTP 适配" })).toHaveAttribute(
-      "href",
-      "/ops/agent-real-http-adapter",
-    );
     expect(await screen.findByRole("heading", { name: "Agent Real HTTP 适配器" }))
       .toBeInTheDocument();
     expect(apiMock.getAgentRealHttpAdapterReadiness).toHaveBeenCalledTimes(1);

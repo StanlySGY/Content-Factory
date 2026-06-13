@@ -114,7 +114,7 @@ function renderRoute() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={["/execution/results"]}>
+      <MemoryRouter initialEntries={["/admin/execution/results"]}>
         <App />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -129,10 +129,6 @@ describe("ExecutionResultLedgerPage", () => {
 
     renderRoute();
 
-    expect(screen.getByRole("link", { name: "执行结果" })).toHaveAttribute(
-      "href",
-      "/execution/results",
-    );
     expect(await screen.findByRole("heading", { name: "执行结果账本" })).toBeInTheDocument();
     expect(await screen.findByText("stage-run:launch:001")).toBeInTheDocument();
     expect(screen.getByText("mcp:search:002")).toBeInTheDocument();

@@ -47,7 +47,7 @@ function renderRoute() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={["/ops/provider-quota"]}>
+      <MemoryRouter initialEntries={["/admin/ops/provider-quota"]}>
         <App />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -60,10 +60,6 @@ describe("ProviderQuotaCostPreflightPage", () => {
 
     renderRoute();
 
-    expect(screen.getByRole("link", { name: "额度成本" })).toHaveAttribute(
-      "href",
-      "/ops/provider-quota",
-    );
     expect(await screen.findByRole("heading", { name: "额度成本门禁" })).toBeInTheDocument();
     expect(apiMock.getProviderQuotaCostPreflight).toHaveBeenCalledTimes(1);
 

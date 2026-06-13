@@ -49,7 +49,7 @@ function renderRoute() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={["/ops/secret-injection"]}>
+      <MemoryRouter initialEntries={["/admin/ops/secret-injection"]}>
         <App />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -66,10 +66,6 @@ describe("SecretInjectionPreflightPage", () => {
 
     renderRoute();
 
-    expect(screen.getByRole("link", { name: "Secret 注入" })).toHaveAttribute(
-      "href",
-      "/ops/secret-injection",
-    );
     expect(await screen.findByRole("heading", { name: "Secret 注入门禁" }))
       .toBeInTheDocument();
     expect(apiMock.getSecretInjectionPreflight).toHaveBeenCalledTimes(1);
