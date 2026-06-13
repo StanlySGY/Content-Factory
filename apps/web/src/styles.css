@@ -1838,7 +1838,10 @@ button {
   color: var(--status-danger);
 }
 
-@media (max-width: 980px) {
+@media (max-width: 1200px) {
+  .kpi-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
   .ops-kpi-grid,
   .knowledge-kpi-grid,
   .candidate-kpi-grid,
@@ -1850,7 +1853,15 @@ button {
   .execution-outbox-kpi-grid,
   .execution-writeback-kpi-grid,
   .marketplace-kpi-grid,
-  .publisher-kpi-grid,
+  .publisher-kpi-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 980px) {
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
   .publisher-channel-form,
   .rbac-member-form,
   .rbac-project-grant-form,
