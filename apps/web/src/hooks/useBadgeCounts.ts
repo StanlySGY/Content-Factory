@@ -7,7 +7,7 @@ export interface BadgeCounts {
 }
 
 const POLL_INTERVAL = 30000; // 30 秒轮询一次
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3456";
 
 export function useBadgeCounts(projectId: string = "00000000-0000-0000-0000-000000000001") {
   const [counts, setCounts] = useState<BadgeCounts>({

@@ -39,6 +39,7 @@ import { PendingReviewsPage } from "../features/reviews/PendingReviewsPage.js";
 import { ReviewQueuePage } from "../features/reviews/ReviewQueuePage.js";
 import { StageRunDetailPage } from "../features/stage-runs/StageRunDetailPage.js";
 import { NewTaskPage } from "../features/tasks/NewTaskPage.js";
+import { QuickCreatePage } from "../features/tasks/QuickCreatePage.js";
 import { TaskDetailPage } from "../features/tasks/TaskDetailPage.js";
 import { TaskListPage } from "../features/tasks/TaskListPage.js";
 import { WorkQueuePage } from "../features/work-queue/WorkQueuePage.js";
@@ -77,6 +78,7 @@ export function App() {
         {/* 任务中心 */}
         <Route path="/tasks" element={<TaskListPage />} />
         <Route path="/tasks/new" element={<NewTaskPage />} />
+        <Route path="/tasks/create" element={<QuickCreatePage />} />
         <Route path="/tasks/:id" element={<TaskDetailPage />} />
         <Route path="/tasks/:taskId/workflow-runs" element={<WorkflowRunsPage />} />
         <Route path="/tasks/:taskId/context-packs" element={<ContextPacksPage />} />

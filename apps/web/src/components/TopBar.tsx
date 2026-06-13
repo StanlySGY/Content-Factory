@@ -23,8 +23,8 @@ export function TopBar({ onMenuToggle }: TopBarProps = {}) {
       <div className="crumbs">
         项目：<strong>Default Project</strong>
       </div>
-      <Link className="btn primary" to="/content/tasks/new">
-        + 新建任务
+      <Link className="btn primary" to="/tasks/create">
+        + 新建文章
       </Link>
     </header>
   );

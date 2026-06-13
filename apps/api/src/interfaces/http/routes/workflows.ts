@@ -53,6 +53,21 @@ export const workflowRoutes: FastifyPluginAsyncTypebox<WorkflowRoutesOptions> = 
     },
   );
 
+  // 别名路由：为前端提供更直观的端点名称
+  app.get(
+    "/api/workflow-definitions",
+    { schema: { querystring: ListWorkflowsQuerySchema, response: { 200: PaginatedWorkflowsSchema } } },
+    async (request) => {
+      const r = await defService.listDefinitions(buildContext(env, request), request.query);
+      return {
+        items: r.items.map(toWorkflowDefinitionDTO),
+        page: r.page,
+        page_size: r.pageSize,
+        total: r.total,
+      };
+    },
+  );
+
   app.get(
     "/api/workflows/:id",
     { schema: { params: IdParamSchema, response: { 200: WorkflowDefinitionSchema } } },
