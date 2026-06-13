@@ -2055,4 +2055,130 @@ button {
   color: #5b6171;
 }
 
+/* ---- 命令面板（Cmd+K） ---- */
+.palette-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.command-palette {
+  position: fixed;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 600px;
+  background: var(--bg-surface);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.3);
+  z-index: 1001;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.palette-header {
+  padding: var(--sp-4);
+  border-bottom: 1px solid var(--border-muted);
+}
+
+.palette-input {
+  width: 100%;
+  padding: var(--sp-3);
+  font-size: 16px;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.palette-input::placeholder {
+  color: var(--text-secondary);
+}
+
+.palette-results {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.palette-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  padding: var(--sp-3) var(--sp-4);
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.palette-item:hover,
+.palette-item.selected {
+  background: var(--bg-subtle);
+}
+
+.palette-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.palette-label {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.palette-path {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.palette-empty {
+  padding: var(--sp-6);
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.palette-footer {
+  padding: var(--sp-3) var(--sp-4);
+  border-top: 1px solid var(--border-muted);
+  font-size: 12px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.palette-footer kbd {
+  padding: 2px 6px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-muted);
+  border-radius: 4px;
+  font-family: var(--font);
+  font-size: 11px;
+  font-weight: 600;
+}
+
 
