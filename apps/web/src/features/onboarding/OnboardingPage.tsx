@@ -5,7 +5,6 @@ import "./onboarding.css";
 const STEPS = [
   { id: "welcome", title: "欢迎使用 Content Factory" },
   { id: "profile", title: "基础配置" },
-  { id: "ai", title: "AI 配置" },
   { id: "tutorial", title: "创建第一篇文章" },
   { id: "complete", title: "完成" },
 ];
@@ -16,7 +15,6 @@ export function OnboardingPage() {
   const [config, setConfig] = useState({
     username: "",
     language: "zh-CN",
-    apiKey: "",
   });
 
   const handleNext = () => {
@@ -42,7 +40,6 @@ export function OnboardingPage() {
 
   const canProceed = () => {
     if (currentStep === 1) return config.username.trim().length > 0;
-    if (currentStep === 2) return config.apiKey.trim().length > 0;
     return true;
   };
 
@@ -63,9 +60,8 @@ export function OnboardingPage() {
       <div className="onboarding-content">
         {currentStep === 0 && <WelcomeStep />}
         {currentStep === 1 && <ProfileStep config={config} setConfig={setConfig} />}
-        {currentStep === 2 && <AIConfigStep config={config} setConfig={setConfig} />}
-        {currentStep === 3 && <TutorialStep />}
-        {currentStep === 4 && <CompleteStep config={config} />}
+        {currentStep === 2 && <TutorialStep />}
+        {currentStep === 3 && <CompleteStep config={config} />}
       </div>
 
       <div className="onboarding-actions">
@@ -153,38 +149,6 @@ function ProfileStep({ config, setConfig }: { config: any; setConfig: any }) {
   );
 }
 
-function AIConfigStep({ config, setConfig }: { config: any; setConfig: any }) {
-  return (
-    <div className="step-card ai-config-step">
-      <h2>AI 配置</h2>
-      <p className="hint">配置您的 AI 服务</p>
-
-      <div className="form-group">
-        <label htmlFor="apiKey">API Key</label>
-        <input
-          id="apiKey"
-          type="password"
-          placeholder="请输入 OpenAI/Claude API Key"
-          value={config.apiKey}
-          onChange={(e) => setConfig({ ...config, apiKey: e.target.value })}
-        />
-        <span className="field-hint">
-          API Key 将加密存储在本地，不会上传到服务器
-        </span>
-      </div>
-
-      <div className="info-box">
-        <h4>如何获取 API Key？</h4>
-        <ul>
-          <li>访问 <a href="https://platform.openai.com" target="_blank" rel="noopener noreferrer">OpenAI Platform</a> 注册账号</li>
-          <li>进入 API Keys 页面创建新的密钥</li>
-          <li>复制密钥并粘贴到上方输入框</li>
-        </ul>
-      </div>
-    </div>
-  );
-}
-
 function TutorialStep() {
   return (
     <div className="step-card tutorial-step">
@@ -245,10 +209,6 @@ function CompleteStep({ config }: { config: any }) {
           <span className="summary-value">
             {config.language === "zh-CN" ? "简体中文" : "English"}
           </span>
-        </div>
-        <div className="summary-item">
-          <span className="summary-label">API Key：</span>
-          <span className="summary-value">已配置 ✓</span>
         </div>
       </div>
 
