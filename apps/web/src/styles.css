@@ -62,6 +62,12 @@ button {
 .shell.has-context {
   grid-template-columns: 232px 1fr 320px;
 }
+
+/* 侧边栏容器 */
+.sidebar-wrapper {
+  position: relative;
+}
+
 .sidebar {
   background: #1b1d23;
   color: #c7cbd4;
@@ -69,6 +75,8 @@ button {
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
+  height: 100%;
+  overflow-y: auto;
 }
 .sidebar .brand {
   font-weight: 700;
@@ -2179,6 +2187,155 @@ button {
   font-family: var(--font);
   font-size: 11px;
   font-weight: 600;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+ * 移动端响应式（768px 以下）
+ * ════════════════════════════════════════════════════════════════════════════*/
+@media (max-width: 768px) {
+  /* 移动端布局：单列 */
+  .shell {
+    grid-template-columns: 1fr;
+  }
+
+  /* 侧边栏：固定定位抽屉式 */
+  .sidebar-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 280px;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    z-index: 900;
+  }
+
+  .sidebar-wrapper.open {
+    transform: translateX(0);
+  }
+
+  .sidebar {
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
+  }
+
+  /* 移动端遮罩 */
+  .mobile-sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 899;
+  }
+
+  /* 汉堡菜单按钮 */
+  .mobile-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--text-primary);
+    cursor: pointer;
+  }
+
+  .mobile-menu-btn:hover {
+    background: var(--bg-subtle);
+    border-radius: var(--radius-sm);
+  }
+
+  /* 顶栏适配 */
+  .topbar {
+    padding: var(--sp-3);
+  }
+
+  .topbar .crumbs {
+    display: none; /* 移动端隐藏项目信息 */
+  }
+
+  /* 面包屑：移动端隐藏 */
+  .breadcrumb {
+    display: none;
+  }
+
+  /* 命令面板：全屏显示 */
+  .command-palette {
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: none;
+    transform: none;
+    border-radius: 0;
+    height: 100vh;
+  }
+
+  .palette-results {
+    max-height: calc(100vh - 120px);
+  }
+
+  /* 模块卡片：单列 */
+  .module-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* 表格：横向滚动 */
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    min-width: 600px;
+  }
+
+  /* 按钮：全宽 */
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .form-actions .button {
+    width: 100%;
+  }
+
+  /* 过滤器：垂直布局 */
+  .filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filters select {
+    width: 100%;
+  }
+
+  /* 页面头部：垂直布局 */
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--sp-3);
+  }
+
+  .page-actions {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+  }
+
+  .page-actions .button {
+    width: 100%;
+  }
+}
+
+/* 桌面端：隐藏汉堡菜单 */
+@media (min-width: 769px) {
+  .mobile-menu-btn {
+    display: none;
+  }
 }
 
 
