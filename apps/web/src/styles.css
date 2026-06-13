@@ -2022,4 +2022,37 @@ button {
   font-size: 1.25rem;
 }
 
+/* ---- Badge 计数 ---- */
+.nav-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  color: #fff;
+  background: var(--status-danger);
+  border-radius: 9px;
+}
+
+.sidebar a {
+  justify-content: space-between;
+}
+
+/* 侧边栏子分组标签 */
+.nav-section-label {
+  margin-top: var(--sp-3);
+  margin-bottom: var(--sp-1);
+  padding: 0 var(--sp-3);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #5b6171;
+}
+
 
