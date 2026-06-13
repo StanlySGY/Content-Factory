@@ -47,14 +47,39 @@ import { WorkflowRunsPage } from "../features/workflow-runs/WorkflowRunsPage.js"
 import { NewWorkflowPage } from "../features/workflows/NewWorkflowPage.js";
 import { WorkflowDetailPage } from "../features/workflows/WorkflowDetailPage.js";
 import { WorkflowListPage } from "../features/workflows/WorkflowListPage.js";
+import { OnboardingPage } from "../features/onboarding/OnboardingPage.js";
+import { SettingsPage } from "../features/settings/SettingsPage.js";
+import { AdminDashboard } from "../features/admin/AdminDashboard.js";
+import { ExecutionLogsOverview } from "../features/admin/ExecutionLogsOverview.js";
+import { useEffect, useState } from "react";
+
+function OnboardingGuard({ children }: { children: React.ReactNode }) {
+  const [isOnboardingCompleted, setIsOnboardingCompleted] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const completed = localStorage.getItem("onboarding_completed");
+    setIsOnboardingCompleted(completed === "true");
+  }, []);
+
+  if (isOnboardingCompleted === null) {
+    return null;
+  }
+
+  if (!isOnboardingCompleted) {
+    return <OnboardingPage />;
+  }
+
+  return <>{children}</>;
+}
 
 export function App() {
   return (
     <AuthProvider>
-      <AppShell>
-        <Routes>
-        {/* 重定向：兼容旧 URL */}
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <OnboardingGuard>
+        <AppShell>
+          <Routes>
+          {/* 重定向：兼容旧 URL */}
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/content/tasks" element={<Navigate to="/tasks" replace />} />
         <Route path="/content/tasks/new" element={<Navigate to="/tasks/new" replace />} />
         <Route path="/content/tasks/:id" element={<Navigate to="/tasks/:id" replace />} />
@@ -95,6 +120,7 @@ export function App() {
         <Route path="/assets/:id/compare" element={<AssetComparePage />} />
 
         {/* 设置模块 */}
+        <Route path="/settings" element={<SettingsPage />} />
         <Route path="/settings/agents" element={<AgentListPage />} />
         <Route path="/settings/agents/new" element={<NewAgentPage />} />
         <Route path="/settings/agents/:id" element={<AgentDetailPage />} />
@@ -104,10 +130,11 @@ export function App() {
         <Route path="/settings/workflows" element={<WorkflowListPage />} />
 
         {/* 管理后台模块 */}
+        <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/reviews" element={<ReviewQueuePage />} />
         <Route path="/admin/reviews/pending" element={<PendingReviewsPage />} />
         <Route path="/admin/work-queue" element={<WorkQueuePage />} />
-        <Route path="/admin/execution" element={<ExecutionOverviewPage />} />
+        <Route path="/admin/execution" element={<ExecutionLogsOverview />} />
         <Route path="/admin/execution/results" element={<ExecutionResultLedgerPage />} />
         <Route path="/admin/execution/outbox" element={<ExecutionOutboxLedgerPage />} />
         <Route path="/admin/execution/writebacks" element={<ExecutionWritebackLedgerPage />} />
@@ -140,6 +167,7 @@ export function App() {
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </AppShell>
+      </OnboardingGuard>
     </AuthProvider>
   );
 }

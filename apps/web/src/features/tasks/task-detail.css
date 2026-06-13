@@ -1,0 +1,103 @@
+.workflow-visualization {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.workflow-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.workflow-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.workflow-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.timeline-info {
+  display: flex;
+  gap: 16px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.timeline-info span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stages-container {
+  background: var(--bg-secondary);
+  padding: 16px;
+  border-radius: 8px;
+  min-height: 200px;
+}
+
+.stages-placeholder {
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 40px 0;
+  margin: 0;
+}
+
+.stages-hint {
+  color: var(--text-tertiary);
+  text-align: center;
+  font-size: 13px;
+  margin: 8px 0 0 0;
+}
+
+.live-progress {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+.live-progress h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.live-progress ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.live-progress li {
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding: 8px 12px;
+  background: var(--bg-primary);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+}
+
+@media (max-width: 768px) {
+  .workflow-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .timeline-info {
+    flex-direction: column;
+    gap: 4px;
+  }
+}

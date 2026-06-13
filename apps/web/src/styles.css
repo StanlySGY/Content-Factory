@@ -2338,4 +2338,82 @@ button {
   }
 }
 
+/* ---- Collapsible Nav Group ---- */
+.nav-group {
+  margin: 0.5rem 0;
+}
+
+.nav-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition: background-color 0.2s;
+  border-radius: var(--radius-sm);
+}
+
+.nav-group-header:hover {
+  background: var(--bg-hover);
+}
+
+.nav-group-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nav-group-icon-text {
+  font-size: 16px;
+}
+
+.nav-group-icon {
+  font-size: 12px;
+  transition: transform 0.2s;
+  display: inline-block;
+}
+
+.nav-group.open .nav-group-icon {
+  transform: rotate(90deg);
+}
+
+.nav-group-children {
+  padding-left: 1rem;
+  border-left: 2px solid var(--border-color);
+  margin-left: 1rem;
+  margin-top: 0.25rem;
+}
+
+.nav-group-children a {
+  font-size: 0.9rem;
+  padding: 0.4rem 1rem;
+}
+
+.nav-section-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-tertiary);
+  padding: 0.5rem 1rem;
+  margin-top: 0.5rem;
+}
+
+/* Nav Badge */
+.nav-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  background: var(--error-color);
+  color: white;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: auto;
+}
+
 

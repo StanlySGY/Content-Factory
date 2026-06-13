@@ -84,11 +84,13 @@ import { agentRoutes } from "./interfaces/http/routes/agents.js";
 import { mcpRoutes } from "./interfaces/http/routes/mcp.js";
 import { workflowRunRoutes } from "./interfaces/http/routes/workflow-runs.js";
 import { workflowRoutes } from "./interfaces/http/routes/workflows.js";
+import { WebSocketService } from "./infrastructure/websocket.service.js";
 
 export interface BuiltApp {
   app: FastifyInstance;
   outboxRelay: OutboxRelay;
   executionRegressionEvaluationRunner: ExecutionRegressionEvaluationRunner;
+  websocketService: WebSocketService;
   close: () => Promise<void>;
 }
 
@@ -325,6 +327,9 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
   });
   await app.register(cors, { origin: env.webOrigin, credentials: true });
 
+  // WebSocket 服务初始化（需要在 app.listen 之后获取 HTTP server 实例）
+  let websocketService: WebSocketService | undefined;
+
   registerErrorHandler(app);
 
   app.get("/api/health", async () => {
@@ -388,9 +393,12 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
     executionWorker.stop();
     outboxRelay.stop();
     executionRegressionEvaluationRunner.stop();
+    if (websocketService) {
+      websocketService.close();
+    }
     await app.close();
     await Promise.all([appPool.end(), auditPool.end()]);
   };
 
-  return { app, outboxRelay, executionRegressionEvaluationRunner, close };
+  return { app, outboxRelay, executionRegressionEvaluationRunner, websocketService: websocketService!, close };
 }
