@@ -19,6 +19,7 @@ import * as defRepo from "../infrastructure/repositories/workflow-definition.rep
 import * as runRepo from "../infrastructure/repositories/workflow-run.repository.js";
 import { recordAudit } from "./audit.service.js";
 import type { RequestContext } from "./task.service.js";
+import type { WorkflowOrchestrator } from "./workflow-orchestrator.js";
 
 export interface StartWorkflowInput {
   taskId: string;
@@ -31,7 +32,10 @@ export interface StartWorkflowResult {
 
 // WorkflowRunService：工作流执行引擎。状态流转必经 GenericStateMachine（领域层），仓储不做状态判断。
 export class WorkflowRunService {
-  constructor(private readonly db: Db) {}
+  constructor(
+    private readonly db: Db,
+    private readonly orchestrator?: WorkflowOrchestrator,
+  ) {}
 
   /**
    * 启动工作流（db §10.1 强一致事务）：① 读定义 ② 校验 active ③ 建 workflow_run
@@ -42,7 +46,7 @@ export class WorkflowRunService {
     ctx: RequestContext,
     input: StartWorkflowInput,
   ): Promise<StartWorkflowResult> {
-    return runInProject(this.db, ctx.projectId, async (tx) => {
+    const result = await runInProject(this.db, ctx.projectId, async (tx) => {
       // ① 读取定义（scoped）
       const def = await defRepo.getById(tx, ctx.projectId, input.workflowDefinitionId);
       if (!def)
@@ -103,6 +107,10 @@ export class WorkflowRunService {
       // ⑦ runInProject 提交
       return { run: running, initialStages };
     });
+    if (this.orchestrator && result.initialStages.length > 0) {
+      await this.orchestrator.advanceStageRuns(ctx.projectId, result.initialStages);
+    }
+    return result;
   }
 
   /** 工作流状态流转（必经状态机；非仓储直推）+ 审计 */

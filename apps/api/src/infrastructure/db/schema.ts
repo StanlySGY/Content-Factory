@@ -104,6 +104,7 @@ export const workflowStages = pgTable("workflow_stages", {
   inputSchema: jsonb("input_schema").$type<JsonContract>().notNull(),
   outputSchema: jsonb("output_schema").$type<JsonContract>().notNull(),
   gateSchema: jsonb("gate_schema").$type<JsonContract>().notNull(),
+  agentProfileId: uuid("agent_profile_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

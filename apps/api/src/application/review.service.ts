@@ -31,6 +31,7 @@ import * as defRepo from "../infrastructure/repositories/workflow-definition.rep
 import * as runRepo from "../infrastructure/repositories/workflow-run.repository.js";
 import { recordAudit } from "./audit.service.js";
 import type { RequestContext } from "./task.service.js";
+import type { WorkflowOrchestrator } from "./workflow-orchestrator.js";
 
 export interface ApproveReviewInput {
   stageRunId: string;
@@ -58,7 +59,10 @@ export interface ReviewResult {
 // 状态机一律走领域层（Review/StageRun/AssetStatus/WorkflowRun），仓储不做状态判断。
 // 退回严守 Sprint-3 Step-2 裁定 Option C：不引入 revision_required、不改/不回退旧 stage_run，仅新建 pending stage_run 重执行。
 export class ReviewService {
-  constructor(private readonly db: Db) {}
+  constructor(
+    private readonly db: Db,
+    private readonly orchestrator?: WorkflowOrchestrator,
+  ) {}
 
   /**
    * 审核通过：建 review_record → 评审状态机(approved) → stage_run waiting_review→approved
@@ -106,6 +110,9 @@ export class ReviewService {
             }),
           );
         await runRepo.updateCurrentStage(tx, ctx.projectId, run.id, createdStageRuns[0]!.id);
+        if (this.orchestrator && createdStageRuns.length > 0) {
+          await this.orchestrator.advanceStageRuns(ctx.projectId, createdStageRuns);
+        }
       } else {
         assertRunTransition(run.status as WorkflowRunStatus, "completed");
         finalRun = (await runRepo.updateStatus(tx, ctx.projectId, run.id, "completed"))!;

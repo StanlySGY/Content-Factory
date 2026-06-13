@@ -10,6 +10,7 @@ import { DashboardService } from "./application/dashboard.service.js";
 import { EditorQueryService } from "./application/editor-query.service.js";
 import { ExecutionJobService } from "./application/execution-job.service.js";
 import { ExecutionBridgeService } from "./application/execution-bridge.service.js";
+import { WorkflowOrchestrator } from "./application/workflow-orchestrator.js";
 import { defaultExecutionOpsRuntimeRegistry, ExecutionOpsService } from "./application/execution-ops.service.js";
 import {
   ExecutionRegressionEvaluationRunner,
@@ -222,13 +223,15 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
   const auditDb = createDb(auditPool);
   const service = new TaskService(db, auditDb);
   const defService = new WorkflowDefinitionService(db);
-  const runService = new WorkflowRunService(db);
   const contextService = new ContextPackService(db);
   const assetService = new AssetService(db);
-  const reviewService = new ReviewService(db);
   const dashboardService = new DashboardService(db);
   const editorQueryService = new EditorQueryService(db);
   const executionJobService = new ExecutionJobService(db);
+  const executionBridgeService = new ExecutionBridgeService(executionJobService);
+  const orchestrator = new WorkflowOrchestrator(db, executionBridgeService);
+  const runService = new WorkflowRunService(db, orchestrator);
+  const reviewService = new ReviewService(db, orchestrator);
   const runtimeSafetyPolicy: RuntimeSafetyPolicy = {
     mode: env.executionRuntimeMode,
     allowRealExecution: env.executionAllowRealRuntime,
@@ -250,7 +253,6 @@ export async function buildApp(env: Env, opts: BuildOptions = {}): Promise<Built
   );
   const outboxService = new OutboxService(db);
   const outboxRelay = new OutboxRelay(db, buildOutboxHandlers(env, db), env.outboxRelayIntervalMs);
-  const executionBridgeService = new ExecutionBridgeService(executionJobService);
   const executionResultService = new ExecutionResultService(db);
   const executionResultEvaluationService = new ExecutionResultEvaluationService(db);
   const executionRegressionEvaluationRunner = new ExecutionRegressionEvaluationRunner(
