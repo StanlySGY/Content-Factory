@@ -46,28 +46,15 @@ export function SidebarNav({ onNavigate }: SidebarNavProps = {}) {
           storageKey="nav-admin"
           pathPrefix="/admin"
         >
-          <div className="nav-section-label">内容管理</div>
-          <NavLink to="/admin/reviews" onClick={handleClick}>
-            <span>审核队列</span>
+          <NavLink to="/admin/content" onClick={handleClick}>
+            <span>内容管理</span>
             {counts.pendingReviews > 0 && (
               <span className="nav-badge">{counts.pendingReviews}</span>
             )}
           </NavLink>
-          <NavLink to="/admin/work-queue" onClick={handleClick}>
-            <span>工作队列</span>
-            {counts.workQueue > 0 && (
-              <span className="nav-badge">{counts.workQueue}</span>
-            )}
-          </NavLink>
-          <NavLink to="/admin/publisher" onClick={handleClick}>发布工作台</NavLink>
-
-          <div className="nav-section-label">执行监控</div>
-          <NavLink to="/admin/execution" onClick={handleClick}>执行日志</NavLink>
-          <NavLink to="/admin/evaluations" onClick={handleClick}>评估看板</NavLink>
-
-          <div className="nav-section-label">系统配置</div>
-          <NavLink to="/admin/mcp" onClick={handleClick}>MCP 管理</NavLink>
-          <NavLink to="/admin/rbac" onClick={handleClick}>权限管理</NavLink>
+          <NavLink to="/admin/agents" onClick={handleClick}>Agent 运维</NavLink>
+          <NavLink to="/admin/execution" onClick={handleClick}>执行监控</NavLink>
+          <NavLink to="/admin/system" onClick={handleClick}>系统配置</NavLink>
           <NavLink to="/admin/ops" onClick={handleClick}>运维看板</NavLink>
         </CollapsibleNavGroup>
       )}

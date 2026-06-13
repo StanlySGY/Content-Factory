@@ -50,7 +50,10 @@ import { WorkflowListPage } from "../features/workflows/WorkflowListPage.js";
 import { OnboardingPage } from "../features/onboarding/OnboardingPage.js";
 import { SettingsPage } from "../features/settings/SettingsPage.js";
 import { AdminDashboard } from "../features/admin/AdminDashboard.js";
-import { ExecutionLogsOverview } from "../features/admin/ExecutionLogsOverview.js";
+import { ContentManagementPage } from "../features/admin/ContentManagementPage.js";
+import { AgentOpsPage } from "../features/admin/AgentOpsPage.js";
+import { ExecutionMonitoringPage } from "../features/admin/ExecutionMonitoringPage.js";
+import { SystemConfigPage } from "../features/admin/SystemConfigPage.js";
 import { useEffect, useState } from "react";
 
 function OnboardingGuard({ children }: { children: React.ReactNode }) {
@@ -131,19 +134,10 @@ export function App() {
 
         {/* 管理后台模块 */}
         <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/admin/reviews" element={<ReviewQueuePage />} />
-        <Route path="/admin/reviews/pending" element={<PendingReviewsPage />} />
-        <Route path="/admin/work-queue" element={<WorkQueuePage />} />
-        <Route path="/admin/execution" element={<ExecutionLogsOverview />} />
-        <Route path="/admin/execution/results" element={<ExecutionResultLedgerPage />} />
-        <Route path="/admin/execution/outbox" element={<ExecutionOutboxLedgerPage />} />
-        <Route path="/admin/execution/writebacks" element={<ExecutionWritebackLedgerPage />} />
-        <Route path="/admin/evaluations" element={<AgentEvaluationDashboardPage />} />
-        <Route path="/admin/mcp" element={<McpManagementPage />} />
-        <Route path="/admin/mcp/invocations" element={<ToolInvocationLedgerPage />} />
-        <Route path="/admin/mcp/marketplace" element={<McpMarketplaceManagementPage />} />
-        <Route path="/admin/rbac" element={<RbacManagementPage />} />
-        <Route path="/admin/publisher" element={<PublisherWorkbenchPage />} />
+        <Route path="/admin/content" element={<ContentManagementPage />} />
+        <Route path="/admin/agents" element={<AgentOpsPage />} />
+        <Route path="/admin/execution" element={<ExecutionMonitoringPage />} />
+        <Route path="/admin/system" element={<SystemConfigPage />} />
 
         {/* 运维看板 */}
         <Route path="/admin/ops" element={<OpsMonitoringPage />} />
