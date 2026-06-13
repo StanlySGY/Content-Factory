@@ -1915,3 +1915,111 @@ button {
   font-size: 13px;
   padding: var(--sp-2) var(--sp-3);
 }
+
+/* ---- 面包屑导航 ---- */
+.breadcrumb {
+  padding: var(--sp-3) var(--sp-5);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.breadcrumb ol {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 14px;
+}
+
+.breadcrumb li {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.breadcrumb li:not(:last-child)::after {
+  content: "/";
+  color: var(--color-muted);
+  font-weight: 300;
+}
+
+.breadcrumb a {
+  color: var(--color-link);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.breadcrumb a:hover {
+  color: var(--color-link-hover);
+}
+
+.breadcrumb span[aria-current="page"] {
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+/* ---- 模块卡片网格 ---- */
+.module-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--sp-5);
+  margin-top: var(--sp-6);
+}
+
+.module-card {
+  display: flex;
+  flex-direction: column;
+  padding: var(--sp-5);
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s;
+}
+
+.module-card:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.module-icon {
+  font-size: 2.5rem;
+  margin-bottom: var(--sp-3);
+}
+
+.module-card h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: var(--sp-2);
+}
+
+.module-card p {
+  color: var(--color-muted);
+  font-size: 0.875rem;
+  flex: 1;
+  margin-bottom: var(--sp-4);
+}
+
+.module-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--color-border);
+  font-size: 0.875rem;
+}
+
+.stats-label {
+  color: var(--color-muted);
+}
+
+.stats-value {
+  font-weight: 600;
+  font-size: 1.25rem;
+}
+
+

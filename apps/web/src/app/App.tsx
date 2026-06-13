@@ -1,6 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import { AuthProvider } from "../lib/auth.js";
 import { AppShell } from "../components/AppShell.js";
-import { EmptyState } from "../components/states.js";
 import { AgentDetailPage } from "../features/agents/AgentDetailPage.js";
 import { AgentListPage } from "../features/agents/AgentListPage.js";
 import { AgentSessionDetailPage } from "../features/agents/AgentSessionDetailPage.js";
@@ -10,8 +10,10 @@ import { AssetDetailPage } from "../features/assets/AssetDetailPage.js";
 import { AssetsPage } from "../features/assets/AssetsPage.js";
 import { ContextPacksPage } from "../features/context-packs/ContextPacksPage.js";
 import { DashboardPage } from "../features/dashboard/DashboardPage.js";
+import { NotFoundPage } from "../features/errors/NotFoundPage.js";
 import { AgentEvaluationDashboardPage } from "../features/evaluations/AgentEvaluationDashboardPage.js";
 import { EditorPage } from "../features/editor/EditorPage.js";
+import { ExecutionOverviewPage } from "../features/execution/ExecutionOverviewPage.js";
 import { ExecutionOutboxLedgerPage } from "../features/execution-outbox/ExecutionOutboxLedgerPage.js";
 import { ExecutionResultLedgerPage } from "../features/execution-results/ExecutionResultLedgerPage.js";
 import { ExecutionWritebackLedgerPage } from "../features/execution-writebacks/ExecutionWritebackLedgerPage.js";
@@ -47,8 +49,9 @@ import { WorkflowListPage } from "../features/workflows/WorkflowListPage.js";
 
 export function App() {
   return (
-    <AppShell>
-      <Routes>
+    <AuthProvider>
+      <AppShell>
+        <Routes>
         {/* 重定向：兼容旧 URL */}
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/content/tasks" element={<Navigate to="/tasks" replace />} />
@@ -102,6 +105,7 @@ export function App() {
         <Route path="/admin/reviews" element={<ReviewQueuePage />} />
         <Route path="/admin/reviews/pending" element={<PendingReviewsPage />} />
         <Route path="/admin/work-queue" element={<WorkQueuePage />} />
+        <Route path="/admin/execution" element={<ExecutionOverviewPage />} />
         <Route path="/admin/execution/results" element={<ExecutionResultLedgerPage />} />
         <Route path="/admin/execution/outbox" element={<ExecutionOutboxLedgerPage />} />
         <Route path="/admin/execution/writebacks" element={<ExecutionWritebackLedgerPage />} />
@@ -130,11 +134,10 @@ export function App() {
         <Route path="/stage-runs/:id" element={<StageRunDetailPage />} />
         <Route path="/agent-sessions/:id" element={<AgentSessionDetailPage />} />
 
-        <Route
-          path="*"
-          element={<EmptyState title="页面不存在" hint="请从左侧导航进入。" />}
-        />
+        {/* 404 页面 */}
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </AppShell>
+    </AuthProvider>
   );
 }
