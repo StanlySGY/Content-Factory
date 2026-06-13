@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { TASK_STATUSES, CONTENT_TYPE_OPTIONS, type ListTasksQuery, type TaskStatus } from "@cf/shared";
+import { TASK_STATUSES, CONTENT_TYPE_OPTIONS, CONTENT_TYPE_LABELS, TASK_STATUS_BADGE, type ListTasksQuery, type TaskStatus } from "@cf/shared";
 import { EmptyState, ErrorBar, Skeleton } from "../../components/states.js";
 import { useTasks } from "./hooks.js";
 import { TaskTable } from "./TaskTable.js";
@@ -29,7 +29,7 @@ export function TaskListPage() {
           <h1>内容中心</h1>
           <p>内容任务列表</p>
         </div>
-        <Link className="btn primary" to="/content/tasks/new">
+        <Link className="btn primary" to="/tasks/new">
           + 新建任务
         </Link>
       </div>
@@ -46,7 +46,7 @@ export function TaskListPage() {
           <option value="">全部状态</option>
           {TASK_STATUSES.map((s) => (
             <option key={s} value={s}>
-              {s}
+              {TASK_STATUS_BADGE[s].label}
             </option>
           ))}
         </select>
@@ -61,7 +61,7 @@ export function TaskListPage() {
           <option value="">全部类型</option>
           {CONTENT_TYPE_OPTIONS.map((c) => (
             <option key={c} value={c}>
-              {c}
+              {CONTENT_TYPE_LABELS[c] || c}
             </option>
           ))}
         </select>
@@ -75,7 +75,7 @@ export function TaskListPage() {
           title="还没有内容任务"
           hint="创建第一个内容任务，开始内容生产流程。"
           action={
-            <Link className="btn primary" to="/content/tasks/new">
+            <Link className="btn primary" to="/tasks/new">
               + 新建任务
             </Link>
           }

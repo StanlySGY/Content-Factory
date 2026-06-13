@@ -31,7 +31,7 @@ export function DashboardPage() {
     <div>
       <div className="page-head">
         <div>
-          <h1>Dashboard</h1>
+          <h1>工作台</h1>
           <p>内容工厂运行概览</p>
         </div>
       </div>
@@ -62,7 +62,7 @@ export function DashboardPage() {
       </div>
 
       <h2 className="section-title">
-        Agent 概览 · <Link to="/agents">全部</Link>
+        Agent 概览 · <Link to="/settings/agents">全部</Link>
       </h2>
       <div className="kpi-grid">
         <div className="card kpi">
@@ -71,11 +71,11 @@ export function DashboardPage() {
         </div>
         <div className="card kpi">
           <div className="kpi-value">{agentList.filter((a) => a.status === "active").length}</div>
-          <div className="kpi-label">Active</div>
+          <div className="kpi-label">已启用</div>
         </div>
         <div className="card kpi">
           <div className="kpi-value">{agentList.filter((a) => a.status === "disabled").length}</div>
-          <div className="kpi-label">Disabled</div>
+          <div className="kpi-label">已禁用</div>
         </div>
       </div>
 

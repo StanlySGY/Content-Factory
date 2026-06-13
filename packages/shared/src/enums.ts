@@ -17,6 +17,11 @@ export type TaskPriority = (typeof TASK_PRIORITIES)[number];
 
 /** 内容类型建议项（开放字符串，db §5.3「如 article/post/script」；仅供 UI 下拉） */
 export const CONTENT_TYPE_OPTIONS = ["article", "post", "script"] as const;
+export const CONTENT_TYPE_LABELS: Record<string, string> = {
+  article: "文章",
+  post: "帖子",
+  script: "脚本",
+};
 
 /** requirement_data 契约版本（ADR-015 / db §6.4） */
 export const REQUIREMENT_SCHEMA_VERSION = 1 as const;
@@ -81,12 +86,12 @@ export const TASK_STATUS_BADGE: Record<
   TaskStatus,
   { label: string; tone: BadgeTone }
 > = {
-  draft: { label: "DRAFT", tone: "neutral" },
-  ready: { label: "READY", tone: "info" },
-  running: { label: "RUN", tone: "running" },
-  completed: { label: "DONE", tone: "success" },
-  cancelled: { label: "CANCEL", tone: "neutral" },
-  archived: { label: "ARCH", tone: "neutral" },
+  draft: { label: "草稿", tone: "neutral" },
+  ready: { label: "已就绪", tone: "info" },
+  running: { label: "进行中", tone: "running" },
+  completed: { label: "已完成", tone: "success" },
+  cancelled: { label: "已取消", tone: "neutral" },
+  archived: { label: "已归档", tone: "neutral" },
 };
 
 // ── Sprint-2 领域枚举（状态值/类型单源；转换规则归后端领域层，ADR-006）──
