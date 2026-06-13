@@ -18,14 +18,13 @@ const KPIS: { label: string; status: TaskStatus }[] = [
 ];
 
 export function DashboardPage() {
-  const { data, isLoading, isError, error } = useTasks({ page: 1, page_size: 100 });
+  const { data, isLoading, isError, error } = useTasks({ page: 1, page_size: 8 });
   const summary = useDashboardSummary(DEFAULT_PROJECT_ID);
   const pending = usePendingReviews(DEFAULT_PROJECT_ID);
   const work = useWorkQueue(DEFAULT_PROJECT_ID);
   const agents = useAgents();
   const agentList = agents.data ?? [];
   const items = data?.items ?? [];
-  const count = (s: TaskStatus) => items.filter((t) => t.status === s).length;
 
   return (
     <div>
@@ -55,7 +54,7 @@ export function DashboardPage() {
         </div>
         {KPIS.map((k) => (
           <div className="card kpi" key={k.status}>
-            <div className="kpi-value">{count(k.status)}</div>
+            <div className="kpi-value">{items.filter((t) => t.status === k.status).length}</div>
             <div className="kpi-label">{k.label}</div>
           </div>
         ))}
@@ -80,7 +79,7 @@ export function DashboardPage() {
       </div>
 
       <h2 className="section-title">
-        待审核 · <Link to="/reviews/pending">全部</Link>
+        待审核 · <Link to="/admin/content">全部</Link>
       </h2>
       {pending.isLoading ? (
         <Skeleton rows={2} />
@@ -89,7 +88,7 @@ export function DashboardPage() {
       )}
 
       <h2 className="section-title">
-        工作队列 · <Link to="/work-queue">全部</Link>
+        工作队列 · <Link to="/admin/content">全部</Link>
       </h2>
       {work.isLoading ? <Skeleton rows={2} /> : <WorkQueueList items={(work.data ?? []).slice(0, 5)} />}
 
@@ -101,13 +100,13 @@ export function DashboardPage() {
           title="开始你的第一个内容任务"
           hint="创建任务后即可在此查看运行状态。"
           action={
-            <Link className="btn primary" to="/content/tasks/new">
+            <Link className="btn primary" to="/tasks/new">
               + 新建任务
             </Link>
           }
         />
       ) : (
-        <TaskTable items={items.slice(0, 8)} />
+        <TaskTable items={items} />
       )}
     </div>
   );
