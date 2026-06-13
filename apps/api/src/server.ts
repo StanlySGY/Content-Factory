@@ -25,9 +25,6 @@ try {
   const httpServer = app.server;
   const websocketService = new WebSocketService(httpServer, app.log as any);
 
-  // 将 WebSocket 服务挂载到 app 实例，供路由访问
-  app.decorate("websocketService", websocketService);
-
   app.log.info({ wsPath: "/ws" }, "WebSocket service started");
 } catch (err) {
   app.log.error(err);
